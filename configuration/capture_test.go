@@ -91,7 +91,7 @@ frontend test_delete
 			}
 
 			// fetch tests, first frontend
-			_, declareCaptures, err := c.GetDeclareCaptures("test", "")
+			_, declareCaptures, err := c.GetDeclareCaptures("frontend", "test", "")
 			if err != nil {
 				t.Error(err.Error())
 			}
@@ -102,7 +102,7 @@ frontend test_delete
 
 			counter := Counter{0}
 
-			_, declareCapture, err := c.GetDeclareCapture(0, "test", "")
+			_, declareCapture, err := c.GetDeclareCapture(0, "frontend", "test", "")
 			if declareCapture.Type != "request" {
 				t.Errorf("Declare capture type %v returned, expected %v", declareCapture.Type, "request")
 			}
@@ -110,7 +110,7 @@ frontend test_delete
 				t.Errorf("Declare capture length %v returned, expected %v", declareCapture.Length, 1)
 			}
 
-			_, declareCapture, err = c.GetDeclareCapture(counter.increment(), "test", "")
+			_, declareCapture, err = c.GetDeclareCapture(counter.increment(), "frontend", "test", "")
 			if declareCapture.Type != "response" {
 				t.Errorf("Declare capture type %v returned, expected %v", declareCapture.Type, "response")
 			}
@@ -119,7 +119,7 @@ frontend test_delete
 			}
 
 			// fetch tests, second frontend
-			_, declareCaptures, err = c.GetDeclareCaptures("test_second", "")
+			_, declareCaptures, err = c.GetDeclareCaptures("frontend", "test_second", "")
 			if err != nil {
 				t.Error(err.Error())
 			}
@@ -130,7 +130,7 @@ frontend test_delete
 
 			counter = Counter{0}
 
-			_, declareCapture, err = c.GetDeclareCapture(0, "test_second", "")
+			_, declareCapture, err = c.GetDeclareCapture(0, "frontend", "test_second", "")
 			if declareCapture.Type != "request" {
 				t.Errorf("Declare capture type %v returned, expected %v", declareCapture.Type, "request")
 			}
@@ -138,7 +138,7 @@ frontend test_delete
 				t.Errorf("Declare capture length %v returned, expected %v", declareCapture.Length, 111)
 			}
 
-			_, declareCapture, err = c.GetDeclareCapture(counter.increment(), "test_second", "")
+			_, declareCapture, err = c.GetDeclareCapture(counter.increment(), "frontend", "test_second", "")
 			if declareCapture.Type != "response" {
 				t.Errorf("Declare capture type %v returned, expected %v", declareCapture.Type, "response")
 			}
@@ -153,7 +153,7 @@ frontend test_delete
 				Type:   "request",
 				Length: 12345,
 			}
-			if c.EditDeclareCapture(0, "test_replace", &edited, "", 1) != nil {
+			if c.EditDeclareCapture(0, "frontend", "test_replace", &edited, "", 1) != nil {
 				t.Errorf("Edit of an existing declare capture failed")
 			}
 
@@ -163,7 +163,7 @@ frontend test_delete
 				Type:   "response",
 				Length: 12345,
 			}
-			if c.EditDeclareCapture(1, "test_replace", &edited, "", 2) != nil {
+			if c.EditDeclareCapture(1, "frontend", "test_replace", &edited, "", 2) != nil {
 				t.Errorf("Edit of an existing declare capture failed")
 			}
 
@@ -174,7 +174,7 @@ frontend test_delete
 				Type:   "request",
 				Length: 1,
 			}
-			if c.CreateDeclareCapture("test_add", &add, "", 3) != nil {
+			if c.CreateDeclareCapture("frontend", "test_add", &add, "", 3) != nil {
 				t.Errorf("Adding a new declare capture request failed")
 			}
 
@@ -183,14 +183,14 @@ frontend test_delete
 				Type:   "response",
 				Length: 2,
 			}
-			if c.CreateDeclareCapture("test_add", &add, "", 4) != nil {
+			if c.CreateDeclareCapture("frontend", "test_add", &add, "", 4) != nil {
 				t.Errorf("Adding a new declare capture response failed")
 			}
 			// delete tests
-			if c.DeleteDeclareCapture(1, "test_delete", "", 5) != nil {
+			if c.DeleteDeclareCapture(1, "frontend", "test_delete", "", 5) != nil {
 				t.Errorf("Deleting an existing declare capture failed")
 			}
-			if c.DeleteDeclareCapture(0, "test_delete", "", 6) != nil {
+			if c.DeleteDeclareCapture(0, "frontend", "test_delete", "", 6) != nil {
 				t.Errorf("Deleting an existing declare capture failed")
 			}
 		})

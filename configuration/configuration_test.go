@@ -28,7 +28,6 @@ const testConf = `
 # _version=1
 global
 	daemon
-	nbproc 4
 	maxconn 2000
 	external-check
   ca-base /etc/ssl/certs
@@ -183,14 +182,12 @@ defaults
   maxconn 2000
   backlog 1024
   mode http
-  bind-process 1-4
   balance roundrobin
   option tcpka
   option srvtcpka
   option clitcpka
   option dontlognull
   option forwardfor header X-Forwarded-For
-  option http-use-htx
   option httpclose
   option httplog
   option disable-h2-upgrade
@@ -271,7 +268,6 @@ frontend test
   bind 192.168.1.1:80 name webserv
   bind 192.168.1.1:8080 name webserv2
   bind [2a01:c9c0:a3:8::3]:80 name ipv6
-  bind-process odd
   option httplog
   option dontlognull
   option contstats
@@ -442,7 +438,6 @@ frontend test
 
 frontend test_2
   mode http
-  bind-process even
   option httplog
   option dontlognull
   option contstats
@@ -487,7 +482,6 @@ frontend test_2
 backend test
   mode http
   balance roundrobin
-  bind-process all
   hash-type consistent sdbm avalanche
   log-tag bla
   option http-keep-alive
@@ -728,7 +722,6 @@ http-errors website-2
 backend test_2
   mode http
   balance roundrobin
-  bind-process all
   hash-type consistent sdbm avalanche
   log-tag bla
   option http-keep-alive

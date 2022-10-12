@@ -46,9 +46,6 @@ func TestGetBackends(t *testing.T) { //nolint:gocognit,gocyclo
 		if b.Name == "test" {
 			optionValue = "enabled"
 		}
-		if b.BindProcess != "all" {
-			t.Errorf("%v: BindProcess not all: %v", b.Name, b.BindProcess)
-		}
 		if b.AdvCheck != "httpchk" {
 			t.Errorf("%v: AdvCheck.Method not HEAD: %v", b.Name, b.AdvCheck)
 		}
@@ -255,9 +252,6 @@ func TestGetBackend(t *testing.T) {
 
 	if b.Name != "test" {
 		t.Errorf("Expected only test, %v found", b.Name)
-	}
-	if b.BindProcess != "all" {
-		t.Errorf("%v: BindProcess not all: %v", b.Name, b.BindProcess)
 	}
 	if b.AdvCheck != "httpchk" {
 		t.Errorf("%v: AdvCheck.Method not HEAD: %v", b.Name, b.AdvCheck)
@@ -619,7 +613,6 @@ func TestCreateEditDeleteBackend(t *testing.T) {
 			URILen:    100,
 			URIDepth:  250,
 		},
-		BindProcess: "4",
 		Cookie: &models.Cookie{
 			Domains: []*models.Domain{
 				{Value: "dom1"},
@@ -759,7 +752,6 @@ func TestCreateEditDeleteBackend(t *testing.T) {
 				URILen:    10,
 				URIDepth:  25,
 			},
-			BindProcess: "3",
 			Cookie: &models.Cookie{
 				Domains: []*models.Domain{
 					{Value: "dom1"},
@@ -1028,10 +1020,6 @@ func compareBackends(x, y *models.Backend, t *testing.T) bool { //nolint:gocogni
 
 	x.Cookie = nil
 	y.Cookie = nil
-
-	if x.BindProcess != y.BindProcess {
-		return false
-	}
 
 	if !reflect.DeepEqual(x.DefaultServer, y.DefaultServer) {
 		return false

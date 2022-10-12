@@ -77,9 +77,6 @@ global:
       type: string
       pattern: '^[^\s]+$'
       x-display-name: Local instance's peer name.
-    nbproc:
-      type: integer
-      x-display-name: Number of Processes
     nbthread:
       type: integer
       x-display-name: Number of Threads
@@ -426,10 +423,6 @@ global:
           type: string
           enum: [enabled, disabled]
           x-display-name: Edge-triggered polling mode
-    tune_ssl_default_dh_param:
-      type: integer
-      x-display-name: SSL Default DH Parameter Size
-      x-deprecated: true
     ssl_default_bind_options:
       type: string
       x-display-name: SSL Default Bind Options
@@ -464,24 +457,6 @@ global:
       type: string
       enum: [none, required]
       x-display-name: Verify server certificates
-    cpu_maps:
-      x-go-name: CPUMaps
-      type: array
-      x-omitempty: true
-      x-display-name: CPU Maps
-      items:
-        type: object
-        x-go-name: CPUMap
-        required:
-          - process
-          - cpu_set
-        properties:
-          process:
-            type: string
-            x-display-name: Process/Thread Set
-          cpu_set:
-            type: string
-            x-display-name: CPU Set
     runtime_apis:
       type: array
       x-omitempty: true

@@ -31,16 +31,16 @@ import (
 )
 
 type DgramBind interface {
-	GetDgramBinds(logForward string, transactionID string) (int64, models.DgramBinds, error)
-	GetDgramBind(name string, logForward string, transactionID string) (int64, *models.DgramBind, error)
-	DeleteDgramBind(name string, logForward string, transactionID string, version int64) error
-	CreateDgramBind(logForward string, data *models.DgramBind, transactionID string, version int64) error
-	EditDgramBind(name string, logForward string, data *models.DgramBind, transactionID string, version int64) error
+	GetDgramBinds(parentType string, parentName string, transactionID string) (int64, models.DgramBinds, error)
+	GetDgramBind(name string, parentType string, parentName string, transactionID string) (int64, *models.DgramBind, error)
+	DeleteDgramBind(name string, parentType string, parentName string, transactionID string, version int64) error
+	CreateDgramBind(parentType string, parentName string, data *models.DgramBind, transactionID string, version int64) error
+	EditDgramBind(name string, parentType string, parentName string, data *models.DgramBind, transactionID string, version int64) error
 }
 
 // GetDgramBinds returns configuration version and an array of
 // configured binds in the specified logForward. Returns error on fail.
-func (c *client) GetDgramBinds(logForward string, transactionID string) (int64, models.DgramBinds, error) {
+func (c *client) GetDgramBinds(parentType string, parentName string, transactionID string) (int64, models.DgramBinds, error) {
 	p, err := c.GetParser(transactionID)
 	if err != nil {
 		return 0, nil, err
@@ -51,9 +51,9 @@ func (c *client) GetDgramBinds(logForward string, transactionID string) (int64, 
 		return 0, nil, err
 	}
 
-	binds, err := ParseDgramBinds(logForward, p)
+	binds, err := ParseDgramBinds(parentType, parentName, p)
 	if err != nil {
-		return v, nil, c.HandleError("", "log-forward", logForward, "", false, err)
+		return v, nil, c.HandleError("", parentType, parentName, "", false, err)
 	}
 
 	return v, binds, nil
@@ -61,7 +61,7 @@ func (c *client) GetDgramBinds(logForward string, transactionID string) (int64, 
 
 // GetDgramBind returns configuration version and a requested dgram-bind
 // in the specified logForward. Returns error on fail or if dgram-bind does not exist.
-func (c *client) GetDgramBind(name string, logForward string, transactionID string) (int64, *models.DgramBind, error) {
+func (c *client) GetDgramBind(name string, parentType string, parentName string, transactionID string) (int64, *models.DgramBind, error) {
 	p, err := c.GetParser(transactionID)
 	if err != nil {
 		return 0, nil, err
@@ -72,9 +72,9 @@ func (c *client) GetDgramBind(name string, logForward string, transactionID stri
 		return 0, nil, err
 	}
 
-	dBind, _ := GetDgramBindByName(name, logForward, p)
+	dBind, _ := GetDgramBindByName(name, parentType, parentName, p)
 	if dBind == nil {
-		return v, nil, NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("DgramBind %s does not exist in log-forward %s", name, logForward))
+		return v, nil, NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("DgramBind %s does not exist in log-forward %s", name, parentName))
 	}
 
 	return v, dBind, nil
@@ -82,20 +82,26 @@ func (c *client) GetDgramBind(name string, logForward string, transactionID stri
 
 // DeleteDgramBind deletes a dgram-bind in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) DeleteDgramBind(name string, logForward string, transactionID string, version int64) error {
+func (c *client) DeleteDgramBind(name string, parentType string, parentName string, transactionID string, version int64) error {
 	p, t, err := c.loadDataForChange(transactionID, version)
 	if err != nil {
 		return err
 	}
 
-	dBind, i := GetDgramBindByName(name, logForward, p)
+	dBind, i := GetDgramBindByName(name, parentType, parentName, p)
 	if dBind == nil {
-		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("DgramBind %s does not exist in log-forward %s", name, logForward))
-		return c.HandleError(name, "log-forward", logForward, t, transactionID == "", e)
+		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("DgramBind %s does not exist in log-forward %s", name, parentName))
+		return c.HandleError(name, parentType, parentName, t, transactionID == "", e)
+	}
+	var parentSection parser.Section
+	if parentType == "log_forward" {
+		parentSection = parser.LogForward
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
 	}
 
-	if err := p.Delete(parser.LogForward, logForward, "dgram-bind", i); err != nil {
-		return c.HandleError(name, "log-forward", logForward, t, transactionID == "", err)
+	if err := p.Delete(parentSection, parentName, "dgram-bind", i); err != nil {
+		return c.HandleError(name, parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -106,7 +112,7 @@ func (c *client) DeleteDgramBind(name string, logForward string, transactionID s
 
 // CreateDgramBind creates a dgram-bind in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) CreateDgramBind(logForward string, data *models.DgramBind, transactionID string, version int64) error {
+func (c *client) CreateDgramBind(parentType string, parentName string, data *models.DgramBind, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -123,14 +129,20 @@ func (c *client) CreateDgramBind(logForward string, data *models.DgramBind, tran
 		return err
 	}
 
-	dBind, _ := GetDgramBindByName(data.Name, logForward, p)
+	dBind, _ := GetDgramBindByName(data.Name, parentType, parentName, p)
 	if dBind != nil {
-		e := NewConfError(ErrObjectAlreadyExists, fmt.Sprintf("DgramBind %s already exists in log-forward %s", data.Name, logForward))
-		return c.HandleError(data.Name, "log-forward", logForward, t, transactionID == "", e)
+		e := NewConfError(ErrObjectAlreadyExists, fmt.Sprintf("DgramBind %s already exists in log-forward %s", data.Name, parentName))
+		return c.HandleError(data.Name, parentType, parentName, t, transactionID == "", e)
+	}
+	var parentSection parser.Section
+	if parentType == "log_forward" {
+		parentSection = parser.LogForward
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
 	}
 
-	if err := p.Insert(parser.LogForward, logForward, "dgram-bind", SerializeDgramBind(*data), -1); err != nil {
-		return c.HandleError(data.Name, "log-forward", logForward, t, transactionID == "", err)
+	if err := p.Insert(parentSection, parentName, "dgram-bind", SerializeDgramBind(*data), -1); err != nil {
+		return c.HandleError(data.Name, parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -142,7 +154,7 @@ func (c *client) CreateDgramBind(logForward string, data *models.DgramBind, tran
 
 // EditDgramBind edits a dgram-bind in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) EditDgramBind(name string, logForward string, data *models.DgramBind, transactionID string, version int64) error {
+func (c *client) EditDgramBind(name string, parentType string, parentName string, data *models.DgramBind, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -158,14 +170,19 @@ func (c *client) EditDgramBind(name string, logForward string, data *models.Dgra
 		return err
 	}
 
-	dBind, i := GetDgramBindByName(name, logForward, p)
+	dBind, i := GetDgramBindByName(name, parentType, parentName, p)
 	if dBind == nil {
-		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("DgramBind %v does not exist in log-forward %s", name, logForward))
-		return c.HandleError(data.Name, "log-forward", logForward, t, transactionID == "", e)
+		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("DgramBind %v does not exist in log-forward %s", name, parentName))
+		return c.HandleError(data.Name, parentType, parentName, t, transactionID == "", e)
 	}
-
-	if err := p.Set(parser.LogForward, logForward, "dgram-bind", SerializeDgramBind(*data), i); err != nil {
-		return c.HandleError(data.Name, "log-forward", logForward, t, transactionID == "", err)
+	var parentSection parser.Section
+	if parentType == "log_forward" {
+		parentSection = parser.LogForward
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
+	}
+	if err := p.Set(parentSection, parentName, "dgram-bind", SerializeDgramBind(*data), i); err != nil {
+		return c.HandleError(data.Name, parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -175,10 +192,16 @@ func (c *client) EditDgramBind(name string, logForward string, data *models.Dgra
 	return nil
 }
 
-func ParseDgramBinds(logForward string, p parser.Parser) (models.DgramBinds, error) {
+func ParseDgramBinds(parentType string, parentName string, p parser.Parser) (models.DgramBinds, error) {
 	dBinds := models.DgramBinds{}
 
-	data, err := p.Get(parser.LogForward, logForward, "dgram-bind", false)
+	var parentSection parser.Section
+	if parentType == "log_forward" {
+		parentSection = parser.LogForward
+	} else {
+		return nil, NewConfError(ErrValidationError, "unsupported parent type")
+	}
+	data, err := p.Get(parentSection, parentName, "dgram-bind", false)
 	if err != nil {
 		if errors.Is(err, parser_errors.ErrFetch) {
 			return dBinds, nil
@@ -295,8 +318,8 @@ func SerializeDgramBind(b models.DgramBind) types.DgramBind {
 	return dBind
 }
 
-func GetDgramBindByName(name string, logForward string, p parser.Parser) (*models.DgramBind, int) {
-	dBinds, err := ParseDgramBinds(logForward, p)
+func GetDgramBindByName(name string, parentType string, parentName string, p parser.Parser) (*models.DgramBind, int) {
+	dBinds, err := ParseDgramBinds(parentType, parentName, p)
 	if err != nil {
 		return nil, 0
 	}

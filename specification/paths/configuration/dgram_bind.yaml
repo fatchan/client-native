@@ -7,11 +7,17 @@ dgram_binds:
     tags:
       - DgramBind
     parameters:
-      - name: log_forward
+      - name: parent_name
         in: query
-        description: Parent log forward name
+        description: Parent name
         required: true
         type: string
+      - name: parent_type
+        in: query
+        description: Parent type
+        required: true
+        type: string
+        enum: [log_forward]
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -31,11 +37,17 @@ dgram_binds:
     tags:
       - DgramBind
     parameters:
-      - name: log_forward
+      - name: parent_name
         in: query
-        description: Parent log forward name
+        description: Parent name
         required: true
         type: string
+      - name: parent_type
+        in: query
+        description: Parent type
+        required: true
+        type: string
+        enum: [log_forward]
       - name: data
         in: body
         required: true
@@ -76,11 +88,17 @@ dgram_binds_one:
         description: Bind name
         required: true
         type: string
-      - name: log_forward
+      - name: parent_name
         in: query
-        description: Parent log forward name
+        description: Parent name
         required: true
         type: string
+      - name: parent_type
+        in: query
+        description: Parent type
+        required: true
+        type: string
+        enum: [log_forward]
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -107,11 +125,17 @@ dgram_binds_one:
         description: Bind name
         required: true
         type: string
-      - name: log_forward
+      - name: parent_name
         in: query
-        description: Parent log forward name
+        description: Parent name
         required: true
         type: string
+      - name: parent_type
+        in: query
+        description: Parent type
+        required: true
+        type: string
+        enum: [log_forward]
       - name: data
         in: body
         required: true
@@ -151,11 +175,17 @@ dgram_binds_one:
         description: Bind name
         required: true
         type: string
-      - name: log_forward
+      - name: parent_name
         in: query
-        description: Parent log forward name
+        description: Parent name
         required: true
         type: string
+      - name: parent_type
+        in: query
+        description: Parent type
+        required: true
+        type: string
+        enum: [log_forward]
       - $ref: "#/parameters/transaction_id"
       - $ref: "#/parameters/version"
       - $ref: "#/parameters/force_reload"

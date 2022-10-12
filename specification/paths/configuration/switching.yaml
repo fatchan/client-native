@@ -7,11 +7,17 @@ backend_switching_rules:
     tags:
       - BackendSwitchingRule
     parameters:
-      - name: frontend
+      - name: parent_name
         in: query
-        description: Frontend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [frontend]
+        required: true
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -31,11 +37,17 @@ backend_switching_rules:
     tags:
       - BackendSwitchingRule
     parameters:
-      - name: frontend
+      - name: parent_name
         in: query
-        description: Frontend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [frontend]
+        required: true
       - name: data
         in: body
         required: true
@@ -76,11 +88,17 @@ backend_switching_rules_one:
         description: Switching Rule Index
         required: true
         type: integer
-      - name: frontend
+      - name: parent_name
         in: query
-        description: Frontend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [frontend]
+        required: true
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -107,11 +125,17 @@ backend_switching_rules_one:
         description: Switching Rule Index
         required: true
         type: integer
-      - name: frontend
+      - name: parent_name
         in: query
-        description: Frontend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [frontend]
+        required: true
       - name: data
         in: body
         required: true
@@ -151,11 +175,17 @@ backend_switching_rules_one:
         description: Switching Rule Index
         required: true
         type: integer
-      - name: frontend
+      - name: parent_name
         in: query
-        description: Frontend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [frontend]
+        required: true
       - $ref: "#/parameters/transaction_id"
       - $ref: "#/parameters/version"
       - $ref: "#/parameters/force_reload"
@@ -180,11 +210,17 @@ server_switching_rules:
     tags:
       - ServerSwitchingRule
     parameters:
-      - name: backend
+      - name: parent_name
         in: query
-        description: Backend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [backend]
+        required: true
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -204,11 +240,17 @@ server_switching_rules:
     tags:
       - ServerSwitchingRule
     parameters:
-      - name: backend
+      - name: parent_name
         in: query
-        description: Backend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [backend]
+        required: true
       - name: data
         in: body
         required: true
@@ -249,11 +291,17 @@ server_switching_rules_one:
         description: Switching Rule Index
         required: true
         type: integer
-      - name: backend
+      - name: parent_name
         in: query
-        description: Backend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [backend]
+        required: true
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -280,11 +328,17 @@ server_switching_rules_one:
         description: Switching Rule Index
         required: true
         type: integer
-      - name: backend
+      - name: parent_name
         in: query
-        description: Backend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [backend]
+        required: true
       - name: data
         in: body
         required: true
@@ -324,11 +378,17 @@ server_switching_rules_one:
         description: Switching Rule Index
         required: true
         type: integer
-      - name: backend
+      - name: parent_name
         in: query
-        description: Backend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [backend]
+        required: true
       - $ref: "#/parameters/transaction_id"
       - $ref: "#/parameters/version"
       - $ref: "#/parameters/force_reload"

@@ -290,8 +290,6 @@ func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //
 			switch v.Name {
 			case "name":
 				b.Name = v.Value
-			case "process":
-				b.Process = v.Value
 			case "tcp-ut":
 				t, err := strconv.ParseInt(v.Value, 10, 64)
 				if err == nil {
@@ -405,9 +403,6 @@ func serializeBindParams(b models.BindParams, path string) (options []params.Bin
 		options = append(options, &params.BindOptionValue{Name: "name", Value: b.Name})
 	} else if path != "" {
 		options = append(options, &params.BindOptionValue{Name: "name", Value: path})
-	}
-	if b.Process != "" {
-		options = append(options, &params.BindOptionValue{Name: "process", Value: b.Process})
 	}
 	if b.SslCertificate != "" {
 		options = append(options, &params.BindOptionValue{Name: "crt", Value: b.SslCertificate})

@@ -29,16 +29,16 @@ import (
 )
 
 type StickRule interface {
-	GetStickRules(backend string, transactionID string) (int64, models.StickRules, error)
-	GetStickRule(id int64, backend string, transactionID string) (int64, *models.StickRule, error)
-	DeleteStickRule(id int64, backend string, transactionID string, version int64) error
-	CreateStickRule(backend string, data *models.StickRule, transactionID string, version int64) error
-	EditStickRule(id int64, backend string, data *models.StickRule, transactionID string, version int64) error
+	GetStickRules(parentType string, parentName string, transactionID string) (int64, models.StickRules, error)
+	GetStickRule(id int64, parentType string, parentName string, transactionID string) (int64, *models.StickRule, error)
+	DeleteStickRule(id int64, parentType string, parentName string, transactionID string, version int64) error
+	CreateStickRule(parentType string, parentName string, data *models.StickRule, transactionID string, version int64) error
+	EditStickRule(id int64, parentType string, parentName string, data *models.StickRule, transactionID string, version int64) error
 }
 
 // GetStickRules returns configuration version and an array of
 // configured stick rules in the specified backend. Returns error on fail.
-func (c *client) GetStickRules(backend string, transactionID string) (int64, models.StickRules, error) {
+func (c *client) GetStickRules(parentType string, parentName string, transactionID string) (int64, models.StickRules, error) {
 	p, err := c.GetParser(transactionID)
 	if err != nil {
 		return 0, nil, err
@@ -49,9 +49,9 @@ func (c *client) GetStickRules(backend string, transactionID string) (int64, mod
 		return 0, nil, err
 	}
 
-	sRules, err := ParseStickRules(backend, p)
+	sRules, err := ParseStickRules(parentType, parentName, p)
 	if err != nil {
-		return v, nil, c.HandleError("", "backend", backend, "", false, err)
+		return v, nil, c.HandleError("", parentType, parentName, "", false, err)
 	}
 
 	return v, sRules, nil
@@ -59,7 +59,7 @@ func (c *client) GetStickRules(backend string, transactionID string) (int64, mod
 
 // GetStickRule returns configuration version and a requested stick rule
 // in the specified backend. Returns error on fail or if stick rule does not exist.
-func (c *client) GetStickRule(id int64, backend string, transactionID string) (int64, *models.StickRule, error) {
+func (c *client) GetStickRule(id int64, parentType string, parentName string, transactionID string) (int64, *models.StickRule, error) {
 	p, err := c.GetParser(transactionID)
 	if err != nil {
 		return 0, nil, err
@@ -70,9 +70,16 @@ func (c *client) GetStickRule(id int64, backend string, transactionID string) (i
 		return 0, nil, err
 	}
 
-	data, err := p.GetOne(parser.Backends, backend, "stick", int(id))
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return 0, nil, NewConfError(ErrValidationError, "unsupported parent type")
+	}
+
+	data, err := p.GetOne(parentSection, parentName, "stick", int(id))
 	if err != nil {
-		return v, nil, c.HandleError(strconv.FormatInt(id, 10), "backend", backend, "", false, err)
+		return v, nil, c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, "", false, err)
 	}
 
 	sRule := ParseStickRule(data.(types.Stick))
@@ -83,14 +90,21 @@ func (c *client) GetStickRule(id int64, backend string, transactionID string) (i
 
 // DeleteStickRule deletes a stick rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) DeleteStickRule(id int64, backend string, transactionID string, version int64) error {
+func (c *client) DeleteStickRule(id int64, parentType string, parentName string, transactionID string, version int64) error {
 	p, t, err := c.loadDataForChange(transactionID, version)
 	if err != nil {
 		return err
 	}
 
-	if err := p.Delete(parser.Backends, backend, "stick", int(id)); err != nil {
-		return c.HandleError(strconv.FormatInt(id, 10), "backend", backend, t, transactionID == "", err)
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
+	}
+
+	if err := p.Delete(parentSection, parentName, "stick", int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -101,7 +115,7 @@ func (c *client) DeleteStickRule(id int64, backend string, transactionID string,
 
 // CreateStickRule creates a stick rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) CreateStickRule(backend string, data *models.StickRule, transactionID string, version int64) error {
+func (c *client) CreateStickRule(parentType string, parentName string, data *models.StickRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -113,8 +127,15 @@ func (c *client) CreateStickRule(backend string, data *models.StickRule, transac
 		return err
 	}
 
-	if err := p.Insert(parser.Backends, backend, "stick", SerializeStickRule(*data), int(*data.Index)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), "backend", backend, t, transactionID == "", err)
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
+	}
+
+	if err := p.Insert(parentSection, parentName, "stick", SerializeStickRule(*data), int(*data.Index)); err != nil {
+		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -125,7 +146,7 @@ func (c *client) CreateStickRule(backend string, data *models.StickRule, transac
 
 // EditStickRule edits a stick rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) EditStickRule(id int64, backend string, data *models.StickRule, transactionID string, version int64) error {
+func (c *client) EditStickRule(id int64, parentType string, parentName string, data *models.StickRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -137,12 +158,19 @@ func (c *client) EditStickRule(id int64, backend string, data *models.StickRule,
 		return err
 	}
 
-	if _, err := p.GetOne(parser.Backends, backend, "stick", int(id)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), "backend", backend, t, transactionID == "", err)
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
 	}
 
-	if err := p.Set(parser.Backends, backend, "stick", SerializeStickRule(*data), int(id)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), "backend", backend, t, transactionID == "", err)
+	if _, err := p.GetOne(parentSection, parentName, "stick", int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
+	}
+
+	if err := p.Set(parentSection, parentName, "stick", SerializeStickRule(*data), int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -151,10 +179,17 @@ func (c *client) EditStickRule(id int64, backend string, data *models.StickRule,
 	return nil
 }
 
-func ParseStickRules(backend string, p parser.Parser) (models.StickRules, error) {
+func ParseStickRules(parentType string, parentName string, p parser.Parser) (models.StickRules, error) {
 	sr := models.StickRules{}
 
-	data, err := p.Get(parser.Backends, backend, "stick", false)
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return nil, NewConfError(ErrValidationError, "unsupported parent type")
+	}
+
+	data, err := p.Get(parentSection, parentName, "stick", false)
 	if err != nil {
 		if errors.Is(err, parser_errors.ErrFetch) {
 			return sr, nil

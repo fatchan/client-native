@@ -30,9 +30,6 @@ func TestGetDefaults(t *testing.T) { //nolint:gocognit,gocyclo
 	if d.MonitorURI != "/monitor" {
 		t.Errorf("MonitorURI not /monitor: %v", d.MonitorURI)
 	}
-	if d.BindProcess != "1-4" {
-		t.Errorf("BindProcess not 1-4: %v", d.BindProcess)
-	}
 	if d.Clitcpka != "enabled" {
 		t.Errorf("Clitcpka not enabled: %v", d.Clitcpka)
 	}
@@ -47,9 +44,6 @@ func TestGetDefaults(t *testing.T) { //nolint:gocognit,gocyclo
 	}
 	if d.DisableH2Upgrade != "enabled" {
 		t.Errorf("DisableH2Upgrade not enabled: %v", d.DisableH2Upgrade)
-	}
-	if d.HTTPUseHtx != "enabled" {
-		t.Errorf("HTTPUseHtx not enabled: %v", d.HTTPUseHtx)
 	}
 	if !d.Httplog {
 		t.Errorf("Httplog not enabled: %v", d.Httplog)
@@ -329,7 +323,6 @@ func TestPushDefaults(t *testing.T) {
 	statsRealm := "Haproxy Stats"
 	d := &models.Defaults{
 		Clitcpka:       "disabled",
-		BindProcess:    "1-4",
 		DefaultBackend: "test2",
 		ErrorFiles: []*models.Errorfile{
 			{
@@ -355,7 +348,6 @@ func TestPushDefaults(t *testing.T) {
 		QueueTimeout:   &tOutS,
 		Mode:           "tcp",
 		MonitorURI:     "/healthz",
-		HTTPUseHtx:     "enabled",
 		Balance: &models.Balance{
 			Algorithm: &balanceAlgorithm,
 		},
@@ -364,10 +356,6 @@ func TestPushDefaults(t *testing.T) {
 		ExternalCheckCommand: "/bin/false",
 		Logasap:              "disabled",
 		Allbackups:           "enabled",
-		HTTPCheck: &models.HTTPCheck{
-			Index: misc.Int64P(0),
-			Type:  "send-state",
-		},
 		AcceptInvalidHTTPRequest:  "disabled",
 		AcceptInvalidHTTPResponse: "disabled",
 		DisableH2Upgrade:          "disabled",

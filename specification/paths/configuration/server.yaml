@@ -7,19 +7,17 @@ servers:
     tags:
       - Server
     parameters:
-      - name: backend
-        in: query
-        description: Parent backend name
-        type: string
       - name: parent_name
         in: query
         description: Parent name
         type: string
+        required: true
       - name: parent_type
         in: query
         description: Parent type
         type: string
         enum: [backend, ring, peers]
+        required: true
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -39,19 +37,17 @@ servers:
     tags:
       - Server
     parameters:
-      - name: backend
-        in: query
-        description: Parent backend name
-        type: string
       - name: parent_name
         in: query
         description: Parent name
         type: string
+        required: true
       - name: parent_type
         in: query
         description: Parent type
         type: string
         enum: [backend, ring, peers]
+        required: true
       - name: data
         in: body
         required: true
@@ -92,19 +88,17 @@ servers_one:
         description: Server name
         required: true
         type: string
-      - name: backend
-        in: query
-        description: Parent backend name
-        type: string
       - name: parent_name
         in: query
         description: Parent name
         type: string
+        required: true
       - name: parent_type
         in: query
         description: Parent type
         type: string
         enum: [backend, ring, peers]
+        required: true
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -131,19 +125,17 @@ servers_one:
         description: Server name
         required: true
         type: string
-      - name: backend
-        in: query
-        description: Parent backend name
-        type: string
       - name: parent_name
         in: query
         description: Parent name
         type: string
+        required: true
       - name: parent_type
         in: query
         description: Parent type
         type: string
         enum: [backend, ring, peers]
+        required: true
       - name: data
         in: body
         required: true
@@ -183,19 +175,17 @@ servers_one:
         description: Server name
         required: true
         type: string
-      - name: backend
-        in: query
-        description: Parent backend name
-        type: string
       - name: parent_name
         in: query
         description: Parent name
         type: string
+        required: true
       - name: parent_type
         in: query
         description: Parent type
         type: string
         enum: [backend, ring, peers]
+        required: true
       - $ref: "#/parameters/transaction_id"
       - $ref: "#/parameters/version"
       - $ref: "#/parameters/force_reload"
@@ -220,11 +210,17 @@ server_templates:
     tags:
       - ServerTemplate
     parameters:
-      - name: backend
+      - name: parent_name
         in: query
-        description: Parent backend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [backend]
+        required: true
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -244,11 +240,17 @@ server_templates:
     tags:
       - ServerTemplate
     parameters:
-      - name: backend
+      - name: parent_name
         in: query
-        description: Parent backend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [backend]
+        required: true
       - name: data
         in: body
         required: true
@@ -289,11 +291,17 @@ server_templates_one:
         description: Server template prefix
         required: true
         type: string
-      - name: backend
+      - name: parent_name
         in: query
-        description: Parent backend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [backend]
+        required: true
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -320,11 +328,17 @@ server_templates_one:
         description: Server template prefix
         required: true
         type: string
-      - name: backend
+      - name: parent_name
         in: query
-        description: Parent backend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [backend]
+        required: true
       - name: data
         in: body
         required: true
@@ -364,11 +378,17 @@ server_templates_one:
         description: Server template prefix
         required: true
         type: string
-      - name: backend
+      - name: parent_name
         in: query
-        description: Parent backend name
-        required: true
+        description: Parent name
         type: string
+        required: true
+      - name: parent_type
+        in: query
+        description: Parent type
+        type: string
+        enum: [backend]
+        required: true
       - $ref: "#/parameters/transaction_id"
       - $ref: "#/parameters/version"
       - $ref: "#/parameters/force_reload"

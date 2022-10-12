@@ -38,9 +38,6 @@ import (
 // swagger:model global
 type Global struct {
 
-	// CPU maps
-	CPUMaps []*CPUMap `json:"cpu_maps,omitempty"`
-
 	// h1 case adjusts
 	H1CaseAdjusts []*H1CaseAdjust `json:"h1_case_adjust,omitempty"`
 
@@ -186,9 +183,6 @@ type Global struct {
 	// mworker max reloads
 	MworkerMaxReloads int64 `json:"mworker_max_reloads,omitempty"`
 
-	// nbproc
-	Nbproc int64 `json:"nbproc,omitempty"`
-
 	// nbthread
 	Nbthread int64 `json:"nbthread,omitempty"`
 
@@ -302,9 +296,6 @@ type Global struct {
 	// tune options
 	TuneOptions *GlobalTuneOptions `json:"tune_options,omitempty"`
 
-	// tune ssl default dh param
-	TuneSslDefaultDhParam int64 `json:"tune_ssl_default_dh_param,omitempty"`
-
 	// uid
 	UID int64 `json:"uid,omitempty"`
 
@@ -328,10 +319,6 @@ type Global struct {
 // Validate validates this global
 func (m *Global) Validate(formats strfmt.Registry) error {
 	var res []error
-
-	if err := m.validateCPUMaps(formats); err != nil {
-		res = append(res, err)
-	}
 
 	if err := m.validateH1CaseAdjusts(formats); err != nil {
 		res = append(res, err)
@@ -444,32 +431,6 @@ func (m *Global) Validate(formats strfmt.Registry) error {
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
-	return nil
-}
-
-func (m *Global) validateCPUMaps(formats strfmt.Registry) error {
-	if swag.IsZero(m.CPUMaps) { // not required
-		return nil
-	}
-
-	for i := 0; i < len(m.CPUMaps); i++ {
-		if swag.IsZero(m.CPUMaps[i]) { // not required
-			continue
-		}
-
-		if m.CPUMaps[i] != nil {
-			if err := m.CPUMaps[i].Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
-					return ve.ValidateName("cpu_maps" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
-					return ce.ValidateName("cpu_maps" + "." + strconv.Itoa(i))
-				}
-				return err
-			}
-		}
-
-	}
-
 	return nil
 }
 
@@ -1136,10 +1097,6 @@ func (m *Global) validateWurflOptions(formats strfmt.Registry) error {
 func (m *Global) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.contextValidateCPUMaps(ctx, formats); err != nil {
-		res = append(res, err)
-	}
-
 	if err := m.contextValidateH1CaseAdjusts(ctx, formats); err != nil {
 		res = append(res, err)
 	}
@@ -1203,26 +1160,6 @@ func (m *Global) ContextValidate(ctx context.Context, formats strfmt.Registry) e
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
-	return nil
-}
-
-func (m *Global) contextValidateCPUMaps(ctx context.Context, formats strfmt.Registry) error {
-
-	for i := 0; i < len(m.CPUMaps); i++ {
-
-		if m.CPUMaps[i] != nil {
-			if err := m.CPUMaps[i].ContextValidate(ctx, formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
-					return ve.ValidateName("cpu_maps" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
-					return ce.ValidateName("cpu_maps" + "." + strconv.Itoa(i))
-				}
-				return err
-			}
-		}
-
-	}
-
 	return nil
 }
 
@@ -1517,79 +1454,6 @@ func (m *Global) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (m *Global) UnmarshalBinary(b []byte) error {
 	var res Global
-	if err := swag.ReadJSON(b, &res); err != nil {
-		return err
-	}
-	*m = res
-	return nil
-}
-
-// CPUMap CPU map
-//
-// swagger:model CPUMap
-type CPUMap struct {
-
-	// cpu set
-	// Required: true
-	CPUSet *string `json:"cpu_set"`
-
-	// process
-	// Required: true
-	Process *string `json:"process"`
-}
-
-// Validate validates this CPU map
-func (m *CPUMap) Validate(formats strfmt.Registry) error {
-	var res []error
-
-	if err := m.validateCPUSet(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateProcess(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if len(res) > 0 {
-		return errors.CompositeValidationError(res...)
-	}
-	return nil
-}
-
-func (m *CPUMap) validateCPUSet(formats strfmt.Registry) error {
-
-	if err := validate.Required("cpu_set", "body", m.CPUSet); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *CPUMap) validateProcess(formats strfmt.Registry) error {
-
-	if err := validate.Required("process", "body", m.Process); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ContextValidate validates this CPU map based on context it is used
-func (m *CPUMap) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
-	return nil
-}
-
-// MarshalBinary interface implementation
-func (m *CPUMap) MarshalBinary() ([]byte, error) {
-	if m == nil {
-		return nil, nil
-	}
-	return swag.WriteJSON(m)
-}
-
-// UnmarshalBinary interface implementation
-func (m *CPUMap) UnmarshalBinary(b []byte) error {
-	var res CPUMap
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

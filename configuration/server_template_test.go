@@ -10,7 +10,7 @@ import (
 
 func TestGetServerTemplates(t *testing.T) { //nolint:gocognit,gocyclo
 
-	v, templates, err := clientTest.GetServerTemplates("test", "")
+	v, templates, err := clientTest.GetServerTemplates("backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -31,7 +31,7 @@ func TestGetServerTemplates(t *testing.T) { //nolint:gocognit,gocyclo
 }
 
 func TestGetServerTemplate(t *testing.T) {
-	v, template, err := clientTest.GetServerTemplate("srv", "test", "")
+	v, template, err := clientTest.GetServerTemplate("srv", "backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -57,14 +57,14 @@ func TestGetServerTemplate(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	_, _, err = clientTest.GetServerTemplate("test2", "example", "")
+	_, _, err = clientTest.GetServerTemplate("test2", "backend", "example", "")
 	if err == nil {
 		t.Error("Should throw error, non existant server template")
 	}
 }
 
 func TestGetServerTemplateSecond(t *testing.T) {
-	v, template, err := clientTest.GetServerTemplate("site", "test", "")
+	v, template, err := clientTest.GetServerTemplate("site", "backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -96,7 +96,7 @@ func TestGetServerTemplateSecond(t *testing.T) {
 }
 
 func TestGetServerTemplateThird(t *testing.T) {
-	v, template, err := clientTest.GetServerTemplate("website", "test", "")
+	v, template, err := clientTest.GetServerTemplate("website", "backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -128,7 +128,7 @@ func TestGetServerTemplateThird(t *testing.T) {
 }
 
 func TestGetServerTemplateFourth(t *testing.T) {
-	v, template, err := clientTest.GetServerTemplate("test", "test", "")
+	v, template, err := clientTest.GetServerTemplate("test", "backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -173,14 +173,14 @@ func TestCreateEditDeleteServerTemplate(t *testing.T) {
 		},
 	}
 
-	err := clientTest.CreateServerTemplate("test", template, "", version)
+	err := clientTest.CreateServerTemplate("backend", "test", template, "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
 		version++
 	}
 
-	v, serverTemplate, err := clientTest.GetServerTemplate("dev", "test", "")
+	v, serverTemplate, err := clientTest.GetServerTemplate("dev", "backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -195,7 +195,7 @@ func TestCreateEditDeleteServerTemplate(t *testing.T) {
 		t.Errorf("Version %v returned, expected %v", v, version)
 	}
 
-	err = clientTest.CreateServerTemplate("test", template, "", version)
+	err = clientTest.CreateServerTemplate("backend", "test", template, "", version)
 	if err == nil {
 		t.Error("Should throw error server already exists")
 		version++
@@ -214,14 +214,14 @@ func TestCreateEditDeleteServerTemplate(t *testing.T) {
 		},
 	}
 
-	err = clientTest.EditServerTemplate("dev", "test", template, "", version)
+	err = clientTest.EditServerTemplate("dev", "backend", "test", template, "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
 		version++
 	}
 
-	v, serverTemplate, err = clientTest.GetServerTemplate("dev", "test", "")
+	v, serverTemplate, err = clientTest.GetServerTemplate("dev", "backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -237,7 +237,7 @@ func TestCreateEditDeleteServerTemplate(t *testing.T) {
 	}
 
 	// TestDeleteServerTemplate
-	err = clientTest.DeleteServerTemplate("dev", "test", "", version)
+	err = clientTest.DeleteServerTemplate("dev", "backend", "test", "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
@@ -248,12 +248,12 @@ func TestCreateEditDeleteServerTemplate(t *testing.T) {
 		t.Error("Version not incremented")
 	}
 
-	_, _, err = clientTest.GetServerTemplate("dev", "test", "")
+	_, _, err = clientTest.GetServerTemplate("dev", "backend", "test", "")
 	if err == nil {
 		t.Error("DeleteServerTemplate failed, server test still exists")
 	}
 
-	err = clientTest.DeleteServerTemplate("dev", "test2", "", version)
+	err = clientTest.DeleteServerTemplate("dev", "backend", "test2", "", version)
 	if err == nil {
 		t.Error("Should throw error, non existant server")
 		version++

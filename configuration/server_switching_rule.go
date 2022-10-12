@@ -28,9 +28,17 @@ import (
 	"github.com/haproxytech/client-native/v5/models"
 )
 
+type ServerSwitchingRule interface {
+	GetServerSwitchingRules(parentType string, parentName string, transactionID string) (int64, models.ServerSwitchingRules, error)
+	GetServerSwitchingRule(id int64, parentType string, parentName string, transactionID string) (int64, *models.ServerSwitchingRule, error)
+	DeleteServerSwitchingRule(id int64, parentType string, parentName string, transactionID string, version int64) error
+	CreateServerSwitchingRule(parentType string, parentName string, data *models.ServerSwitchingRule, transactionID string, version int64) error
+	EditServerSwitchingRule(id int64, parentType string, parentName string, data *models.ServerSwitchingRule, transactionID string, version int64) error
+}
+
 // GetServerSwitchingRules returns configuration version and an array of
 // configured server switching rules in the specified backend. Returns error on fail.
-func (c *client) GetServerSwitchingRules(backend string, transactionID string) (int64, models.ServerSwitchingRules, error) {
+func (c *client) GetServerSwitchingRules(parentType string, parentName string, transactionID string) (int64, models.ServerSwitchingRules, error) {
 	p, err := c.GetParser(transactionID)
 	if err != nil {
 		return 0, nil, err
@@ -41,9 +49,9 @@ func (c *client) GetServerSwitchingRules(backend string, transactionID string) (
 		return 0, nil, err
 	}
 
-	srvRules, err := ParseServerSwitchingRules(backend, p)
+	srvRules, err := ParseServerSwitchingRules(parentType, parentName, p)
 	if err != nil {
-		return v, nil, c.HandleError("", "backend", backend, "", false, err)
+		return v, nil, c.HandleError("", parentType, parentName, "", false, err)
 	}
 
 	return v, srvRules, nil
@@ -51,7 +59,7 @@ func (c *client) GetServerSwitchingRules(backend string, transactionID string) (
 
 // GetServerSwitchingRule returns configuration version and a requested server switching rule
 // in the specified backend. Returns error on fail or if server switching rule does not exist.
-func (c *client) GetServerSwitchingRule(id int64, backend string, transactionID string) (int64, *models.ServerSwitchingRule, error) {
+func (c *client) GetServerSwitchingRule(id int64, parentType string, parentName string, transactionID string) (int64, *models.ServerSwitchingRule, error) {
 	p, err := c.GetParser(transactionID)
 	if err != nil {
 		return 0, nil, err
@@ -62,9 +70,15 @@ func (c *client) GetServerSwitchingRule(id int64, backend string, transactionID 
 		return 0, nil, err
 	}
 
-	data, err := p.GetOne(parser.Backends, backend, "use-server", int(id))
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return 0, nil, NewConfError(ErrValidationError, "unsupported parent type")
+	}
+	data, err := p.GetOne(parentSection, parentName, "use-server", int(id))
 	if err != nil {
-		return v, nil, c.HandleError(strconv.FormatInt(id, 10), "backend", backend, "", false, err)
+		return v, nil, c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, "", false, err)
 	}
 
 	srvRule := ParseServerSwitchingRule(data.(types.UseServer))
@@ -75,14 +89,20 @@ func (c *client) GetServerSwitchingRule(id int64, backend string, transactionID 
 
 // DeleteServerSwitchingRule deletes a server switching rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) DeleteServerSwitchingRule(id int64, backend string, transactionID string, version int64) error {
+func (c *client) DeleteServerSwitchingRule(id int64, parentType string, parentName string, transactionID string, version int64) error {
 	p, t, err := c.loadDataForChange(transactionID, version)
 	if err != nil {
 		return err
 	}
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
+	}
 
-	if err := p.Delete(parser.Backends, backend, "use-server", int(id)); err != nil {
-		return c.HandleError(strconv.FormatInt(id, 10), "backend", backend, t, transactionID == "", err)
+	if err := p.Delete(parentSection, parentName, "use-server", int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -93,7 +113,7 @@ func (c *client) DeleteServerSwitchingRule(id int64, backend string, transaction
 
 // CreateServerSwitchingRule creates a server switching rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) CreateServerSwitchingRule(backend string, data *models.ServerSwitchingRule, transactionID string, version int64) error {
+func (c *client) CreateServerSwitchingRule(parentType string, parentName string, data *models.ServerSwitchingRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -104,9 +124,15 @@ func (c *client) CreateServerSwitchingRule(backend string, data *models.ServerSw
 	if err != nil {
 		return err
 	}
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
+	}
 
-	if err := p.Insert(parser.Backends, backend, "use-server", SerializeServerSwitchingRule(*data), int(*data.Index)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), "backend", backend, t, transactionID == "", err)
+	if err := p.Insert(parentSection, parentName, "use-server", SerializeServerSwitchingRule(*data), int(*data.Index)); err != nil {
+		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -117,7 +143,7 @@ func (c *client) CreateServerSwitchingRule(backend string, data *models.ServerSw
 
 // EditServerSwitchingRule edits a server switching rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) EditServerSwitchingRule(id int64, backend string, data *models.ServerSwitchingRule, transactionID string, version int64) error {
+func (c *client) EditServerSwitchingRule(id int64, parentType string, parentName string, data *models.ServerSwitchingRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -128,13 +154,19 @@ func (c *client) EditServerSwitchingRule(id int64, backend string, data *models.
 	if err != nil {
 		return err
 	}
-
-	if _, err := p.GetOne(parser.Backends, backend, "use-server", int(id)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), "backend", backend, t, transactionID == "", err)
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
 	}
 
-	if err := p.Set(parser.Backends, backend, "use-server", SerializeServerSwitchingRule(*data), int(id)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), "backend", backend, t, transactionID == "", err)
+	if _, err := p.GetOne(parentSection, parentName, "use-server", int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
+	}
+
+	if err := p.Set(parentSection, parentName, "use-server", SerializeServerSwitchingRule(*data), int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -143,10 +175,16 @@ func (c *client) EditServerSwitchingRule(id int64, backend string, data *models.
 	return nil
 }
 
-func ParseServerSwitchingRules(backend string, p parser.Parser) (models.ServerSwitchingRules, error) {
+func ParseServerSwitchingRules(parentType string, parentName string, p parser.Parser) (models.ServerSwitchingRules, error) {
 	sr := models.ServerSwitchingRules{}
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return nil, NewConfError(ErrValidationError, "unsupported parent type")
+	}
 
-	data, err := p.Get(parser.Backends, backend, "use-server", false)
+	data, err := p.Get(parentSection, parentName, "use-server", false)
 	if err != nil {
 		if errors.Is(err, parser_errors.ErrFetch) {
 			return sr, nil

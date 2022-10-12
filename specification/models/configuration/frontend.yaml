@@ -23,15 +23,6 @@ frontend:
       type: string
       enum: [enabled, disabled]
       x-display-name: Log ASAP
-    bind_process:
-      type: string
-      pattern: '^[^\s]+$'
-    clflog:
-      type: boolean
-      x-display-name: CLF Log
-      x-dependency:
-        mode:
-          value: http
     tcplog:
       type: boolean
       x-display-name: TCP Log
@@ -127,13 +118,6 @@ frontend:
           value: tcp
     stick_table:
       $ref: "#/definitions/config_stick_table"
-    http-use-htx:
-      type: string
-      enum: [enabled, disabled]
-      x-display-name: HTTP Use HTX
-      x-dependency:
-        mode:
-          value: http
     unique_id_format:
       type: string
       x-display-name: Unique ID format

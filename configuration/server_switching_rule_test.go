@@ -24,7 +24,7 @@ import (
 )
 
 func TestGetServerSwitchingRules(t *testing.T) {
-	v, srvRules, err := clientTest.GetServerSwitchingRules("test", "")
+	v, srvRules, err := clientTest.GetServerSwitchingRules("backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -64,7 +64,7 @@ func TestGetServerSwitchingRules(t *testing.T) {
 		}
 	}
 
-	_, srvRules, err = clientTest.GetServerSwitchingRules("test_2", "")
+	_, srvRules, err = clientTest.GetServerSwitchingRules("backend", "test_2", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -74,7 +74,7 @@ func TestGetServerSwitchingRules(t *testing.T) {
 }
 
 func TestGetServerSwitchingRule(t *testing.T) {
-	v, sr, err := clientTest.GetServerSwitchingRule(0, "test", "")
+	v, sr, err := clientTest.GetServerSwitchingRule(0, "backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -98,7 +98,7 @@ func TestGetServerSwitchingRule(t *testing.T) {
 		t.Error(err.Error())
 	}
 
-	_, _, err = clientTest.GetServerSwitchingRule(3, "test2", "")
+	_, _, err = clientTest.GetServerSwitchingRule(3, "backend", "test2", "")
 	if err == nil {
 		t.Error("Should throw error, non existant server switching rule")
 	}
@@ -114,14 +114,14 @@ func TestCreateEditDeleteServerSwitchingRule(t *testing.T) {
 		CondTest:     "TRUE",
 	}
 
-	err := clientTest.CreateServerSwitchingRule("test", sr, "", version)
+	err := clientTest.CreateServerSwitchingRule("backend", "test", sr, "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
 		version++
 	}
 
-	v, srvRule, err := clientTest.GetServerSwitchingRule(2, "test", "")
+	v, srvRule, err := clientTest.GetServerSwitchingRule(2, "backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -144,14 +144,14 @@ func TestCreateEditDeleteServerSwitchingRule(t *testing.T) {
 		CondTest:     "TRUE",
 	}
 
-	err = clientTest.EditServerSwitchingRule(2, "test", sr, "", version)
+	err = clientTest.EditServerSwitchingRule(2, "backend", "test", sr, "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
 		version++
 	}
 
-	v, srvRule, err = clientTest.GetServerSwitchingRule(2, "test", "")
+	v, srvRule, err = clientTest.GetServerSwitchingRule(2, "backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -167,7 +167,7 @@ func TestCreateEditDeleteServerSwitchingRule(t *testing.T) {
 	}
 
 	// TestDeleteServerSwitchingRule
-	err = clientTest.DeleteServerSwitchingRule(2, "test", "", version)
+	err = clientTest.DeleteServerSwitchingRule(2, "backend", "test", "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
@@ -178,12 +178,12 @@ func TestCreateEditDeleteServerSwitchingRule(t *testing.T) {
 		t.Error("Version not incremented")
 	}
 
-	_, _, err = clientTest.GetServerSwitchingRule(2, "test", "")
+	_, _, err = clientTest.GetServerSwitchingRule(2, "backend", "test", "")
 	if err == nil {
 		t.Error("DeleteServerSwitchingRule failed, server switching rule 3 still exists")
 	}
 
-	err = clientTest.DeleteServerSwitchingRule(2, "test_2", "", version)
+	err = clientTest.DeleteServerSwitchingRule(2, "backend", "test_2", "", version)
 	if err == nil {
 		t.Error("Should throw error, non existant server switching rule")
 		version++

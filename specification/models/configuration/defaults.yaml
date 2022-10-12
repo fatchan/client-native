@@ -33,11 +33,6 @@ defaults:
       $ref: "#/definitions/pgsql_check_params"
     httpchk_params:
       $ref: "#/definitions/httpchk_params"
-    http-check:
-      $ref: "#/definitions/http_check"
-    bind_process:
-      type: string
-      pattern: '^[^\s]+$'
     disable_h2_upgrade:
       type: string
       enum: [enabled, disabled]
@@ -51,10 +46,6 @@ defaults:
     abortonclose:
       type: string
       enum: [enabled, disabled]
-    http-use-htx:
-      type: string
-      enum: [enabled, disabled]
-      x-display-name: HTTP Use HTX
     dontlognull:
       type: string
       enum: [enabled, disabled]
@@ -70,9 +61,6 @@ defaults:
       type: string
       enum: [preserve, delete, reject]
       x-display-name: Restrict HTTP Request Header Names
-    clflog:
-      type: boolean
-      x-display-name: CLF Log
     tcplog:
       type: boolean
       x-display-name: TCP Log

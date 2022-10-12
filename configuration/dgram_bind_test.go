@@ -24,7 +24,7 @@ import (
 )
 
 func TestGetDgramBinds(t *testing.T) {
-	v, dBinds, err := clientTest.GetDgramBinds("sylog-loadb", "")
+	v, dBinds, err := clientTest.GetDgramBinds("log_forward", "sylog-loadb", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -59,7 +59,7 @@ func TestGetDgramBinds(t *testing.T) {
 }
 
 func TestGetDgramBind(t *testing.T) {
-	v, l, err := clientTest.GetDgramBind("webserv", "sylog-loadb", "")
+	v, l, err := clientTest.GetDgramBind("webserv", "log_forward", "sylog-loadb", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -83,7 +83,7 @@ func TestGetDgramBind(t *testing.T) {
 		t.Error(err.Error())
 	}
 
-	_, _, err = clientTest.GetDgramBind("webserv", "test_2", "")
+	_, _, err = clientTest.GetDgramBind("webserv", "log_forward", "test_2", "")
 	if err == nil {
 		t.Error("Should throw error, non existent bind")
 	}
@@ -99,14 +99,14 @@ func TestCreateEditDeleteDgramBind(t *testing.T) {
 		Interface: "eth0",
 	}
 
-	err := clientTest.CreateDgramBind("sylog-loadb", l, "", version)
+	err := clientTest.CreateDgramBind("log_forward", "sylog-loadb", l, "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
 		version++
 	}
 
-	v, bind, err := clientTest.GetDgramBind("created", "sylog-loadb", "")
+	v, bind, err := clientTest.GetDgramBind("created", "log_forward", "sylog-loadb", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -121,7 +121,7 @@ func TestCreateEditDeleteDgramBind(t *testing.T) {
 		t.Errorf("Version %v returned, expected %v", v, version)
 	}
 
-	err = clientTest.CreateDgramBind("sylog-loadb", l, "", version)
+	err = clientTest.CreateDgramBind("log_forward", "sylog-loadb", l, "", version)
 	if err == nil {
 		t.Error("Should throw error bind already exists")
 		version++
@@ -137,14 +137,14 @@ func TestCreateEditDeleteDgramBind(t *testing.T) {
 		Interface:   "eth1",
 	}
 
-	err = clientTest.EditDgramBind("created", "sylog-loadb", l, "", version)
+	err = clientTest.EditDgramBind("created", "log_forward", "sylog-loadb", l, "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
 		version++
 	}
 
-	v, bind, err = clientTest.GetDgramBind("created", "sylog-loadb", "")
+	v, bind, err = clientTest.GetDgramBind("created", "log_forward", "sylog-loadb", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -160,7 +160,7 @@ func TestCreateEditDeleteDgramBind(t *testing.T) {
 	}
 
 	// TestDeleteBind
-	err = clientTest.DeleteDgramBind("created", "sylog-loadb", "", version)
+	err = clientTest.DeleteDgramBind("created", "log_forward", "sylog-loadb", "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
@@ -171,12 +171,12 @@ func TestCreateEditDeleteDgramBind(t *testing.T) {
 		t.Error("Version not incremented")
 	}
 
-	_, _, err = clientTest.GetDgramBind("created", "sylog-loadb", "")
+	_, _, err = clientTest.GetDgramBind("created", "log_forward", "sylog-loadb", "")
 	if err == nil {
 		t.Error("DeleteDgramBind failed, bind test still exists")
 	}
 
-	err = clientTest.DeleteDgramBind("created", "test2", "", version)
+	err = clientTest.DeleteDgramBind("created", "log_forward", "test2", "", version)
 	if err == nil {
 		t.Error("Should throw error, non existent bind")
 		version++

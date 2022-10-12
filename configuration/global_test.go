@@ -58,9 +58,6 @@ func TestGetGlobal(t *testing.T) {
 	if global.CrtBase != "/etc/ssl/private" {
 		t.Errorf("CrtBase is %v, expected /etc/ssl/private", global.CrtBase)
 	}
-	if global.Nbproc != 4 {
-		t.Errorf("Nbproc is %v, expected 4", global.Nbproc)
-	}
 	if global.Maxconn != 2000 {
 		t.Errorf("Maxconn is %v, expected 2000", global.Maxconn)
 	}
@@ -536,20 +533,12 @@ func TestGetGlobal(t *testing.T) {
 
 func TestPutGlobal(t *testing.T) {
 	tOut := int64(3600)
-	n := "1/1"
-	v := "0"
 	a := "/var/run/haproxy.sock"
 	f := "/etc/foo.lua"
 	luaPrependPath := "/usr/share/haproxy-lua/?/init.lua"
 	enabled := "enabled"
 	g := &models.Global{
 		Daemon: "enabled",
-		CPUMaps: []*models.CPUMap{
-			{
-				Process: &n,
-				CPUSet:  &v,
-			},
-		},
 		RuntimeAPIs: []*models.RuntimeAPI{
 			{
 				Address: &a,
@@ -562,7 +551,6 @@ func TestPutGlobal(t *testing.T) {
 		SslDefaultBindCiphers: "test",
 		SslDefaultBindOptions: "ssl-min-ver TLSv1.0 no-tls-tickets",
 		StatsTimeout:          &tOut,
-		TuneSslDefaultDhParam: 1024,
 		ExternalCheck:         false,
 		LuaPrependPath: []*models.LuaPrependPath{
 			{

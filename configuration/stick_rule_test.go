@@ -24,7 +24,7 @@ import (
 )
 
 func TestGetStickRules(t *testing.T) { //nolint:gocognit,gocyclo
-	v, sRules, err := clientTest.GetStickRules("test", "")
+	v, sRules, err := clientTest.GetStickRules("backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -107,7 +107,7 @@ func TestGetStickRules(t *testing.T) { //nolint:gocognit,gocyclo
 		}
 	}
 
-	_, sRules, err = clientTest.GetStickRules("test_2", "")
+	_, sRules, err = clientTest.GetStickRules("backend", "test_2", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -117,7 +117,7 @@ func TestGetStickRules(t *testing.T) { //nolint:gocognit,gocyclo
 }
 
 func TestGetStickRule(t *testing.T) {
-	v, sr, err := clientTest.GetStickRule(0, "test", "")
+	v, sr, err := clientTest.GetStickRule(0, "backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -141,7 +141,7 @@ func TestGetStickRule(t *testing.T) {
 		t.Error(err.Error())
 	}
 
-	_, _, err = clientTest.GetStickRule(5, "test_2", "")
+	_, _, err = clientTest.GetStickRule(5, "backend", "test_2", "")
 	if err == nil {
 		t.Error("Should throw error, non existant stick rule")
 	}
@@ -158,14 +158,14 @@ func TestCreateEditDeleteStickRule(t *testing.T) {
 		CondTest: "TRUE",
 	}
 
-	err := clientTest.CreateStickRule("test", sr, "", version)
+	err := clientTest.CreateStickRule("backend", "test", sr, "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
 		version++
 	}
 
-	v, sRule, err := clientTest.GetStickRule(1, "test", "")
+	v, sRule, err := clientTest.GetStickRule(1, "backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -190,14 +190,14 @@ func TestCreateEditDeleteStickRule(t *testing.T) {
 		CondTest: "FALSE",
 	}
 
-	err = clientTest.EditStickRule(1, "test", sr, "", version)
+	err = clientTest.EditStickRule(1, "backend", "test", sr, "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
 		version++
 	}
 
-	v, sRule, err = clientTest.GetStickRule(1, "test", "")
+	v, sRule, err = clientTest.GetStickRule(1, "backend", "test", "")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -213,7 +213,7 @@ func TestCreateEditDeleteStickRule(t *testing.T) {
 	}
 
 	// TestDeleteStickRule
-	err = clientTest.DeleteStickRule(6, "test", "", version)
+	err = clientTest.DeleteStickRule(6, "backend", "test", "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
@@ -224,12 +224,12 @@ func TestCreateEditDeleteStickRule(t *testing.T) {
 		t.Error("Version not incremented")
 	}
 
-	_, _, err = clientTest.GetStickRule(6, "test", "")
+	_, _, err = clientTest.GetStickRule(6, "backend", "test", "")
 	if err == nil {
 		t.Error("DeleteStickRule failed, stick rule 3 still exists")
 	}
 
-	err = clientTest.DeleteStickRule(6, "test_2", "", version)
+	err = clientTest.DeleteStickRule(6, "backend", "test_2", "", version)
 	if err == nil {
 		t.Error("Should throw error, non existant stick rule")
 		version++

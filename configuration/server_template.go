@@ -30,16 +30,16 @@ import (
 )
 
 type ServerTemplate interface {
-	GetServerTemplates(backend string, transactionID string) (int64, models.ServerTemplates, error)
-	GetServerTemplate(prefix string, backend string, transactionID string) (int64, *models.ServerTemplate, error)
-	DeleteServerTemplate(prefix string, backend string, transactionID string, version int64) error
-	CreateServerTemplate(backend string, data *models.ServerTemplate, transactionID string, version int64) error
-	EditServerTemplate(prefix string, backend string, data *models.ServerTemplate, transactionID string, version int64) error
+	GetServerTemplates(parentType string, parentName string, transactionID string) (int64, models.ServerTemplates, error)
+	GetServerTemplate(prefix string, parentType string, parentName string, transactionID string) (int64, *models.ServerTemplate, error)
+	DeleteServerTemplate(prefix string, parentType string, parentName string, transactionID string, version int64) error
+	CreateServerTemplate(parentType string, parentName string, data *models.ServerTemplate, transactionID string, version int64) error
+	EditServerTemplate(prefix string, parentType string, parentName string, data *models.ServerTemplate, transactionID string, version int64) error
 }
 
 // GetServerTemplates returns configuration version and an array of
 // configured server templates in the specified backend. Returns error on fail.
-func (c *client) GetServerTemplates(backend string, transactionID string) (int64, models.ServerTemplates, error) {
+func (c *client) GetServerTemplates(parentType string, parentName string, transactionID string) (int64, models.ServerTemplates, error) {
 	p, err := c.GetParser(transactionID)
 	if err != nil {
 		return 0, nil, err
@@ -50,9 +50,9 @@ func (c *client) GetServerTemplates(backend string, transactionID string) (int64
 		return 0, nil, err
 	}
 
-	templates, err := ParseServerTemplates(backend, p)
+	templates, err := ParseServerTemplates(parentType, parentName, p)
 	if err != nil {
-		return v, nil, c.HandleError("", "backend", backend, "", false, err)
+		return v, nil, c.HandleError("", parentType, parentName, "", false, err)
 	}
 
 	return v, templates, nil
@@ -60,7 +60,7 @@ func (c *client) GetServerTemplates(backend string, transactionID string) (int64
 
 // GetServerTemplate returns configuration version and a requested server template
 // in the specified backend. Returns error on fail or if server template does not exist.
-func (c *client) GetServerTemplate(prefix string, backend string, transactionID string) (int64, *models.ServerTemplate, error) {
+func (c *client) GetServerTemplate(prefix string, parentType string, parentName string, transactionID string) (int64, *models.ServerTemplate, error) {
 	p, err := c.GetParser(transactionID)
 	if err != nil {
 		return 0, nil, err
@@ -71,9 +71,9 @@ func (c *client) GetServerTemplate(prefix string, backend string, transactionID 
 		return 0, nil, err
 	}
 
-	template, _ := GetServerTemplateByPrefix(prefix, backend, p)
+	template, _ := GetServerTemplateByPrefix(prefix, parentType, parentName, p)
 	if template == nil {
-		return v, nil, NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("Server template %s does not exist in backend %s", prefix, backend))
+		return v, nil, NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("Server template %s does not exist in %s %s", prefix, parentType, parentName))
 	}
 
 	return v, template, nil
@@ -81,20 +81,20 @@ func (c *client) GetServerTemplate(prefix string, backend string, transactionID 
 
 // DeleteServerTemplate deletes a server template in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) DeleteServerTemplate(prefix string, backend string, transactionID string, version int64) error {
+func (c *client) DeleteServerTemplate(prefix string, parentType string, parentName string, transactionID string, version int64) error {
 	p, t, err := c.loadDataForChange(transactionID, version)
 	if err != nil {
 		return err
 	}
 
-	template, i := GetServerTemplateByPrefix(prefix, backend, p)
+	template, i := GetServerTemplateByPrefix(prefix, parentType, parentName, p)
 	if template == nil {
-		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("Server template %s does not exist in backend %s", prefix, backend))
-		return c.HandleError(prefix, "backend", backend, t, transactionID == "", e)
+		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("Server template %s does not exist in %s %s", prefix, parentType, parentName))
+		return c.HandleError(prefix, parentType, parentName, t, transactionID == "", e)
 	}
 
-	if err := p.Delete(parser.Backends, backend, "server-template", i); err != nil {
-		return c.HandleError(prefix, "backend", backend, t, transactionID == "", err)
+	if err := p.Delete(parser.Backends, parentName, "server-template", i); err != nil {
+		return c.HandleError(prefix, parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -106,7 +106,7 @@ func (c *client) DeleteServerTemplate(prefix string, backend string, transaction
 
 // CreateServerTemplate creates a server template in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) CreateServerTemplate(backend string, data *models.ServerTemplate, transactionID string, version int64) error {
+func (c *client) CreateServerTemplate(parentType string, parentName string, data *models.ServerTemplate, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -118,14 +118,20 @@ func (c *client) CreateServerTemplate(backend string, data *models.ServerTemplat
 		return err
 	}
 
-	template, _ := GetServerTemplateByPrefix(data.Prefix, backend, p)
+	template, _ := GetServerTemplateByPrefix(data.Prefix, parentType, parentName, p)
 	if template != nil {
-		e := NewConfError(ErrObjectAlreadyExists, fmt.Sprintf("Server template %s already exists in backend %s", data.Prefix, backend))
-		return c.HandleError(data.Prefix, "backend", backend, t, transactionID == "", e)
+		e := NewConfError(ErrObjectAlreadyExists, fmt.Sprintf("Server template %s already exists in %s %s", data.Prefix, parentType, parentName))
+		return c.HandleError(data.Prefix, parentType, parentName, t, transactionID == "", e)
 	}
 
-	if err := p.Insert(parser.Backends, backend, "server-template", SerializeServerTemplate(*data), -1); err != nil {
-		return c.HandleError(data.Prefix, "backend", backend, t, transactionID == "", err)
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
+	}
+	if err := p.Insert(parentSection, parentName, "server-template", SerializeServerTemplate(*data), -1); err != nil {
+		return c.HandleError(data.Prefix, parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -136,7 +142,7 @@ func (c *client) CreateServerTemplate(backend string, data *models.ServerTemplat
 
 // EditServerTemplate edits a server template in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) EditServerTemplate(prefix string, backend string, data *models.ServerTemplate, transactionID string, version int64) error {
+func (c *client) EditServerTemplate(prefix string, parentType string, parentName string, data *models.ServerTemplate, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -148,14 +154,20 @@ func (c *client) EditServerTemplate(prefix string, backend string, data *models.
 		return err
 	}
 
-	template, i := GetServerTemplateByPrefix(prefix, backend, p)
+	template, i := GetServerTemplateByPrefix(prefix, parentType, parentName, p)
 	if template == nil {
-		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("Server template %v does not exist in backend %s", prefix, backend))
-		return c.HandleError(data.Prefix, "backend", backend, t, transactionID == "", e)
+		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("Server template %v does not exist in %s %s", prefix, parentType, parentName))
+		return c.HandleError(data.Prefix, parentType, parentName, t, transactionID == "", e)
+	}
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
 	}
 
-	if err := p.Set(parser.Backends, backend, "server-template", SerializeServerTemplate(*data), i); err != nil {
-		return c.HandleError(data.Prefix, "backend", backend, t, transactionID == "", err)
+	if err := p.Set(parentSection, parentName, "server-template", SerializeServerTemplate(*data), i); err != nil {
+		return c.HandleError(data.Prefix, parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -164,10 +176,16 @@ func (c *client) EditServerTemplate(prefix string, backend string, data *models.
 	return nil
 }
 
-func ParseServerTemplates(backend string, p parser.Parser) (models.ServerTemplates, error) {
+func ParseServerTemplates(parentType string, parentName string, p parser.Parser) (models.ServerTemplates, error) {
 	templates := models.ServerTemplates{}
+	var parentSection parser.Section
+	if parentType == "backend" {
+		parentSection = parser.Backends
+	} else {
+		return nil, NewConfError(ErrValidationError, "unsupported parent type")
+	}
 
-	data, err := p.Get(parser.Backends, backend, "server-template", false)
+	data, err := p.Get(parentSection, parentName, "server-template", false)
 	if err != nil {
 		if errors.Is(err, parser_errors.ErrFetch) {
 			return templates, nil
@@ -211,8 +229,8 @@ func SerializeServerTemplate(s models.ServerTemplate) types.ServerTemplate {
 	return template
 }
 
-func GetServerTemplateByPrefix(prefix string, backend string, p parser.Parser) (*models.ServerTemplate, int) {
-	templates, err := ParseServerTemplates(backend, p)
+func GetServerTemplateByPrefix(prefix string, parentType string, parentName string, p parser.Parser) (*models.ServerTemplate, int) {
+	templates, err := ParseServerTemplates(parentType, parentName, p)
 	if err != nil {
 		return nil, 0
 	}

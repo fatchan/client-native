@@ -373,7 +373,7 @@ func (c *client) EditSite(name string, data *models.Site, transactionID string, 
 					continue
 				}
 				delete(danglingBcks, f.DefaultBackend)
-				_, ubs, err := c.GetBackendSwitchingRules(f.Name, t)
+				_, ubs, err := c.GetBackendSwitchingRules("frontend", f.Name, t)
 				if err == nil {
 					for _, ub := range ubs {
 						delete(danglingBcks, ub.Name)
@@ -431,7 +431,7 @@ func (c *client) DeleteSite(name string, transactionID string, version int64) er
 			}
 			farmsUsed[f.DefaultBackend] = true
 			var ubs models.BackendSwitchingRules
-			_, ubs, err = c.GetBackendSwitchingRules(f.Name, t)
+			_, ubs, err = c.GetBackendSwitchingRules("frontend", f.Name, t)
 			if err == nil {
 				for _, ub := range ubs {
 					farmsUsed[ub.Name] = true
@@ -503,7 +503,7 @@ func (c *client) parseSite(s string, p parser.Parser) *models.Site {
 			site.Farms = append(site.Farms, farm)
 		}
 	}
-	ubs, err := ParseBackendSwitchingRules(s, p)
+	ubs, err := ParseBackendSwitchingRules("frontend", s, p)
 	if err == nil {
 		for _, ub := range ubs {
 			farm := c.parseFarm(ub.Name, "conditional", ub.Cond, ub.CondTest, p)
@@ -561,13 +561,13 @@ func SerializeFarmToBackend(farm *models.SiteFarm) *models.Backend {
 
 // frontend backend relation helper methods
 func (c *client) removeUseFarm(frontend string, backend string, t string, p parser.Parser) error {
-	ufs, err := ParseBackendSwitchingRules(frontend, p)
+	ufs, err := ParseBackendSwitchingRules("frontend", frontend, p)
 	if err != nil {
 		return err
 	}
 	for i, uf := range ufs {
 		if uf.Name == backend {
-			return c.DeleteBackendSwitchingRule(int64(i), frontend, t, 0)
+			return c.DeleteBackendSwitchingRule(int64(i), "frontend", frontend, t, 0)
 		}
 	}
 	return nil
@@ -598,7 +598,7 @@ func (c *client) createBckFrontendRels(name string, b *models.SiteFarm, edit boo
 				Cond:     b.Cond,
 				CondTest: b.CondTest,
 			}
-			err = c.CreateBackendSwitchingRule(name, uf, t, 0)
+			err = c.CreateBackendSwitchingRule("frontend", name, uf, t, 0)
 			if err != nil {
 				res = append(res, err)
 			}

@@ -7,11 +7,17 @@ captures:
     tags:
       - DeclareCapture
     parameters:
-      - name: frontend
+      - name: parent_name
         in: query
-        description: Parent frontend name
+        description: Parent name
         required: true
         type: string
+      - name: parent_type
+        in: query
+        description: Parent type
+        required: true
+        type: string
+        enum: [frontend]
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -31,11 +37,17 @@ captures:
     tags:
       - DeclareCapture
     parameters:
-      - name: frontend
+      - name: parent_name
         in: query
-        description: Parent frontend name
+        description: Parent name
         required: true
         type: string
+      - name: parent_type
+        in: query
+        description: Parent type
+        required: true
+        type: string
+        enum: [frontend]
       - name: data
         in: body
         required: true
@@ -76,11 +88,17 @@ captures_one:
         description: Declare Capture Index
         required: true
         type: integer
-      - name: frontend
+      - name: parent_name
         in: query
-        description: Parent frontend name
+        description: Parent name
         required: true
         type: string
+      - name: parent_type
+        in: query
+        description: Parent type
+        required: true
+        type: string
+        enum: [frontend]
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -107,11 +125,17 @@ captures_one:
         description: Declare Capture Index
         required: true
         type: integer
-      - name: frontend
+      - name: parent_name
         in: query
-        description: Parent frontend name
+        description: Parent name
         required: true
         type: string
+      - name: parent_type
+        in: query
+        description: Parent type
+        required: true
+        type: string
+        enum: [frontend]
       - name: data
         in: body
         required: true
@@ -151,11 +175,17 @@ captures_one:
         description: Declare Capture Index
         required: true
         type: integer
-      - name: frontend
+      - name: parent_name
         in: query
-        description: Parent frontend name
+        description: Parent name
         required: true
         type: string
+      - name: parent_type
+        in: query
+        description: Parent type
+        required: true
+        type: string
+        enum: [frontend]
       - $ref: "#/parameters/transaction_id"
       - $ref: "#/parameters/version"
       - $ref: "#/parameters/force_reload"

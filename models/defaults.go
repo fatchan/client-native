@@ -70,19 +70,12 @@ type Defaults struct {
 	// balance
 	Balance *Balance `json:"balance,omitempty"`
 
-	// bind process
-	// Pattern: ^[^\s]+$
-	BindProcess string `json:"bind_process,omitempty"`
-
 	// check timeout
 	CheckTimeout *int64 `json:"check_timeout,omitempty"`
 
 	// checkcache
 	// Enum: [enabled disabled]
 	Checkcache string `json:"checkcache,omitempty"`
-
-	// clflog
-	Clflog bool `json:"clflog,omitempty"`
 
 	// client fin timeout
 	ClientFinTimeout *int64 `json:"client_fin_timeout,omitempty"`
@@ -189,13 +182,6 @@ type Defaults struct {
 	// http buffer request
 	// Enum: [enabled disabled]
 	HTTPBufferRequest string `json:"http-buffer-request,omitempty"`
-
-	// http check
-	HTTPCheck *HTTPCheck `json:"http-check,omitempty"`
-
-	// http use htx
-	// Enum: [enabled disabled]
-	HTTPUseHtx string `json:"http-use-htx,omitempty"`
 
 	// http connection mode
 	// Enum: [httpclose http-server-close http-keep-alive]
@@ -437,10 +423,6 @@ func (m *Defaults) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateBindProcess(formats); err != nil {
-		res = append(res, err)
-	}
-
 	if err := m.validateCheckcache(formats); err != nil {
 		res = append(res, err)
 	}
@@ -526,14 +508,6 @@ func (m *Defaults) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateHTTPBufferRequest(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateHTTPCheck(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateHTTPUseHtx(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -985,18 +959,6 @@ func (m *Defaults) validateBalance(formats strfmt.Registry) error {
 			}
 			return err
 		}
-	}
-
-	return nil
-}
-
-func (m *Defaults) validateBindProcess(formats strfmt.Registry) error {
-	if swag.IsZero(m.BindProcess) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("bind_process", "body", m.BindProcess, `^[^\s]+$`); err != nil {
-		return err
 	}
 
 	return nil
@@ -1613,67 +1575,6 @@ func (m *Defaults) validateHTTPBufferRequest(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateHTTPBufferRequestEnum("http-buffer-request", "body", m.HTTPBufferRequest); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *Defaults) validateHTTPCheck(formats strfmt.Registry) error {
-	if swag.IsZero(m.HTTPCheck) { // not required
-		return nil
-	}
-
-	if m.HTTPCheck != nil {
-		if err := m.HTTPCheck.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("http-check")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
-				return ce.ValidateName("http-check")
-			}
-			return err
-		}
-	}
-
-	return nil
-}
-
-var defaultsTypeHTTPUseHtxPropEnum []interface{}
-
-func init() {
-	var res []string
-	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
-		panic(err)
-	}
-	for _, v := range res {
-		defaultsTypeHTTPUseHtxPropEnum = append(defaultsTypeHTTPUseHtxPropEnum, v)
-	}
-}
-
-const (
-
-	// DefaultsHTTPUseHtxEnabled captures enum value "enabled"
-	DefaultsHTTPUseHtxEnabled string = "enabled"
-
-	// DefaultsHTTPUseHtxDisabled captures enum value "disabled"
-	DefaultsHTTPUseHtxDisabled string = "disabled"
-)
-
-// prop value enum
-func (m *Defaults) validateHTTPUseHtxEnum(path, location string, value string) error {
-	if err := validate.EnumCase(path, location, value, defaultsTypeHTTPUseHtxPropEnum, true); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *Defaults) validateHTTPUseHtx(formats strfmt.Registry) error {
-	if swag.IsZero(m.HTTPUseHtx) { // not required
-		return nil
-	}
-
-	// value enum
-	if err := m.validateHTTPUseHtxEnum("http-use-htx", "body", m.HTTPUseHtx); err != nil {
 		return err
 	}
 
@@ -3081,10 +2982,6 @@ func (m *Defaults) ContextValidate(ctx context.Context, formats strfmt.Registry)
 		res = append(res, err)
 	}
 
-	if err := m.contextValidateHTTPCheck(ctx, formats); err != nil {
-		res = append(res, err)
-	}
-
 	if err := m.contextValidateHttpchkParams(ctx, formats); err != nil {
 		res = append(res, err)
 	}
@@ -3299,22 +3196,6 @@ func (m *Defaults) contextValidateHashType(ctx context.Context, formats strfmt.R
 				return ve.ValidateName("hash_type")
 			} else if ce, ok := err.(*errors.CompositeError); ok {
 				return ce.ValidateName("hash_type")
-			}
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (m *Defaults) contextValidateHTTPCheck(ctx context.Context, formats strfmt.Registry) error {
-
-	if m.HTTPCheck != nil {
-		if err := m.HTTPCheck.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("http-check")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
-				return ce.ValidateName("http-check")
 			}
 			return err
 		}

@@ -52,13 +52,6 @@ type Frontend struct {
 	// backlog
 	Backlog *int64 `json:"backlog,omitempty"`
 
-	// bind process
-	// Pattern: ^[^\s]+$
-	BindProcess string `json:"bind_process,omitempty"`
-
-	// clflog
-	Clflog bool `json:"clflog,omitempty"`
-
 	// client fin timeout
 	ClientFinTimeout *int64 `json:"client_fin_timeout,omitempty"`
 
@@ -132,10 +125,6 @@ type Frontend struct {
 	// http buffer request
 	// Enum: [enabled disabled]
 	HTTPBufferRequest string `json:"http-buffer-request,omitempty"`
-
-	// http use htx
-	// Enum: [enabled disabled]
-	HTTPUseHtx string `json:"http-use-htx,omitempty"`
 
 	// http connection mode
 	// Enum: [httpclose http-server-close http-keep-alive]
@@ -284,10 +273,6 @@ func (m *Frontend) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateBindProcess(formats); err != nil {
-		res = append(res, err)
-	}
-
 	if err := m.validateClitcpka(formats); err != nil {
 		res = append(res, err)
 	}
@@ -337,10 +322,6 @@ func (m *Frontend) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateHTTPBufferRequest(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateHTTPUseHtx(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -538,18 +519,6 @@ func (m *Frontend) validateAcceptInvalidHTTPRequest(formats strfmt.Registry) err
 
 	// value enum
 	if err := m.validateAcceptInvalidHTTPRequestEnum("accept_invalid_http_request", "body", m.AcceptInvalidHTTPRequest); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *Frontend) validateBindProcess(formats strfmt.Registry) error {
-	if swag.IsZero(m.BindProcess) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("bind_process", "body", m.BindProcess, `^[^\s]+$`); err != nil {
 		return err
 	}
 
@@ -948,48 +917,6 @@ func (m *Frontend) validateHTTPBufferRequest(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateHTTPBufferRequestEnum("http-buffer-request", "body", m.HTTPBufferRequest); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-var frontendTypeHTTPUseHtxPropEnum []interface{}
-
-func init() {
-	var res []string
-	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
-		panic(err)
-	}
-	for _, v := range res {
-		frontendTypeHTTPUseHtxPropEnum = append(frontendTypeHTTPUseHtxPropEnum, v)
-	}
-}
-
-const (
-
-	// FrontendHTTPUseHtxEnabled captures enum value "enabled"
-	FrontendHTTPUseHtxEnabled string = "enabled"
-
-	// FrontendHTTPUseHtxDisabled captures enum value "disabled"
-	FrontendHTTPUseHtxDisabled string = "disabled"
-)
-
-// prop value enum
-func (m *Frontend) validateHTTPUseHtxEnum(path, location string, value string) error {
-	if err := validate.EnumCase(path, location, value, frontendTypeHTTPUseHtxPropEnum, true); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *Frontend) validateHTTPUseHtx(formats strfmt.Registry) error {
-	if swag.IsZero(m.HTTPUseHtx) { // not required
-		return nil
-	}
-
-	// value enum
-	if err := m.validateHTTPUseHtxEnum("http-use-htx", "body", m.HTTPUseHtx); err != nil {
 		return err
 	}
 

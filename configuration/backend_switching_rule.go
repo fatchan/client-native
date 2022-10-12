@@ -28,9 +28,17 @@ import (
 	"github.com/haproxytech/client-native/v5/models"
 )
 
+type BackendSwitchingRule interface {
+	GetBackendSwitchingRules(parentType string, parentName string, transactionID string) (int64, models.BackendSwitchingRules, error)
+	GetBackendSwitchingRule(id int64, parentType string, parentName string, transactionID string) (int64, *models.BackendSwitchingRule, error)
+	DeleteBackendSwitchingRule(id int64, parentType string, parentName string, transactionID string, version int64) error
+	CreateBackendSwitchingRule(parentType string, parentName string, data *models.BackendSwitchingRule, transactionID string, version int64) error
+	EditBackendSwitchingRule(id int64, parentType string, parentName string, data *models.BackendSwitchingRule, transactionID string, version int64) error
+}
+
 // GetBackendSwitchingRules returns configuration version and an array of
 // configured backend switching rules in the specified frontend. Returns error on fail.
-func (c *client) GetBackendSwitchingRules(frontend string, transactionID string) (int64, models.BackendSwitchingRules, error) {
+func (c *client) GetBackendSwitchingRules(parentType string, parentName string, transactionID string) (int64, models.BackendSwitchingRules, error) {
 	p, err := c.GetParser(transactionID)
 	if err != nil {
 		return 0, nil, err
@@ -41,9 +49,9 @@ func (c *client) GetBackendSwitchingRules(frontend string, transactionID string)
 		return 0, nil, err
 	}
 
-	bckRules, err := ParseBackendSwitchingRules(frontend, p)
+	bckRules, err := ParseBackendSwitchingRules(parentType, parentName, p)
 	if err != nil {
-		return v, nil, c.HandleError("", "frontend", frontend, "", false, err)
+		return v, nil, c.HandleError("", parentType, parentName, "", false, err)
 	}
 
 	return v, bckRules, nil
@@ -51,7 +59,7 @@ func (c *client) GetBackendSwitchingRules(frontend string, transactionID string)
 
 // GetBackendSwitchingRule returns configuration version and a requested backend switching rule
 // in the specified frontend. Returns error on fail or if backend switching rule does not exist.
-func (c *client) GetBackendSwitchingRule(id int64, frontend string, transactionID string) (int64, *models.BackendSwitchingRule, error) {
+func (c *client) GetBackendSwitchingRule(id int64, parentType string, parentName string, transactionID string) (int64, *models.BackendSwitchingRule, error) {
 	p, err := c.GetParser(transactionID)
 	if err != nil {
 		return 0, nil, err
@@ -62,9 +70,15 @@ func (c *client) GetBackendSwitchingRule(id int64, frontend string, transactionI
 		return 0, nil, err
 	}
 
-	data, err := p.GetOne(parser.Frontends, frontend, "use_backend", int(id))
+	var parentSection parser.Section
+	if parentType == "frontend" {
+		parentSection = parser.Frontends
+	} else {
+		return 0, nil, NewConfError(ErrValidationError, "unsupported parent type")
+	}
+	data, err := p.GetOne(parentSection, parentName, "use_backend", int(id))
 	if err != nil {
-		return v, nil, c.HandleError(strconv.FormatInt(id, 10), "frontend", frontend, "", false, err)
+		return v, nil, c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, "", false, err)
 	}
 
 	bckRule := ParseBackendSwitchingRule(data.(types.UseBackend))
@@ -75,14 +89,20 @@ func (c *client) GetBackendSwitchingRule(id int64, frontend string, transactionI
 
 // DeleteBackendSwitchingRule deletes a backend switching rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) DeleteBackendSwitchingRule(id int64, frontend string, transactionID string, version int64) error {
+func (c *client) DeleteBackendSwitchingRule(id int64, parentType string, parentName string, transactionID string, version int64) error {
 	p, t, err := c.loadDataForChange(transactionID, version)
 	if err != nil {
 		return err
 	}
+	var parentSection parser.Section
+	if parentType == "frontend" {
+		parentSection = parser.Frontends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
+	}
 
-	if err := p.Delete(parser.Frontends, frontend, "use_backend", int(id)); err != nil {
-		return c.HandleError(strconv.FormatInt(id, 10), "frontend", frontend, t, transactionID == "", err)
+	if err := p.Delete(parentSection, parentName, "use_backend", int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -93,7 +113,7 @@ func (c *client) DeleteBackendSwitchingRule(id int64, frontend string, transacti
 
 // CreateBackendSwitchingRule creates a backend switching rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) CreateBackendSwitchingRule(frontend string, data *models.BackendSwitchingRule, transactionID string, version int64) error {
+func (c *client) CreateBackendSwitchingRule(parentType string, parentName string, data *models.BackendSwitchingRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -105,9 +125,15 @@ func (c *client) CreateBackendSwitchingRule(frontend string, data *models.Backen
 	if err != nil {
 		return err
 	}
+	var parentSection parser.Section
+	if parentType == "frontend" {
+		parentSection = parser.Frontends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
+	}
 
-	if err := p.Insert(parser.Frontends, frontend, "use_backend", SerializeBackendSwitchingRule(*data), int(*data.Index)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), "frontend", frontend, t, transactionID == "", err)
+	if err := p.Insert(parentSection, parentName, "use_backend", SerializeBackendSwitchingRule(*data), int(*data.Index)); err != nil {
+		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -119,7 +145,7 @@ func (c *client) CreateBackendSwitchingRule(frontend string, data *models.Backen
 
 // EditBackendSwitchingRule edits a backend switching rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) EditBackendSwitchingRule(id int64, frontend string, data *models.BackendSwitchingRule, transactionID string, version int64) error {
+func (c *client) EditBackendSwitchingRule(id int64, parentType string, parentName string, data *models.BackendSwitchingRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -130,13 +156,18 @@ func (c *client) EditBackendSwitchingRule(id int64, frontend string, data *model
 	if err != nil {
 		return err
 	}
-
-	if _, err := p.GetOne(parser.Frontends, frontend, "use_backend", int(id)); err != nil {
-		return c.HandleError(strconv.FormatInt(id, 10), "frontend", frontend, t, transactionID == "", err)
+	var parentSection parser.Section
+	if parentType == "frontend" {
+		parentSection = parser.Frontends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
+	}
+	if _, err := p.GetOne(parentSection, parentName, "use_backend", int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
-	if err := p.Set(parser.Frontends, frontend, "use_backend", SerializeBackendSwitchingRule(*data), int(id)); err != nil {
-		return c.HandleError(strconv.FormatInt(id, 10), "frontend", frontend, t, transactionID == "", err)
+	if err := p.Set(parentSection, parentName, "use_backend", SerializeBackendSwitchingRule(*data), int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
@@ -146,10 +177,16 @@ func (c *client) EditBackendSwitchingRule(id int64, frontend string, data *model
 	return nil
 }
 
-func ParseBackendSwitchingRules(frontend string, p parser.Parser) (models.BackendSwitchingRules, error) {
+func ParseBackendSwitchingRules(parentType string, parentName string, p parser.Parser) (models.BackendSwitchingRules, error) {
 	br := models.BackendSwitchingRules{}
+	var parentSection parser.Section
+	if parentType == "frontend" {
+		parentSection = parser.Frontends
+	} else {
+		return nil, NewConfError(ErrValidationError, "unsupported parent type")
+	}
 
-	data, err := p.Get(parser.Frontends, frontend, "use_backend", false)
+	data, err := p.Get(parentSection, parentName, "use_backend", false)
 	if err != nil {
 		if goerrors.Is(err, parser_errors.ErrFetch) {
 			return br, nil

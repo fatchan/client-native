@@ -45,9 +45,6 @@ func TestGetFrontends(t *testing.T) { //nolint:gocognit
 		optionValue := "disabled"
 		if f.Name == "test" {
 			optionValue = "enabled"
-			if f.BindProcess != "odd" {
-				t.Errorf("%v: BindProcess not all: %v", f.Name, f.BindProcess)
-			}
 		}
 		if f.Mode != "http" {
 			t.Errorf("%v: Mode not http: %v", f.Name, f.Mode)
@@ -194,9 +191,6 @@ func TestGetFrontend(t *testing.T) {
 
 	if f.Name != "test" {
 		t.Errorf("Expected only test, %v found", f.Name)
-	}
-	if f.BindProcess != "odd" {
-		t.Errorf("%v: BindProcess not all: %v", f.Name, f.BindProcess)
 	}
 	if f.Mode != "http" {
 		t.Errorf("%v: Mode not http: %v", f.Name, f.Mode)
@@ -465,7 +459,6 @@ func TestCreateEditDeleteFrontend(t *testing.T) {
 		Httplog:                  true,
 		HTTPConnectionMode:       "http-keep-alive",
 		HTTPKeepAliveTimeout:     &tOut,
-		BindProcess:              "4",
 		Logasap:                  "disabled",
 		UniqueIDFormat:           "%{+X}o_%fi:%fp_%Ts_%rt:%pid",
 		UniqueIDHeader:           "X-Unique-Id",
@@ -535,9 +528,7 @@ func TestCreateEditDeleteFrontend(t *testing.T) {
 		Mode:               "tcp",
 		Maxconn:            &mConn,
 		Backlog:            misc.Int64P(1024),
-		Clflog:             true,
 		HTTPConnectionMode: "httpclose",
-		BindProcess:        "3",
 		MonitorURI:         "/healthz",
 		MonitorFail: &models.MonitorFail{
 			Cond:     misc.StringP("if"),

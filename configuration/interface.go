@@ -30,6 +30,7 @@ type Configuration interface {
 	Parser
 	ACL
 	Backend
+	BackendSwitchingRule
 	Bind
 	Cache
 	Capture
@@ -57,6 +58,7 @@ type Configuration interface {
 	Resolver
 	Ring
 	Server
+	ServerSwitchingRule
 	ServerTemplate
 	Site
 	StickRule

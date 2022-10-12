@@ -29,16 +29,16 @@ import (
 )
 
 type Capture interface {
-	GetDeclareCaptures(frontend string, transactionID string) (int64, models.Captures, error)
-	GetDeclareCapture(index int64, frontend string, transactionID string) (int64, *models.Capture, error)
-	DeleteDeclareCapture(index int64, frontend string, transactionID string, version int64) error
-	CreateDeclareCapture(frontend string, data *models.Capture, transactionID string, version int64) error
-	EditDeclareCapture(index int64, frontend string, data *models.Capture, transactionID string, version int64) error
+	GetDeclareCaptures(parentType string, parentName string, transactionID string) (int64, models.Captures, error)
+	GetDeclareCapture(index int64, parentType string, parentName string, transactionID string) (int64, *models.Capture, error)
+	DeleteDeclareCapture(index int64, parentType string, parentName string, transactionID string, version int64) error
+	CreateDeclareCapture(parentType string, parentName string, data *models.Capture, transactionID string, version int64) error
+	EditDeclareCapture(index int64, parentType string, parentName string, data *models.Capture, transactionID string, version int64) error
 }
 
 // GetDeclareCaptures returns configuration version and an array of configured DeclareCapture lines in the specified frontend.
 // Returns error on fail.
-func (c *client) GetDeclareCaptures(frontend string, transactionID string) (int64, models.Captures, error) {
+func (c *client) GetDeclareCaptures(parentType string, parentName string, transactionID string) (int64, models.Captures, error) {
 	p, err := c.GetParser(transactionID)
 	if err != nil {
 		return 0, nil, err
@@ -47,19 +47,26 @@ func (c *client) GetDeclareCaptures(frontend string, transactionID string) (int6
 	if err != nil {
 		return 0, nil, err
 	}
-	captures, err := ParseDeclareCaptures(frontend, p)
+	captures, err := ParseDeclareCaptures(parentType, parentName, p)
 	if err != nil {
-		return v, nil, c.HandleError("", "frontend", frontend, "", false, err)
+		return v, nil, c.HandleError("", parentType, parentName, "", false, err)
 	}
 	return v, captures, nil
 }
 
 // GetDeclareCapture returns configuration version and a requested DeclareCapture line in the specified frontend.
 // Returns error on fail or if DeclareCapture does not exist
-func (c *client) GetDeclareCapture(index int64, frontend string, transactionID string) (int64, *models.Capture, error) {
+func (c *client) GetDeclareCapture(index int64, parentType string, parentName string, transactionID string) (int64, *models.Capture, error) {
 	p, err := c.GetParser(transactionID)
 	if err != nil {
 		return 0, nil, err
+	}
+
+	var parentSection parser.Section
+	if parentType == "frontend" {
+		parentSection = parser.Frontends
+	} else {
+		return 0, nil, NewConfError(ErrValidationError, "unsupported parent type")
 	}
 
 	v, err := c.GetVersion(transactionID)
@@ -67,9 +74,9 @@ func (c *client) GetDeclareCapture(index int64, frontend string, transactionID s
 		return 0, nil, err
 	}
 
-	data, err := p.GetOne("frontend", frontend, "declare capture", int(index))
+	data, err := p.GetOne(parentSection, parentName, "declare capture", int(index))
 	if err != nil {
-		return v, nil, c.HandleError(strconv.FormatInt(index, 10), "frontend", frontend, "", false, err)
+		return v, nil, c.HandleError(strconv.FormatInt(index, 10), parentType, parentName, "", false, err)
 	}
 
 	declareCapture := ParseDeclareCapture(data.(types.DeclareCapture))
@@ -79,13 +86,20 @@ func (c *client) GetDeclareCapture(index int64, frontend string, transactionID s
 
 // DeleteDeclareCapture deletes a DeclareCapture line in the configuration. One of version or transactionID is mandatory.
 // Returns error on fail, nil on success
-func (c *client) DeleteDeclareCapture(index int64, frontend string, transactionID string, version int64) error {
+func (c *client) DeleteDeclareCapture(index int64, parentType string, parentName string, transactionID string, version int64) error {
 	p, t, err := c.loadDataForChange(transactionID, version)
 	if err != nil {
 		return err
 	}
-	if err := p.Delete("frontend", frontend, "declare capture", int(index)); err != nil {
-		return c.HandleError(strconv.FormatInt(index, 10), "frontend", frontend, t, transactionID == "", err)
+	var parentSection parser.Section
+	if parentType == "frontend" {
+		parentSection = parser.Frontends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
+	}
+
+	if err := p.Delete(parentSection, parentName, "declare capture", int(index)); err != nil {
+		return c.HandleError(strconv.FormatInt(index, 10), parentType, parentName, t, transactionID == "", err)
 	}
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
 		return err
@@ -95,7 +109,7 @@ func (c *client) DeleteDeclareCapture(index int64, frontend string, transactionI
 
 // CreateDeclareCapture creates a DeclareCapture line in the configuration. One of version or transactionID is mandatory.
 // Returns error on fail, nil on success
-func (c *client) CreateDeclareCapture(frontend string, data *models.Capture, transactionID string, version int64) error {
+func (c *client) CreateDeclareCapture(parentType string, parentName string, data *models.Capture, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -106,8 +120,15 @@ func (c *client) CreateDeclareCapture(frontend string, data *models.Capture, tra
 	if err != nil {
 		return err
 	}
-	if err := p.Insert("frontend", frontend, "declare capture", SerializeDeclareCapture(*data), int(*data.Index)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), "frontend", frontend, t, transactionID == "", err)
+	var parentSection parser.Section
+	if parentType == "frontend" {
+		parentSection = parser.Frontends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
+	}
+
+	if err := p.Insert(parentSection, parentName, "declare capture", SerializeDeclareCapture(*data), int(*data.Index)); err != nil {
+		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
 	}
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
 		return err
@@ -117,7 +138,7 @@ func (c *client) CreateDeclareCapture(frontend string, data *models.Capture, tra
 
 // EditDeclareCapture edits a DeclareCapture line in the configuration. One of version or transactionID is mandatory.
 // Returns error on fail, nil on success.
-func (c *client) EditDeclareCapture(index int64, frontend string, data *models.Capture, transactionID string, version int64) error {
+func (c *client) EditDeclareCapture(index int64, parentType string, parentName string, data *models.Capture, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -128,8 +149,15 @@ func (c *client) EditDeclareCapture(index int64, frontend string, data *models.C
 	if err != nil {
 		return err
 	}
-	if _, err := p.GetOne("frontend", frontend, "declare capture", int(index)); err != nil {
-		return c.HandleError(strconv.FormatInt(index, 10), "frontend", frontend, t, transactionID == "", err)
+	var parentSection parser.Section
+	if parentType == "frontend" {
+		parentSection = parser.Frontends
+	} else {
+		return NewConfError(ErrValidationError, "unsupported parent type")
+	}
+
+	if _, err := p.GetOne(parentSection, parentName, "declare capture", int(index)); err != nil {
+		return c.HandleError(strconv.FormatInt(index, 10), parentType, parentName, t, transactionID == "", err)
 	}
 	if err := c.SaveData(p, t, transactionID == ""); err != nil {
 		return err
@@ -137,9 +165,16 @@ func (c *client) EditDeclareCapture(index int64, frontend string, data *models.C
 	return nil
 }
 
-func ParseDeclareCaptures(frontend string, p parser.Parser) (models.Captures, error) {
+func ParseDeclareCaptures(parentType string, parentName string, p parser.Parser) (models.Captures, error) {
 	captures := models.Captures{}
-	data, err := p.Get("frontend", frontend, "declare capture", false)
+	var parentSection parser.Section
+	if parentType == "frontend" {
+		parentSection = parser.Frontends
+	} else {
+		return nil, NewConfError(ErrValidationError, "unsupported parent type")
+	}
+
+	data, err := p.Get(parentSection, parentName, "declare capture", false)
 	if err != nil {
 		if errors.Is(err, parser_errors.ErrFetch) {
 			return captures, nil

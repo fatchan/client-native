@@ -388,9 +388,6 @@ definitions:
           type: string
         prefer_client_ciphers:
           type: boolean
-        process:
-          pattern: ^[^\s]+$
-          type: string
         proto:
           type: string
           x-display-name: Protocol name
@@ -1012,24 +1009,6 @@ definitions:
           pattern: ^[^\s]+$
           type: string
           x-display-name: Chroot
-        cpu_maps:
-          items:
-            properties:
-              cpu_set:
-                type: string
-                x-display-name: CPU Set
-              process:
-                type: string
-                x-display-name: Process/Thread Set
-            required:
-            - process
-            - cpu_set
-            type: object
-            x-go-name: CPUMap
-          type: array
-          x-display-name: CPU Maps
-          x-go-name: CPUMaps
-          x-omitempty: true
         crt_base:
           type: string
           x-display-name: SSL Certificates Base Directory
@@ -1205,9 +1184,6 @@ definitions:
           x-display-name: Maximum amount of RAM in megabytes per process usable by the zlib
         mworker_max_reloads:
           type: integer
-        nbproc:
-          type: integer
-          x-display-name: Number of Processes
         nbthread:
           type: integer
           x-display-name: Number of Threads
@@ -1645,10 +1621,6 @@ definitions:
               type: integer
               x-display-name: Zlib Window Size
           type: object
-        tune_ssl_default_dh_param:
-          type: integer
-          x-deprecated: true
-          x-display-name: SSL Default DH Parameter Size
         uid:
           type: integer
           x-display-name: UID
@@ -1729,9 +1701,6 @@ definitions:
           x-nullable: true
         balance:
           $ref: '#/definitions/balance'
-        bind_process:
-          pattern: ^[^\s]+$
-          type: string
         check_timeout:
           type: integer
           x-nullable: true
@@ -1741,9 +1710,6 @@ definitions:
           - disabled
           type: string
           x-display-name: Checkcache
-        clflog:
-          type: boolean
-          x-display-name: CLF Log
         client_fin_timeout:
           type: integer
           x-nullable: true
@@ -1872,14 +1838,6 @@ definitions:
           - disabled
           type: string
           x-display-name: HTTP bufferrequest
-        http-check:
-          $ref: '#/definitions/http_check'
-        http-use-htx:
-          enum:
-          - enabled
-          - disabled
-          type: string
-          x-display-name: HTTP Use HTX
         http_connection_mode:
           enum:
           - httpclose
@@ -2159,15 +2117,6 @@ definitions:
           type: integer
           x-display-name: Backlog
           x-nullable: true
-        bind_process:
-          pattern: ^[^\s]+$
-          type: string
-        clflog:
-          type: boolean
-          x-dependency:
-            mode:
-              value: http
-          x-display-name: CLF Log
         client_fin_timeout:
           type: integer
           x-nullable: true
@@ -2269,15 +2218,6 @@ definitions:
           - disabled
           type: string
           x-display-name: HTTP bufferrequest
-        http-use-htx:
-          enum:
-          - enabled
-          - disabled
-          type: string
-          x-dependency:
-            mode:
-              value: http
-          x-display-name: HTTP Use HTX
         http_connection_mode:
           enum:
           - httpclose
@@ -2517,9 +2457,6 @@ definitions:
           x-display-name: All Backups
         balance:
           $ref: '#/definitions/balance'
-        bind_process:
-          pattern: ^[^\s]+$
-          type: string
         check_timeout:
           type: integer
           x-nullable: true
@@ -2633,8 +2570,6 @@ definitions:
             mode:
               value: http
           x-display-name: HTTP bufferrequest
-        http-check:
-          $ref: '#/definitions/http_check'
         http-keep-alive:
           enum:
           - enabled
@@ -2662,15 +2597,6 @@ definitions:
             mode:
               value: http
           x-display-name: HTTP server close
-        http-use-htx:
-          enum:
-          - enabled
-          - disabled
-          pattern: ^[^\s]+$
-          type: string
-          x-dependency:
-            mode:
-              value: http
         http_connection_mode:
           enum:
           - httpclose
@@ -2694,15 +2620,6 @@ definitions:
           x-dependency:
             mode:
               value: http
-        http_proxy:
-          enum:
-          - enabled
-          - disabled
-          type: string
-          x-dependency:
-            mode:
-              value: http
-          x-display-name: HTTP proxy mode
         http_request_timeout:
           type: integer
           x-dependency:
@@ -8864,20 +8781,6 @@ definitions:
           - linear
           - exponential
           type: string
-        service-blacklist:
-          description: deprecated, use service_denylist
-          items:
-            pattern: ^[^\s]+$
-            type: string
-          type: array
-          x-omitempty: true
-        service-whitelist:
-          description: deprecated, use service_allowlist
-          items:
-            pattern: ^[^\s]+$
-            type: string
-          type: array
-          x-omitempty: true
         service_allowlist:
           items:
             pattern: ^[^\s]+$
@@ -12421,13 +12324,10 @@ paths:
         description: Returns an array of all binds that are configured in specified frontend.
         operationId: getBinds
         parameters:
-        - description: Parent frontend name
-          in: query
-          name: frontend
-          type: string
         - description: Parent name
           in: query
           name: parent_name
+          required: true
           type: string
         - description: Parent type
           enum:
@@ -12436,6 +12336,7 @@ paths:
           - peers
           in: query
           name: parent_type
+          required: true
           type: string
         - $ref: '#/parameters/transaction_id'
         responses:
@@ -12456,13 +12357,10 @@ paths:
         description: Adds a new bind in the specified frontend in the configuration file.
         operationId: createBind
         parameters:
-        - description: Parent frontend name
-          in: query
-          name: frontend
-          type: string
         - description: Parent name
           in: query
           name: parent_name
+          required: true
           type: string
         - description: Parent type
           enum:
@@ -12471,6 +12369,7 @@ paths:
           - peers
           in: query
           name: parent_type
+          required: true
           type: string
         - in: body
           name: data
@@ -12512,13 +12411,10 @@ paths:
           name: name
           required: true
           type: string
-        - description: Parent frontend name
-          in: query
-          name: frontend
-          type: string
         - description: Parent name
           in: query
           name: parent_name
+          required: true
           type: string
         - description: Parent type
           enum:
@@ -12527,6 +12423,7 @@ paths:
           - peers
           in: query
           name: parent_type
+          required: true
           type: string
         - $ref: '#/parameters/transaction_id'
         - $ref: '#/parameters/version'
@@ -12556,13 +12453,10 @@ paths:
           name: name
           required: true
           type: string
-        - description: Parent frontend name
-          in: query
-          name: frontend
-          type: string
         - description: Parent name
           in: query
           name: parent_name
+          required: true
           type: string
         - description: Parent type
           enum:
@@ -12571,6 +12465,7 @@ paths:
           - peers
           in: query
           name: parent_type
+          required: true
           type: string
         - $ref: '#/parameters/transaction_id'
         responses:
@@ -12598,13 +12493,10 @@ paths:
           name: name
           required: true
           type: string
-        - description: Parent frontend name
-          in: query
-          name: frontend
-          type: string
         - description: Parent name
           in: query
           name: parent_name
+          required: true
           type: string
         - description: Parent type
           enum:
@@ -12613,6 +12505,7 @@ paths:
           - peers
           in: query
           name: parent_type
+          required: true
           type: string
         - in: body
           name: data
@@ -12650,9 +12543,16 @@ paths:
           log forward.
         operationId: getDgramBinds
         parameters:
-        - description: Parent log forward name
+        - description: Parent name
           in: query
-          name: log_forward
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - log_forward
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -12675,9 +12575,16 @@ paths:
           file.
         operationId: createDgramBind
         parameters:
-        - description: Parent log forward name
+        - description: Parent name
           in: query
-          name: log_forward
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - log_forward
+          in: query
+          name: parent_type
           required: true
           type: string
         - in: body
@@ -12721,9 +12628,16 @@ paths:
           name: name
           required: true
           type: string
-        - description: Parent log forward name
+        - description: Parent name
           in: query
-          name: log_forward
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - log_forward
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -12755,9 +12669,16 @@ paths:
           name: name
           required: true
           type: string
-        - description: Parent log forward name
+        - description: Parent name
           in: query
-          name: log_forward
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - log_forward
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -12787,9 +12708,16 @@ paths:
           name: name
           required: true
           type: string
-        - description: Parent log forward name
+        - description: Parent name
           in: query
-          name: log_forward
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - log_forward
+          in: query
+          name: parent_type
           required: true
           type: string
         - in: body
@@ -12975,13 +12903,10 @@ paths:
         description: Returns an array of all servers that are configured in specified backend.
         operationId: getServers
         parameters:
-        - description: Parent backend name
-          in: query
-          name: backend
-          type: string
         - description: Parent name
           in: query
           name: parent_name
+          required: true
           type: string
         - description: Parent type
           enum:
@@ -12990,6 +12915,7 @@ paths:
           - peers
           in: query
           name: parent_type
+          required: true
           type: string
         - $ref: '#/parameters/transaction_id'
         responses:
@@ -13010,13 +12936,10 @@ paths:
         description: Adds a new server in the specified backend in the configuration file.
         operationId: createServer
         parameters:
-        - description: Parent backend name
-          in: query
-          name: backend
-          type: string
         - description: Parent name
           in: query
           name: parent_name
+          required: true
           type: string
         - description: Parent type
           enum:
@@ -13025,6 +12948,7 @@ paths:
           - peers
           in: query
           name: parent_type
+          required: true
           type: string
         - in: body
           name: data
@@ -13066,13 +12990,10 @@ paths:
           name: name
           required: true
           type: string
-        - description: Parent backend name
-          in: query
-          name: backend
-          type: string
         - description: Parent name
           in: query
           name: parent_name
+          required: true
           type: string
         - description: Parent type
           enum:
@@ -13081,6 +13002,7 @@ paths:
           - peers
           in: query
           name: parent_type
+          required: true
           type: string
         - $ref: '#/parameters/transaction_id'
         - $ref: '#/parameters/version'
@@ -13110,13 +13032,10 @@ paths:
           name: name
           required: true
           type: string
-        - description: Parent backend name
-          in: query
-          name: backend
-          type: string
         - description: Parent name
           in: query
           name: parent_name
+          required: true
           type: string
         - description: Parent type
           enum:
@@ -13125,6 +13044,7 @@ paths:
           - peers
           in: query
           name: parent_type
+          required: true
           type: string
         - $ref: '#/parameters/transaction_id'
         responses:
@@ -13152,13 +13072,10 @@ paths:
           name: name
           required: true
           type: string
-        - description: Parent backend name
-          in: query
-          name: backend
-          type: string
         - description: Parent name
           in: query
           name: parent_name
+          required: true
           type: string
         - description: Parent type
           enum:
@@ -13167,6 +13084,7 @@ paths:
           - peers
           in: query
           name: parent_type
+          required: true
           type: string
         - in: body
           name: data
@@ -13204,9 +13122,16 @@ paths:
           backend.
         operationId: getServerTemplates
         parameters:
-        - description: Parent backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -13229,9 +13154,16 @@ paths:
           file.
         operationId: createServerTemplate
         parameters:
-        - description: Parent backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - in: body
@@ -13275,9 +13207,16 @@ paths:
           name: prefix
           required: true
           type: string
-        - description: Parent backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -13309,9 +13248,16 @@ paths:
           name: prefix
           required: true
           type: string
-        - description: Parent backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -13341,9 +13287,16 @@ paths:
           name: prefix
           required: true
           type: string
-        - description: Parent backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - in: body
@@ -15066,9 +15019,16 @@ paths:
           frontend.
         operationId: getBackendSwitchingRules
         parameters:
-        - description: Frontend name
+        - description: Parent name
           in: query
-          name: frontend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - frontend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -15091,9 +15051,16 @@ paths:
           frontend.
         operationId: createBackendSwitchingRule
         parameters:
-        - description: Frontend name
+        - description: Parent name
           in: query
-          name: frontend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - frontend
+          in: query
+          name: parent_type
           required: true
           type: string
         - in: body
@@ -15137,9 +15104,16 @@ paths:
           name: index
           required: true
           type: integer
-        - description: Frontend name
+        - description: Parent name
           in: query
-          name: frontend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - frontend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -15171,9 +15145,16 @@ paths:
           name: index
           required: true
           type: integer
-        - description: Frontend name
+        - description: Parent name
           in: query
-          name: frontend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - frontend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -15203,9 +15184,16 @@ paths:
           name: index
           required: true
           type: integer
-        - description: Frontend name
+        - description: Parent name
           in: query
-          name: frontend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - frontend
+          in: query
+          name: parent_type
           required: true
           type: string
         - in: body
@@ -15244,9 +15232,16 @@ paths:
           backend.
         operationId: getServerSwitchingRules
         parameters:
-        - description: Backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -15269,9 +15264,16 @@ paths:
           backend.
         operationId: createServerSwitchingRule
         parameters:
-        - description: Backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - in: body
@@ -15315,9 +15317,16 @@ paths:
           name: index
           required: true
           type: integer
-        - description: Backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -15349,9 +15358,16 @@ paths:
           name: index
           required: true
           type: integer
-        - description: Backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -15381,9 +15397,16 @@ paths:
           name: index
           required: true
           type: integer
-        - description: Backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - in: body
@@ -15634,9 +15657,16 @@ paths:
         description: Returns all Stick Rules that are configured in specified backend.
         operationId: getStickRules
         parameters:
-        - description: Backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -15658,9 +15688,16 @@ paths:
         description: Adds a new Stick Rule of the specified type in the specified backend.
         operationId: createStickRule
         parameters:
-        - description: Backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - in: body
@@ -15704,9 +15741,16 @@ paths:
           name: index
           required: true
           type: integer
-        - description: Backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -15738,9 +15782,16 @@ paths:
           name: index
           required: true
           type: integer
-        - description: Backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -15770,9 +15821,16 @@ paths:
           name: index
           required: true
           type: integer
-        - description: Backend name
+        - description: Parent name
           in: query
-          name: backend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - backend
+          in: query
+          name: parent_type
           required: true
           type: string
         - in: body
@@ -18716,9 +18774,16 @@ paths:
           in specified frontend.
         operationId: getDeclareCaptures
         parameters:
-        - description: Parent frontend name
+        - description: Parent name
           in: query
-          name: frontend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - frontend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -18741,9 +18806,16 @@ paths:
           file.
         operationId: createDeclareCapture
         parameters:
-        - description: Parent frontend name
+        - description: Parent name
           in: query
-          name: frontend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - frontend
+          in: query
+          name: parent_type
           required: true
           type: string
         - in: body
@@ -18787,9 +18859,16 @@ paths:
           name: index
           required: true
           type: integer
-        - description: Parent frontend name
+        - description: Parent name
           in: query
-          name: frontend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - frontend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -18821,9 +18900,16 @@ paths:
           name: index
           required: true
           type: integer
-        - description: Parent frontend name
+        - description: Parent name
           in: query
-          name: frontend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - frontend
+          in: query
+          name: parent_type
           required: true
           type: string
         - $ref: '#/parameters/transaction_id'
@@ -18853,9 +18939,16 @@ paths:
           name: index
           required: true
           type: integer
-        - description: Parent frontend name
+        - description: Parent name
           in: query
-          name: frontend
+          name: parent_name
+          required: true
+          type: string
+        - description: Parent type
+          enum:
+          - frontend
+          in: query
+          name: parent_type
           required: true
           type: string
         - in: body

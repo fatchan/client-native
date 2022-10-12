@@ -335,16 +335,6 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		mConn = maxConn.Value
 	}
 
-	var nbproc int64
-	data, err = p.Get(parser.Global, parser.GlobalSectionName, "nbproc")
-	if err == nil {
-		nbProcParser, ok := data.(*types.Int64C)
-		if !ok {
-			return nil, misc.CreateTypeAssertError("nbproc")
-		}
-		nbproc = nbProcParser.Value
-	}
-
 	var nbthread int64
 	data, err = p.Get(parser.Global, parser.GlobalSectionName, "nbthread")
 	if err == nil {
@@ -377,23 +367,6 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 			rAPI := &models.RuntimeAPI{Address: &p}
 			rAPI.BindParams = parseBindParams(s.Params)
 			rAPIs = append(rAPIs, rAPI)
-		}
-	}
-
-	var cpuMaps []*models.CPUMap
-	data, err = p.Get(parser.Global, parser.GlobalSectionName, "cpu-map")
-	if err == nil {
-		cMaps, ok := data.([]types.CPUMap)
-		if !ok {
-			return nil, misc.CreateTypeAssertError("cpu-map")
-		}
-		for _, m := range cMaps {
-			ondiskMap := m
-			cpuMap := &models.CPUMap{
-				Process: &ondiskMap.Process,
-				CPUSet:  &ondiskMap.CPUSet,
-			}
-			cpuMaps = append(cpuMaps, cpuMap)
 		}
 	}
 
@@ -977,12 +950,6 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		return nil, err
 	}
 
-	// deprecated option
-	dhParam := int64(0)
-	if tuneOptions != nil {
-		dhParam = tuneOptions.SslDefaultDhParam
-	}
-
 	global := &models.Global{
 		Anonkey:                           anonkey,
 		PresetEnvs:                        presetEnvs,
@@ -1003,12 +970,10 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		Daemon:                            daemon,
 		MasterWorker:                      masterWorker,
 		Maxconn:                           mConn,
-		Nbproc:                            nbproc,
 		Nbthread:                          nbthread,
 		Pidfile:                           pidfile,
 		RuntimeAPIs:                       rAPIs,
 		StatsTimeout:                      statsTimeout,
-		CPUMaps:                           cpuMaps,
 		SslDefaultBindCiphers:             sslBindCiphers,
 		SslDefaultBindCiphersuites:        sslBindCiphersuites,
 		SslDefaultBindCurves:              sslDefaultBindCurves,
@@ -1019,7 +984,6 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		SslModeAsync:                      sslModeAsync,
 		SslSkipSelfIssuedCa:               sslSkipSelfIssuedCa,
 		TuneOptions:                       tuneOptions,
-		TuneSslDefaultDhParam:             dhParam,
 		ExternalCheck:                     externalCheck,
 		LuaLoads:                          luaLoads,
 		LuaPrependPath:                    luaPrependPath,
@@ -1228,16 +1192,6 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global) error { //noli
 		return err
 	}
 
-	pNbProc := &types.Int64C{
-		Value: data.Nbproc,
-	}
-	if data.Nbproc == 0 {
-		pNbProc = nil
-	}
-	if err := p.Set(parser.Global, parser.GlobalSectionName, "nbproc", pNbProc); err != nil {
-		return err
-	}
-
 	pNbthread := &types.Int64C{
 		Value: data.Nbthread,
 	}
@@ -1278,18 +1232,6 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global) error { //noli
 		statsTimeout = nil
 	}
 	if err := p.Set(parser.Global, parser.GlobalSectionName, "stats timeout", statsTimeout); err != nil {
-		return err
-	}
-
-	cpuMaps := []types.CPUMap{}
-	for _, cpuMap := range data.CPUMaps {
-		cm := types.CPUMap{
-			Process: *cpuMap.Process,
-			CPUSet:  *cpuMap.CPUSet,
-		}
-		cpuMaps = append(cpuMaps, cm)
-	}
-	if err := p.Set(parser.Global, parser.GlobalSectionName, "cpu-map", cpuMaps); err != nil {
 		return err
 	}
 
@@ -1936,15 +1878,6 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global) error { //noli
 		return err
 	}
 
-	// deprecated option
-	if data.TuneSslDefaultDhParam != 0 {
-		if data.TuneOptions != nil && data.TuneOptions.SslDefaultDhParam == 0 {
-			data.TuneOptions.SslDefaultDhParam = data.TuneSslDefaultDhParam
-		}
-		if data.TuneOptions == nil {
-			data.TuneOptions = &models.GlobalTuneOptions{SslDefaultDhParam: data.TuneSslDefaultDhParam}
-		}
-	}
 	return serializeTuneOptions(p, data.TuneOptions)
 }
 

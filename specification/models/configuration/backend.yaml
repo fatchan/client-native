@@ -16,11 +16,6 @@ backend:
       $ref: "#/definitions/persist_rule"
     hash_type:
       $ref: "#/definitions/hash_type"
-    http-check:
-      $ref: "#/definitions/http_check"
-    bind_process:
-      type: string
-      pattern: '^[^\s]+$'
     mode:
       type: string
       enum: [http, tcp]
@@ -60,13 +55,6 @@ backend:
       type: string
       enum: [enabled, disabled]
       x-display-name: HTTP connection closing
-      x-dependency:
-        mode:
-          value: http
-    http_proxy:
-      type: string
-      enum: [enabled, disabled]
-      x-display-name: HTTP proxy mode
       x-dependency:
         mode:
           value: http
@@ -202,13 +190,6 @@ backend:
           value: http
     stick_table:
       $ref: "#/definitions/config_stick_table"
-    http-use-htx:
-      type: string
-      enum: [enabled, disabled]
-      x-dependency:
-        mode:
-          value: http
-      pattern: '^[^\s]+$'
     accept_invalid_http_response:
       type: string
       enum: [enabled, disabled]

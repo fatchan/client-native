@@ -293,8 +293,6 @@ func (s *SectionParser) checkSpecialFields(fieldName string) (match bool, data i
 		return true, s.monitorURI()
 	case "StatsOptions":
 		return true, s.statsOptions()
-	case "HTTPCheck":
-		return true, s.httpCheck()
 	case "Forwardfor":
 		return true, s.forwardfor()
 	case "Redispatch":
@@ -303,8 +301,6 @@ func (s *SectionParser) checkSpecialFields(fieldName string) (match bool, data i
 		return true, s.balance()
 	case "PersistRule":
 		return true, s.persistRule()
-	case "BindProcess":
-		return true, s.bindProcess()
 	case "Cookie":
 		return true, s.cookie()
 	case "HashType":
@@ -333,8 +329,6 @@ func (s *SectionParser) checkSpecialFields(fieldName string) (match bool, data i
 		return true, s.externalCheckCommand()
 	case "DefaultBackend":
 		return true, s.defaultBackend()
-	case "Clflog":
-		return true, s.clflog()
 	case "Httplog":
 		return true, s.httplog()
 	case "HTTPReuse":
@@ -441,14 +435,6 @@ func (s *SectionParser) httpConnectionMode() interface{} {
 			return "httpclose"
 		}
 	}
-	// deprecated option, alias for httpclose
-	data, err = s.get("option forceclose", false)
-	if err == nil {
-		d := data.(*types.SimpleOption) //nolint:forcetypeassert
-		if !d.NoOption {
-			return "httpclose"
-		}
-	}
 
 	data, err = s.get("option http-server-close", false)
 	if err == nil {
@@ -505,17 +491,6 @@ func (s *SectionParser) httplog() interface{} {
 		d := data.(*types.OptionHTTPLog)
 		if !d.NoOption {
 			return !d.Clf
-		}
-	}
-	return nil
-}
-
-func (s *SectionParser) clflog() interface{} {
-	data, err := s.get("option httplog", false)
-	if err == nil {
-		d := data.(*types.OptionHTTPLog)
-		if !d.NoOption {
-			return d.Clf
 		}
 	}
 	return nil
@@ -877,15 +852,6 @@ func (s *SectionParser) cookie() interface{} {
 	}
 }
 
-func (s *SectionParser) bindProcess() interface{} {
-	data, err := s.get("bind-process", false)
-	if err != nil {
-		return nil
-	}
-	d := data.(*types.BindProcess)
-	return d.Process
-}
-
 func (s *SectionParser) persistRule() interface{} {
 	data, err := s.get("persist", false)
 	if err != nil {
@@ -968,25 +934,6 @@ func (s *SectionParser) forwardfor() interface{} {
 		Enabled: &enabled,
 	}
 	return bff
-}
-
-func (s *SectionParser) httpCheck() interface{} {
-	data, err := s.get("http-check", false)
-	if err != nil {
-		return nil
-	}
-	d := data.([]types.Action)
-	if s.Section == parser.Defaults || s.Section == parser.Backends {
-		for _, h := range d {
-			httpCheck, err := ParseHTTPCheck(h)
-			if err != nil {
-				continue
-			}
-			httpCheck.Index = misc.Int64P(0)
-			return httpCheck
-		}
-	}
-	return nil
 }
 
 func (s *SectionParser) emailAlert() interface{} {
@@ -1397,8 +1344,6 @@ func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value
 		return true, s.monitorFail(field)
 	case "StatsOptions":
 		return true, s.statsOptions(field)
-	case "HTTPCheck":
-		return true, s.httpCheck(field)
 	case "Forwardfor":
 		return true, s.forwardfor(field)
 	case "Redispatch":
@@ -1407,8 +1352,6 @@ func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value
 		return true, s.balance(field)
 	case "PersistRule":
 		return true, s.persistRule(field)
-	case "BindProcess":
-		return true, s.bindProcess(field)
 	case "Cookie":
 		return true, s.cookie(field)
 	case "HashType":
@@ -1445,8 +1388,6 @@ func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value
 		return true, s.uniqueIDFormat(field)
 	case "UniqueIDHeader":
 		return true, s.uniqueIDHeader(field)
-	case "Clflog":
-		return true, s.clflog(field)
 	case "Httplog":
 		return true, s.httplog(field)
 	case "Compression":
@@ -1567,7 +1508,7 @@ func (s *SectionObject) set(attribute string, data interface{}) error {
 func (s *SectionObject) httplog(field reflect.Value) error {
 	if s.Section == parser.Frontends || s.Section == parser.Defaults {
 		if valueIsNil(field) {
-			// check if clflog is active, if yes, do nothing
+			// check if httplog is active, if yes, do nothing
 			d, err := s.Parser.Get(s.Section, s.Name, "option httplog", false)
 			if err != nil {
 				if !errors.Is(err, parser_errors.ErrFetch) {
@@ -1584,34 +1525,6 @@ func (s *SectionObject) httplog(field reflect.Value) error {
 			return nil
 		}
 		o := &types.OptionHTTPLog{}
-		if err := s.set("option httplog", o); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *SectionObject) clflog(field reflect.Value) error {
-	if s.Section == parser.Frontends || s.Section == parser.Defaults {
-		if valueIsNil(field) {
-			// check if httplog exists, if not do nothing
-			d, err := s.Parser.Get(s.Section, s.Name, "option httplog", false)
-			if err != nil {
-				if !errors.Is(err, parser_errors.ErrFetch) {
-					return err
-				}
-				return nil
-			}
-			o := d.(*types.OptionHTTPLog)
-			if o.Clf {
-				o.Clf = false
-				if err := s.set("option httplog", o); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-		o := &types.OptionHTTPLog{Clf: true}
 		if err := s.set("option httplog", o); err != nil {
 			return err
 		}
@@ -1690,8 +1603,6 @@ func (s *SectionObject) httpConnectionMode(field reflect.Value) error {
 			return err
 		}
 	}
-	// Deprecated, delete if exists
-	_ = s.set("option forceclose", nil)
 
 	if !valueIsNil(field) {
 		pName := fmt.Sprintf("option %v", field.String())
@@ -2136,25 +2047,6 @@ func (s *SectionObject) cookie(field reflect.Value) error {
 	return nil
 }
 
-func (s *SectionObject) bindProcess(field reflect.Value) error {
-	if s.Section == parser.Defaults || s.Section == parser.Frontends || s.Section == parser.Backends {
-		if valueIsNil(field) {
-			if err := s.set("bind-process", nil); err != nil {
-				return err
-			}
-			return nil
-		}
-		b := field.String()
-		d := &types.BindProcess{
-			Process: b,
-		}
-		if err := s.set("bind-process", d); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (s *SectionObject) persistRule(field reflect.Value) error {
 	if s.Section == parser.Backends || s.Section == parser.Defaults {
 		if valueIsNil(field) {
@@ -2283,34 +2175,6 @@ func (s *SectionObject) forwardfor(field reflect.Value) error {
 	}
 	if err := s.set("option forwardfor", d); err != nil {
 		return err
-	}
-	return nil
-}
-
-func (s *SectionObject) httpCheck(field reflect.Value) error {
-	if s.Section == parser.Defaults || s.Section == parser.Backends {
-		hc, ok := field.Interface().(*models.HTTPCheck)
-		if !ok {
-			return misc.CreateTypeAssertError("http-check")
-		}
-
-		if hc == nil {
-			return nil
-		}
-		httpChecks, err := ParseHTTPChecks(string(s.Section), s.Name, s.Parser)
-		if err != nil {
-			return err
-		}
-		if hc != nil {
-			for _, httpCheck := range httpChecks {
-				if reflect.DeepEqual(httpCheck, hc) {
-					return nil
-				}
-			}
-			if err := s.Parser.Insert(s.Section, s.Name, "http-check", hc, 0); err != nil {
-				return err
-			}
-		}
 	}
 	return nil
 }
