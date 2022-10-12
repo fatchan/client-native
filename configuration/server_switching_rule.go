@@ -143,6 +143,8 @@ func (c *client) CreateServerSwitchingRule(parentType string, parentName string,
 
 // EditServerSwitchingRule edits a server switching rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
+//
+//nolint:dupl
 func (c *client) EditServerSwitchingRule(id int64, parentType string, parentName string, data *models.ServerSwitchingRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)

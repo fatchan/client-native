@@ -1336,7 +1336,7 @@ func (s *SectionObject) checkParams(fieldName string) (match bool) {
 	return s.Section != parser.FCGIApp && strings.HasSuffix(fieldName, "Params")
 }
 
-func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value) (match bool, err error) { //nolint:gocyclo,cyclop
+func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value) (match bool, err error) { //nolint:cyclop
 	switch fieldName {
 	case "MonitorURI":
 		return true, s.monitorURI(field)
