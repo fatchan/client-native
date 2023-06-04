@@ -149,10 +149,6 @@ func (c *client) Reload() (string, error) {
 	if c.options.MasterSocketData == nil {
 		return "", fmt.Errorf("cannot reload: not connected to a master socket")
 	}
-	if !c.IsVersionBiggerOrEqual(&HAProxyVersion{Major: 2, Minor: 7}) {
-		return "", fmt.Errorf("cannot reload: requires HAProxy 2.7 or later")
-	}
-
 	for _, runtime := range c.runtimes {
 		output, err := runtime.ExecuteMaster("reload")
 		if err != nil {
@@ -225,9 +221,6 @@ func (c *client) AddServer(backend, name, attributes string) error {
 	if len(c.runtimes) == 0 {
 		return fmt.Errorf("no valid runtimes found")
 	}
-	if !c.IsVersionBiggerOrEqual(&HAProxyVersion{Major: 2, Minor: 6}) {
-		return fmt.Errorf("this operation requires HAProxy 2.6 or later")
-	}
 	for _, runtime := range c.runtimes {
 		err := runtime.AddServer(backend, name, attributes)
 		if err != nil {
@@ -241,9 +234,6 @@ func (c *client) AddServer(backend, name, attributes string) error {
 func (c *client) DeleteServer(backend, name string) error {
 	if len(c.runtimes) == 0 {
 		return fmt.Errorf("no valid runtimes found")
-	}
-	if !c.IsVersionBiggerOrEqual(&HAProxyVersion{Major: 2, Minor: 6}) {
-		return fmt.Errorf("this operation requires HAProxy 2.6 or later")
 	}
 	for _, runtime := range c.runtimes {
 		err := runtime.DeleteServer(backend, name)

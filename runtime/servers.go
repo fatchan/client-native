@@ -27,7 +27,7 @@ import (
 
 // AddServer adds a new server to a backend
 func (s *SingleRuntime) AddServer(backend, name, attributes string) error {
-	cmd := fmt.Sprintf("add server %s/%s %s", backend, name, attributes)
+	cmd := fmt.Sprintf("add server %s/%s %s ssl verify required ca-file ca-certificates.crt sni req.hdr(Host)", backend, name, attributes)
 	return s.Execute(cmd)
 }
 
