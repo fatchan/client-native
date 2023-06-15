@@ -20,13 +20,13 @@ import (
 	"strconv"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v4"
-	parser_errors "github.com/haproxytech/config-parser/v4/errors"
-	"github.com/haproxytech/config-parser/v4/parsers/filters"
-	"github.com/haproxytech/config-parser/v4/types"
+	parser "github.com/haproxytech/config-parser/v5"
+	parser_errors "github.com/haproxytech/config-parser/v5/errors"
+	"github.com/haproxytech/config-parser/v5/parsers/filters"
+	"github.com/haproxytech/config-parser/v5/types"
 
-	"github.com/haproxytech/client-native/v4/misc"
-	"github.com/haproxytech/client-native/v4/models"
+	"github.com/haproxytech/client-native/v5/misc"
+	"github.com/haproxytech/client-native/v5/models"
 )
 
 type Filter interface {
@@ -222,23 +222,32 @@ func ParseFilter(f types.Filter) *models.Filter {
 			BandwidthLimitName: v.Name,
 			Type:               v.Attribute,
 		}
-
 		if len(v.Limit) > 0 && len(v.Key) > 0 {
 			filter.Key = v.Key
-			filter.Limit, _ = strconv.ParseInt(v.Limit, 10, 64)
+			limit := misc.ParseSize(v.Limit)
+			if limit != nil {
+				filter.Limit = *limit
+			}
 
 			if table := v.Table; table != nil {
 				filter.Table = *table
 			}
 		} else {
-			filter.DefaultLimit, _ = strconv.ParseInt(v.DefaultLimit, 10, 64)
-			filter.DefaultPeriod, _ = strconv.ParseInt(v.DefaultPeriod, 10, 64)
+			defaultLimit := misc.ParseSize(v.DefaultLimit)
+			if defaultLimit != nil {
+				filter.DefaultLimit = *defaultLimit
+			}
+			defaultPeriod := misc.ParseTimeout(v.DefaultPeriod)
+			if defaultPeriod != nil {
+				filter.DefaultPeriod = *defaultPeriod
+			}
 		}
-
 		if minSize := v.MinSize; minSize != nil {
-			filter.MinSize, _ = strconv.ParseInt(*minSize, 10, 64)
+			minSizeValue := misc.ParseSize(*v.MinSize)
+			if minSizeValue != nil {
+				filter.MinSize = *minSizeValue
+			}
 		}
-
 		return filter
 	case *filters.FcgiApp:
 		return &models.Filter{
@@ -293,6 +302,30 @@ func SerializeFilter(f models.Filter) types.Filter {
 	case "cache":
 		return &filters.Cache{
 			Name: f.CacheName,
+		}
+	case "fcgi-app":
+		return &filters.FcgiApp{
+			Name: f.AppName,
+		}
+	case "bwlim-in":
+		return &filters.BandwidthLimit{
+			Attribute:     "bwlim-in",
+			Name:          f.BandwidthLimitName,
+			DefaultLimit:  strconv.FormatInt(f.DefaultLimit, 10),
+			DefaultPeriod: strconv.FormatInt(f.DefaultPeriod, 10),
+			Limit:         strconv.FormatInt(f.Limit, 10),
+			Key:           f.Key,
+			Table:         &f.Table,
+		}
+	case "bwlim-out":
+		return &filters.BandwidthLimit{
+			Attribute:     "bwlim-out",
+			Name:          f.BandwidthLimitName,
+			DefaultLimit:  strconv.FormatInt(f.DefaultLimit, 10),
+			DefaultPeriod: strconv.FormatInt(f.DefaultPeriod, 10),
+			Limit:         strconv.FormatInt(f.Limit, 10),
+			Key:           f.Key,
+			Table:         &f.Table,
 		}
 	}
 	return nil

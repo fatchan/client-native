@@ -21,7 +21,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/haproxytech/client-native/v4/configuration/options"
+	"github.com/haproxytech/client-native/v5/configuration/options"
 )
 
 const testConf = `
@@ -109,7 +109,8 @@ global
   tune.zlib.windowsize 55
   tune.memory.hot-size 56
   busy-polling
-  max-spread-checks 1
+  max-spread-checks 1ms
+  close-spread-time 1s
   maxconnrate 2
   maxcomprate 3
   maxcompcpuusage 4
@@ -176,6 +177,12 @@ global
   51degrees-cache-size 51
   quiet
   zero-warning
+  httpclient.resolvers.disabled on
+  httpclient.resolvers.prefer ipv4
+  httpclient.resolvers.id resolver_1
+  httpclient.ssl.ca-file my_test_file.ca
+  httpclient.ssl.verify none
+  prealloc-fd
   ssl-engine first
   ssl-engine second RSA,DSA,DH,EC,RAND
   ssl-engine third CIPHERS,DIGESTS,PKEY,PKEY_CRYPTO,PKEY_ASN1
@@ -334,7 +341,7 @@ frontend test
   filter compression
   filter trace name AFTER-HTTP-COMP random-forwarding
   filter fcgi-app my-app
-  filter bwlim-in in default-limit 1024 default-period 10 min-size 32
+  filter bwlim-in in default-limit 1k default-period 1s min-size 1m
   filter bwlim-out out limit 1024 key name(arg1) table st_src_global min-size 32
   http-request allow if src 192.168.0.0/16
   http-request set-header X-SSL %[ssl_fc]
@@ -596,7 +603,7 @@ backend test
   external-check command /bin/false
   use-server webserv if TRUE
   use-server webserv2 unless TRUE
-  server webserv 192.168.1.1:9200 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128 id 1234
+  server webserv 192.168.1.1:9200 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128 id 1234 pool-purge-delay 10s tcp-ut 2s
   server webserv2 192.168.1.1:9300 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128
   http-request set-dst hdr(x-dst)
   http-request set-dst-port int(4000)

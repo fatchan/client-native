@@ -19,14 +19,14 @@ import (
 	"fmt"
 	"sync"
 
-	parser "github.com/haproxytech/config-parser/v4"
-	"github.com/haproxytech/config-parser/v4/spoe"
-	"github.com/haproxytech/config-parser/v4/types"
+	parser "github.com/haproxytech/config-parser/v5"
+	"github.com/haproxytech/config-parser/v5/spoe"
+	"github.com/haproxytech/config-parser/v5/types"
 
-	conf "github.com/haproxytech/client-native/v4/configuration"
-	"github.com/haproxytech/client-native/v4/configuration/options"
-	"github.com/haproxytech/client-native/v4/misc"
-	"github.com/haproxytech/client-native/v4/models"
+	conf "github.com/haproxytech/client-native/v5/configuration"
+	"github.com/haproxytech/client-native/v5/configuration/options"
+	"github.com/haproxytech/client-native/v5/misc"
+	"github.com/haproxytech/client-native/v5/models"
 )
 
 // SingleSpoe configuration client

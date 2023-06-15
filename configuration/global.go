@@ -22,14 +22,14 @@ import (
 	"strings"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v4"
-	"github.com/haproxytech/config-parser/v4/common"
-	parser_errors "github.com/haproxytech/config-parser/v4/errors"
-	"github.com/haproxytech/config-parser/v4/params"
-	"github.com/haproxytech/config-parser/v4/types"
+	parser "github.com/haproxytech/config-parser/v5"
+	"github.com/haproxytech/config-parser/v5/common"
+	parser_errors "github.com/haproxytech/config-parser/v5/errors"
+	"github.com/haproxytech/config-parser/v5/params"
+	"github.com/haproxytech/config-parser/v5/types"
 
-	"github.com/haproxytech/client-native/v4/misc"
-	"github.com/haproxytech/client-native/v4/models"
+	"github.com/haproxytech/client-native/v5/misc"
+	"github.com/haproxytech/client-native/v5/models"
 )
 
 type Global interface {
@@ -429,6 +429,46 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		statsTimeout = misc.ParseTimeout(statsTimeoutParser.Value)
 	}
 
+	httpClientResolversDisabled, err := parseOnOffOption(p, "httpclient.resolvers.disabled")
+	if err != nil {
+		return nil, err
+	}
+
+	httpClientResolversID, err := parseStringOption(p, "httpclient.resolvers.id")
+	if err != nil {
+		return nil, err
+	}
+
+	var httpClientResolversPrefer string
+	data, err = p.Get(parser.Global, parser.GlobalSectionName, "httpclient.resolvers.prefer")
+	if err == nil {
+		httpClientResolversPreferParser, ok := data.(*types.HTTPClientResolversPrefer)
+		if !ok {
+			return nil, misc.CreateTypeAssertError("httpclient.resolvers.prefer")
+		}
+		httpClientResolversPrefer = httpClientResolversPreferParser.Type
+	}
+
+	httpClientSSLCaFile, err := parseStringOption(p, "httpclient.ssl.ca-file")
+	if err != nil {
+		return nil, err
+	}
+
+	var httpClientSSLVerify *string
+	data, err = p.Get(parser.Global, parser.GlobalSectionName, "httpclient.ssl.verify")
+	if err == nil {
+		httpClientSSLVerifyParser, ok := data.(*types.HTTPClientSSLVerify)
+		if !ok {
+			return nil, misc.CreateTypeAssertError("httpclient.ssl.verify")
+		}
+		httpClientSSLVerify = &httpClientSSLVerifyParser.Type
+	}
+
+	preallocFD, err := parseBoolOption(p, "prealloc-fd")
+	if err != nil {
+		return nil, err
+	}
+
 	var sslBindCiphers string
 	data, err = p.Get(parser.Global, parser.GlobalSectionName, "ssl-default-bind-ciphers")
 	if err == nil {
@@ -627,15 +667,17 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		busyPolling = true
 	}
 
-	var maxSpreadChecks int64
-	data, err = p.Get(parser.Global, parser.GlobalSectionName, "max-spread-checks")
-	if err == nil {
-		maxSpreadChecksParser, ok := data.(*types.Int64C)
-		if !ok {
-			return nil, misc.CreateTypeAssertError("max-spread-checks")
-		}
-		maxSpreadChecks = maxSpreadChecksParser.Value
+	maxSpreadChecksStr, err := parseStringOption(p, "max-spread-checks")
+	if err != nil {
+		return nil, err
 	}
+	maxSpreadChecks := misc.ParseTimeout(maxSpreadChecksStr)
+
+	closeSpreadTimeStr, err := parseStringOption(p, "close-spread-time")
+	if err != nil {
+		return nil, err
+	}
+	closeSpreadTime := misc.ParseTimeout(closeSpreadTimeStr)
 
 	var maxconnrate int64
 	data, err = p.Get(parser.Global, parser.GlobalSectionName, "maxconnrate")
@@ -1070,6 +1112,12 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		RuntimeAPIs:                       rAPIs,
 		StatsTimeout:                      statsTimeout,
 		CPUMaps:                           cpuMaps,
+		HttpclientResolversDisabled:       httpClientResolversDisabled,
+		HttpclientResolversID:             httpClientResolversID,
+		HttpclientResolversPrefer:         httpClientResolversPrefer,
+		HttpclientSslCaFile:               httpClientSSLCaFile,
+		HttpclientSslVerify:               httpClientSSLVerify,
+		PreallocFd:                        preallocFD,
 		SslDefaultBindCiphers:             sslBindCiphers,
 		SslDefaultBindCiphersuites:        sslBindCiphersuites,
 		SslDefaultBindCurves:              sslDefaultBindCurves,
@@ -1089,6 +1137,7 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		H1CaseAdjustFile:                  h1CaseAdjustFile,
 		BusyPolling:                       busyPolling,
 		MaxSpreadChecks:                   maxSpreadChecks,
+		CloseSpreadTime:                   closeSpreadTime,
 		Maxconnrate:                       maxconnrate,
 		Maxcomprate:                       maxcomprate,
 		Maxcompcpuusage:                   maxcompcpuusage,
@@ -1367,6 +1416,42 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global) error { //noli
 		return err
 	}
 
+	if err := serializeOnOffOption(p, "httpclient.resolvers.disabled", data.HttpclientResolversDisabled); err != nil {
+		return err
+	}
+
+	if err := serializeStringOption(p, "httpclient.resolvers.id", data.HttpclientResolversID); err != nil {
+		return err
+	}
+
+	pHTTPClientResolversPrefer := &types.HTTPClientResolversPrefer{
+		Type: data.HttpclientResolversPrefer,
+	}
+	if data.HttpclientResolversPrefer == "" {
+		pHTTPClientResolversPrefer = nil
+	}
+	if err := p.Set(parser.Global, parser.GlobalSectionName, "httpclient.resolvers.prefer", pHTTPClientResolversPrefer); err != nil {
+		return err
+	}
+
+	if err := serializeStringOption(p, "httpclient.ssl.ca-file", data.HttpclientSslCaFile); err != nil {
+		return err
+	}
+
+	var pHTTPClientSSLCaFile *types.HTTPClientSSLVerify
+	if data.HttpclientSslVerify != nil {
+		pHTTPClientSSLCaFile = &types.HTTPClientSSLVerify{
+			Type: *data.HttpclientSslVerify,
+		}
+	}
+	if err := p.Set(parser.Global, parser.GlobalSectionName, "httpclient.ssl.verify", pHTTPClientSSLCaFile); err != nil {
+		return err
+	}
+
+	if err := serializeBoolOption(p, "prealloc-fd", data.PreallocFd); err != nil {
+		return err
+	}
+
 	pSSLBindCiphers := &types.StringC{
 		Value: data.SslDefaultBindCiphers,
 	}
@@ -1545,13 +1630,11 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global) error { //noli
 		return err
 	}
 
-	maxSpreadChecks := &types.Int64C{
-		Value: data.MaxSpreadChecks,
+	if err := serializeTimeoutSizeOption(p, "max-spread-checks", data.MaxSpreadChecks); err != nil {
+		return err
 	}
-	if data.MaxSpreadChecks == 0 {
-		maxSpreadChecks = nil
-	}
-	if err := p.Set(parser.Global, parser.GlobalSectionName, "max-spread-checks", maxSpreadChecks); err != nil {
+
+	if err := serializeTimeoutSizeOption(p, "close-spread-time", data.CloseSpreadTime); err != nil {
 		return err
 	}
 

@@ -20,8 +20,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/haproxytech/client-native/v4/misc"
-	"github.com/haproxytech/client-native/v4/models"
+	"github.com/haproxytech/client-native/v5/misc"
+	"github.com/haproxytech/client-native/v5/models"
 )
 
 func TestGetServers(t *testing.T) { //nolint:gocognit,gocyclo
@@ -142,6 +142,12 @@ func TestGetServer(t *testing.T) {
 		if s.ProxyV2Options[1] != "crc32c" {
 			t.Errorf("%v: ProxyV2Options[0] not crc32c: %s", s.Name, s.ProxyV2Options[1])
 		}
+	}
+	if *s.PoolPurgeDelay != 10000 {
+		t.Errorf("%v: PoolPurgeDelay not 10000: %v", s.Name, *s.PoolPurgeDelay)
+	}
+	if *s.TCPUt != 2000 {
+		t.Errorf("%v: TCPUt not 2000: %v", s.Name, *s.TCPUt)
 	}
 
 	_, err = s.MarshalBinary()

@@ -22,13 +22,13 @@ import (
 	"strings"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v4"
-	parser_errors "github.com/haproxytech/config-parser/v4/errors"
-	"github.com/haproxytech/config-parser/v4/params"
-	"github.com/haproxytech/config-parser/v4/types"
+	parser "github.com/haproxytech/config-parser/v5"
+	parser_errors "github.com/haproxytech/config-parser/v5/errors"
+	"github.com/haproxytech/config-parser/v5/params"
+	"github.com/haproxytech/config-parser/v5/types"
 
-	"github.com/haproxytech/client-native/v4/misc"
-	"github.com/haproxytech/client-native/v4/models"
+	"github.com/haproxytech/client-native/v5/misc"
+	"github.com/haproxytech/client-native/v5/models"
 )
 
 type Server interface {
@@ -416,10 +416,7 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 					serverParams.PoolMaxConn = &m
 				}
 			case "pool-purge-delay":
-				d, err := strconv.ParseInt(v.Value, 10, 64)
-				if err == nil {
-					serverParams.PoolPurgeDelay = &d
-				}
+				serverParams.PoolPurgeDelay = misc.ParseTimeout(v.Value)
 			case "addr":
 				serverParams.HealthCheckAddress = v.Value
 			case "port":
@@ -465,10 +462,7 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 			case "socks4":
 				serverParams.Socks4 = v.Value
 			case "tcp-ut":
-				d, err := strconv.ParseInt(v.Value, 10, 64)
-				if err == nil {
-					serverParams.TCPUt = d
-				}
+				serverParams.TCPUt = misc.ParseTimeout(v.Value)
 			case "track":
 				serverParams.Track = v.Value
 			case "verify":
@@ -796,8 +790,8 @@ func serializeServerParams(s models.ServerParams) (options []params.ServerOption
 	if s.Socks4 != "" {
 		options = append(options, &params.ServerOptionValue{Name: "socks4", Value: s.Socks4})
 	}
-	if s.TCPUt != 0 {
-		options = append(options, &params.ServerOptionValue{Name: "tcp-ut", Value: strconv.FormatInt(s.TCPUt, 10)})
+	if s.TCPUt != nil {
+		options = append(options, &params.ServerOptionValue{Name: "tcp-ut", Value: strconv.FormatInt(*s.TCPUt, 10)})
 	}
 	if s.Track != "" {
 		options = append(options, &params.ServerOptionValue{Name: "track", Value: s.Track})

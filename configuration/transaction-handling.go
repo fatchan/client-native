@@ -18,11 +18,11 @@ package configuration
 import (
 	"fmt"
 
-	parser "github.com/haproxytech/config-parser/v4"
-	parser_options "github.com/haproxytech/config-parser/v4/options"
-	"github.com/haproxytech/config-parser/v4/types"
+	parser "github.com/haproxytech/config-parser/v5"
+	parser_options "github.com/haproxytech/config-parser/v5/options"
+	"github.com/haproxytech/config-parser/v5/types"
 
-	"github.com/haproxytech/client-native/v4/models"
+	"github.com/haproxytech/client-native/v5/models"
 )
 
 type TransactionHandling interface {
