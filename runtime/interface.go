@@ -136,7 +136,12 @@ type Raw interface {
 	ExecuteRaw(command string) ([]string, error)
 }
 
+type SSL interface {
+	AddSetCommitSSLCert(filename, content string) error
+}
+
 type Runtime interface {
+	SSL
 	Info
 	Frontend
 	Manage

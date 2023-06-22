@@ -53,7 +53,7 @@ type Storage interface {
 	GetRawContents(name string) (io.ReadCloser, error)
 	Delete(name string) error
 	Replace(name string, config string) (string, error)
-	Create(name string, contents io.ReadCloser) (string, error)
+	Create(name string, contents io.ReadCloser) (string, string, error)
 }
 
 type storage struct {
@@ -162,7 +162,7 @@ func (s storage) Replace(name string, config string) (string, error) {
 	return f, nil
 }
 
-func (s *storage) Create(name string, readCloser io.ReadCloser) (string, error) {
+func (s *storage) Create(name string, readCloser io.ReadCloser) (string, string, error) {
 	name = misc.SanitizeFilename(name)
 	if s.fileType == MapsType {
 		if !strings.HasSuffix(name, ".map") {
@@ -171,44 +171,49 @@ func (s *storage) Create(name string, readCloser io.ReadCloser) (string, error) 
 	}
 	f := filepath.Join(s.dirname, name)
 	if _, err := os.Stat(f); err == nil {
-		return "", conf.NewConfError(conf.ErrObjectAlreadyExists, fmt.Sprintf("file %s already exists", f))
+		return "", "", conf.NewConfError(conf.ErrObjectAlreadyExists, fmt.Sprintf("file %s already exists", f))
 	}
-
+	var b string
+	var err error
 	switch s.fileType { //nolint:exhaustive
 	case SSLType:
-		return s.createSSL(f, readCloser)
+		_, b, err = s.createSSL(f, readCloser)
 	case MapsType, GeneralType:
-		return s.createFile(f, readCloser)
+		_, b, err = s.createFile(f, readCloser)
 	}
-	return f, nil
+	if err != nil {
+		return "", "", conf.NewConfError(conf.ErrObjectAlreadyExists, fmt.Sprintf("Error creating file %s", f))
+	}
+	return f, b, nil
 }
 
-func (s *storage) createSSL(name string, readCloser io.ReadCloser) (string, error) {
+func (s *storage) createSSL(name string, readCloser io.ReadCloser) (string, string, error) {
 	b, err := io.ReadAll(readCloser)
+	// fmt.Printf("%s\n", b)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	err = s.validatePEM(b)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	err = renameio.WriteFile(name, b, 0o644)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return name, nil
+	return name, fmt.Sprintf("%s\n", b), nil
 }
 
-func (s *storage) createFile(name string, readCloser io.ReadCloser) (string, error) {
+func (s *storage) createFile(name string, readCloser io.ReadCloser) (string, string, error) {
 	b, err := io.ReadAll(readCloser)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	err = renameio.WriteFile(name, b, 0o644)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return name, nil
+	return name, "", nil
 }
 
 func (s *storage) remove(name string) error {

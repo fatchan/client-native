@@ -103,11 +103,36 @@ func (c *client) GetInfo() (models.ProcessInfos, error) {
 }
 
 // "new ssl cert name.pem"
-func (c *client) NewSSLCert(name string) error {
-	fmt.Println("NewSSLCert")
+func (c *client) AddSetCommitSSLCert(filename, content string) error {
+	// fmt.Printf("%s\n%s\n", filename, content)
+	content = strings.Replace(content, "\n\n", "\n", -1) // Remove blank lines for set cert command
+	for _, runtime := range c.runtimes {
+		resp, err := runtime.ExecuteRaw(fmt.Sprintf("new ssl cert %s", filename))
+		fmt.Println(resp)
+		if err != nil {
+			runtime.ExecuteRaw(fmt.Sprintf("abort ssl cert %s", filename))
+			return nil
+		}
+		resp, err = runtime.ExecuteRaw(fmt.Sprintf("set ssl cert %s <<\n%s\n", filename, content))
+		fmt.Println(resp)
+		if err != nil {
+			runtime.ExecuteRaw(fmt.Sprintf("abort ssl cert %s", filename))
+			return nil
+		}
+		resp, err = runtime.ExecuteRaw(fmt.Sprintf("commit ssl cert %s", filename))
+		fmt.Println(resp)
+		if err != nil {
+			runtime.ExecuteRaw(fmt.Sprintf("abort ssl cert %s", filename))
+			return nil
+		}
+		resp, err = runtime.ExecuteRaw(fmt.Sprintf("add ssl crt-list /etc/haproxy/certs %s", filename))
+		fmt.Println(resp)
+		if err != nil {
+			return nil
+		}
+	}
 	return nil
 }
-
 
 var versionSync sync.Once //nolint:gochecknoglobals
 
