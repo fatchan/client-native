@@ -102,6 +102,13 @@ func (c *client) GetInfo() (models.ProcessInfos, error) {
 	return result, nil
 }
 
+// "new ssl cert name.pem"
+func (c *client) NewSSLCert(name string) error {
+	fmt.Println("NewSSLCert")
+	return nil
+}
+
+
 var versionSync sync.Once //nolint:gochecknoglobals
 
 // GetVersion returns info from the socket
