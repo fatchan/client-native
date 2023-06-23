@@ -138,6 +138,7 @@ type Raw interface {
 
 type SSL interface {
 	AddSetCommitSSLCert(filename, content string) error
+	DelSSLCert(filename string) error
 }
 
 type Runtime interface {
