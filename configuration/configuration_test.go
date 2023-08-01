@@ -308,7 +308,7 @@ defaults
 frontend test
   mode http
   backlog 2048
-  bind 192.168.1.1:80 name webserv thread all ocsp-update on sigalgs RSA+SHA256 client-sigalgs ECDSA+SHA256:RSA+SHA256
+  bind 192.168.1.1:80 name webserv thread all sigalgs RSA+SHA256 client-sigalgs ECDSA+SHA256:RSA+SHA256 ca-verify-file ca.pem nice 789
   bind 192.168.1.1:8080 name webserv2 thread 1/all
   bind 192.168.1.2:8080 name webserv3 thread 1/1
   bind [2a01:c9c0:a3:8::3]:80 name ipv6 thread 1/1-1
@@ -385,6 +385,10 @@ frontend test
   http-request set-bandwidth-limit my-limit limit 1m period 10s
   http-request set-bandwidth-limit my-limit-reverse period 20s limit 2m
   http-request set-bandwidth-limit my-limit-cond limit 3m if FALSE
+  http-request track-sc0 src table tr0 if TRUE
+  http-request track-sc1 src table tr1 if TRUE
+  http-request track-sc2 src table tr2 if TRUE
+  http-request track-sc5 src table test if TRUE
   http-response allow if src 192.168.0.0/16
   http-response set-header X-SSL %[ssl_fc]
   http-response set-var(req.my_var) req.fhdr(user-agent),lower
@@ -413,6 +417,10 @@ frontend test
   http-response set-bandwidth-limit my-limit limit 1m period 10s
   http-response set-bandwidth-limit my-limit-reverse period 20s limit 2m
   http-response set-bandwidth-limit my-limit-cond limit 3m if FALSE
+  http-response track-sc0 src table tr0 if TRUE
+  http-response track-sc1 src table tr1 if TRUE
+  http-response track-sc2 src table tr2 if TRUE
+  http-response track-sc5 src table test if TRUE
   http-after-response set-map(map.lst) %[src] %[res.hdr(X-Value)]
   http-after-response del-map(map.lst) %[src] if FALSE
   http-after-response del-acl(map.lst) %[src] if FALSE
@@ -454,6 +462,12 @@ frontend test
   tcp-request content set-var-fmt(req.tn) ssl_c_s_tn if FALSE
   tcp-request content switch-mode http proto my-proto if FALSE
   tcp-request session sc-add-gpc(0,1) 1 if FALSE
+  tcp-request content track-sc0 src table tr0 if TRUE
+  tcp-request connection track-sc0 src table tr0 if TRUE
+  tcp-request session track-sc0 src table tr0 if TRUE
+  tcp-request content track-sc5 src table test if TRUE
+  tcp-request connection track-sc5 src table test if TRUE
+  tcp-request session track-sc5 src table test if TRUE
   log global
   no log
   log 127.0.0.1:514 local0 notice notice

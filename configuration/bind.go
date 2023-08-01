@@ -302,6 +302,8 @@ func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //
 				b.SslCertificate = v.Value
 			case "ca-file":
 				b.SslCafile = v.Value
+			case "ca-verify-file":
+				b.CaVerifyFile = v.Value
 			case "verify":
 				b.Verify = v.Value
 			case "alpn":
@@ -368,8 +370,6 @@ func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //
 				}
 			case "npn":
 				b.Npn = v.Value
-			case "ocsp-update":
-				b.OcspUpdate = v.Value
 			case "proto":
 				b.Proto = v.Value
 			case "sigalgs":
@@ -425,6 +425,9 @@ func serializeBindParams(b models.BindParams, path string) (options []params.Bin
 	}
 	if b.SslCafile != "" {
 		options = append(options, &params.BindOptionValue{Name: "ca-file", Value: b.SslCafile})
+	}
+	if b.CaVerifyFile != "" {
+		options = append(options, &params.BindOptionValue{Name: "ca-verify-file", Value: b.CaVerifyFile})
 	}
 	if b.TCPUserTimeout != nil {
 		options = append(options, &params.BindOptionValue{Name: "tcp-ut", Value: strconv.FormatInt(*b.TCPUserTimeout, 10)})
@@ -567,9 +570,6 @@ func serializeBindParams(b models.BindParams, path string) (options []params.Bin
 	if b.Npn != "" {
 		options = append(options, &params.BindOptionValue{Name: "npn", Value: b.Npn})
 	}
-	if b.OcspUpdate != "" {
-		options = append(options, &params.BindOptionValue{Name: "ocsp-update", Value: b.OcspUpdate})
-	}
 	if b.PreferClientCiphers {
 		options = append(options, &params.ServerOptionWord{Name: "prefer-client-ciphers"})
 	}
@@ -614,6 +614,9 @@ func serializeBindParams(b models.BindParams, path string) (options []params.Bin
 	}
 	if b.NoAlpn {
 		options = append(options, &params.BindOptionWord{Name: "no-alpn"})
+	}
+	if b.Nice != 0 {
+		options = append(options, &params.BindOptionValue{Name: "nice", Value: strconv.FormatInt(b.Nice, 10)})
 	}
 	return options
 }

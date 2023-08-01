@@ -417,8 +417,8 @@ func TestGetGlobal(t *testing.T) {
 	if *global.TuneOptions.VarsTxnMaxSize != 55 {
 		t.Errorf("VarsTxnMaxSize is %v, expected 55", global.TuneOptions.VarsTxnMaxSize)
 	}
-	if *global.TuneOptions.QuicFrontendConnTcBuffersLimit != 10 {
-		t.Errorf("QuicFrontendConnTcBuffersLimit is %v, expected 10", global.TuneOptions.QuicFrontendConnTcBuffersLimit)
+	if *global.TuneOptions.QuicFrontendConnTxBuffersLimit != 10 {
+		t.Errorf("QuicFrontendConnTxBuffersLimit is %v, expected 10", global.TuneOptions.QuicFrontendConnTxBuffersLimit)
 	}
 	if *global.TuneOptions.QuicFrontendMaxIdleTimeout != 10000 {
 		t.Errorf("QuicFrontendMaxIdleTimeout is %v, expected 10000", global.TuneOptions.QuicFrontendMaxIdleTimeout)
@@ -567,7 +567,7 @@ func TestGetGlobal(t *testing.T) {
 			t.Errorf("SetVars[2] Expr is %v, expected int(200),sub(proc.prio)", *global.SetVars[2].Expr)
 		}
 	} else {
-		t.Errorf("SetVars lenght is %v, expected 3", len(global.SetVars))
+		t.Errorf("SetVars length is %v, expected 3", len(global.SetVars))
 	}
 	if len(global.SetVarFmts) == 2 {
 		if *global.SetVarFmts[0].Name != "proc.bootid" {
@@ -583,7 +583,7 @@ func TestGetGlobal(t *testing.T) {
 			t.Errorf("SetVars[1] Format is %v, expected \"primary\"", *global.SetVarFmts[1].Format)
 		}
 	} else {
-		t.Errorf("SetVarFmts lenght is %v, expected 2", len(global.SetVarFmts))
+		t.Errorf("SetVarFmts length is %v, expected 2", len(global.SetVarFmts))
 	}
 	if len(global.PresetEnvs) == 1 {
 		if *global.PresetEnvs[0].Name != "first" {
@@ -672,7 +672,7 @@ func TestPutGlobal(t *testing.T) {
 		},
 		TuneOptions: &models.GlobalTuneOptions{
 			PeersMaxUpdatesAtOnce:          100,
-			QuicFrontendConnTcBuffersLimit: nil,
+			QuicFrontendConnTxBuffersLimit: nil,
 			QuicFrontendMaxIdleTimeout:     misc.Int64P(5000),
 			QuicSocketOwner:                "listener",
 			SslOcspUpdateMaxDelay:          misc.Int64P(48),
