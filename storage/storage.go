@@ -207,9 +207,9 @@ func (s *storage) Create(name string, readCloser io.ReadCloser) (string, int64, 
 		}
 	}
 	f := filepath.Join(s.dirname, name)
-	if _, err := os.Stat(f); err == nil {
-		return "", -1, "", conf.NewConfError(conf.ErrObjectAlreadyExists, fmt.Sprintf("file %s already exists", f))
-	}
+	// if _, err := os.Stat(f); err == nil {
+		// return "", -1, "", conf.NewConfError(conf.ErrObjectAlreadyExists, fmt.Sprintf("file %s already exists", f))
+	// }
 	var b string
 	var err error
 	switch s.fileType { //nolint:exhaustive
