@@ -2800,6 +2800,7 @@ definitions:
               x-dependency:
                   mode:
                       value: http
+              x-deprecated: true
               x-display-name: HTTP keep-alive
           http-no-delay:
               enum:
@@ -2818,6 +2819,7 @@ definitions:
               x-dependency:
                   mode:
                       value: http
+              x-deprecated: true
               x-display-name: HTTP server close
           http-use-htx:
               enum:
@@ -2902,6 +2904,7 @@ definitions:
               x-dependency:
                   mode:
                       value: http
+              x-deprecated: true
               x-display-name: HTTP connection closing
           id:
               type: integer
@@ -6962,7 +6965,6 @@ definitions:
           - index
           - acl_name
           - criterion
-          - value
       title: ACL Lines
       type: object
   acls:
@@ -8618,6 +8620,7 @@ definitions:
           size:
               description: File size in bytes.
               type: integer
+              x-nullable: true
           storage_name:
               type: string
       title: Map File
@@ -8652,28 +8655,36 @@ definitions:
           description:
               type: string
           domains:
-              items:
-                  type: string
-              type: array
+              readOnly: true
+              type: string
+              x-omitempty: true
           file:
               type: string
           ip_addresses:
-              items:
-                  type: string
-              type: array
+              readOnly: true
+              type: string
+              x-omitempty: true
           issuers:
-              items:
-                  type: string
-              type: array
+              readOnly: true
+              type: string
+              x-omitempty: true
           not_after:
-              format: date
+              format: date-time
+              readOnly: true
               type: string
+              x-go-custom-tag: gorm:"type:timestamp with time zone"
+              x-nullable: true
           not_before:
-              format: date
+              format: date-time
+              readOnly: true
               type: string
+              x-go-custom-tag: gorm:"type:timestamp with time zone"
+              x-nullable: true
           size:
               description: File size in bytes.
+              readOnly: true
               type: integer
+              x-nullable: true
           storage_name:
               type: string
       title: SSL File
@@ -8763,6 +8774,7 @@ definitions:
           size:
               description: File size in bytes.
               type: integer
+              x-nullable: true
           storage_name:
               type: string
       title: General use file
@@ -19055,6 +19067,14 @@ paths:
           responses:
               "201":
                   description: SSL certificate created
+                  schema:
+                      $ref: '#/definitions/ssl_certificate'
+              "202":
+                  description: SSL certificate created requested
+                  headers:
+                      Reload-ID:
+                          description: ID of the requested reload
+                          type: string
                   schema:
                       $ref: '#/definitions/ssl_certificate'
               "400":

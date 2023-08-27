@@ -2,7 +2,7 @@ PROJECT_PATH=${PWD}
 DOCKER_HAPROXY_VERSION?=2.7
 SWAGGER_VERSION=v0.30.2
 GO_VERSION:=${shell go mod edit -json | jq -r .Go}
-GOLANGCI_LINT_VERSION=1.51.1
+GOLANGCI_LINT_VERSION=1.53.3
 
 .PHONY: test
 test:
@@ -21,6 +21,12 @@ e2e-docker:
 .PHONY: spec
 spec:
 	go run specification/build/build.go -file specification/haproxy-spec.yaml > specification/build/haproxy_spec.yaml
+
+.PHONY: equal
+equal:
+	rm -rf models/*_compare.go
+	rm -rf models/*_compare_test.go
+	go run cmd/struct_equal_generator/*.go -l ${PROJECT_PATH}/specification/copyright.txt ${PROJECT_PATH}/models
 
 .PHONY: models
 models: spec swagger-check

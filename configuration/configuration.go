@@ -1414,6 +1414,11 @@ type SectionObject struct {
 	Section parser.Section
 	Name    string
 	Parser  parser.Parser
+	// In the context of the deprecation of the fields:
+	//	 HTTPKeepAlive, HTTPServerClose and Httpclose.
+	// This flag is used to set a priority on HTTPConnectionMode field over
+	// the deprecated ones.
+	httpConnectionModeFlag bool
 }
 
 // CreateEditSection creates or updates a section in the parser based on the provided object
@@ -1424,6 +1429,7 @@ func CreateEditSection(object interface{}, section parser.Section, pName string,
 		Name:    pName,
 		Parser:  p,
 	}
+	so.setHTTPConnectionModeFlag()
 	return so.CreateEditSection()
 }
 
@@ -1526,6 +1532,11 @@ func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value
 	case "DefaultBackend":
 		return true, s.defaultBackend(field)
 	case "HTTPConnectionMode":
+		// if HTTPConnectionMode is not set, skip HTTPConnectionMode
+		// Write only options (Httpclose, HTTPKeepAlive, HTTPServerClose)
+		if !s.httpConnectionModeFlag {
+			return true, nil
+		}
 		return true, s.httpConnectionMode(field)
 	case "HTTPReuse":
 		return true, s.httpReuse(field)
@@ -1596,8 +1607,70 @@ func (s *SectionObject) checkTimeouts(fieldName string, field reflect.Value) (ma
 	return false, nil
 }
 
+// setHTTPConnectionModeFlag set the httpConnectionModeFlag flag if:
+//
+//	HTTPConnectionMode is present, false otherwise.
+//
+// This check is needed due to the deprecation of deprecated options:
+//
+//	HTTPKeepAlive, HTTPServerClose and Httpclose.
+func (s *SectionObject) setHTTPConnectionModeFlag() {
+	objValue := reflect.ValueOf(s.Object)
+	if objValue.Kind() == reflect.Ptr {
+		objValue = reflect.ValueOf(s.Object).Elem()
+	}
+
+	deprecatedFieldPresent := false
+	atLeastOneDeprecatedFieldNotEmpty := false
+	httpConnectionModePresentSet := false
+	for i := 0; i < objValue.NumField(); i++ {
+		typeField := objValue.Type().Field(i)
+		field := objValue.FieldByName(typeField.Name)
+		if typeField.Name == "HTTPConnectionMode" && !valueIsNil(field) {
+			httpConnectionModePresentSet = true
+		}
+		if typeField.Name == "HTTPKeepAlive" || typeField.Name == "HTTPServerClose" || typeField.Name == "Httpclose" {
+			deprecatedFieldPresent = true
+			if !valueIsNil(field) {
+				atLeastOneDeprecatedFieldNotEmpty = true
+			}
+		}
+	}
+	// Backend
+	if deprecatedFieldPresent {
+		// if HTTPConnectionMode is present is not empty => has priority
+		if httpConnectionModePresentSet {
+			s.httpConnectionModeFlag = true
+			return
+		}
+
+		s.httpConnectionModeFlag = !atLeastOneDeprecatedFieldNotEmpty
+		return
+	}
+	// For Default and Frontend,
+	//	HTTPKeepAlive, HTTPServerClose and Httpclose do not exist in the Object
+	// We are always using HTTPConnectionMode
+	s.httpConnectionModeFlag = true
+}
+
+// isHTTPConnectionModeDeprecatedField returns, in regards to the deprecation of HTTPConectionMode option fields:
+//
+//	HTTPKeepAlive, HTTPServerClose and Httpclose.
+//
+// - true if it's a deprecated field, false otherwise
+func isHTTPConnectionModeDeprecatedField(fieldName string) bool {
+	if fieldName == "HTTPKeepAlive" || fieldName == "HTTPServerClose" || fieldName == "Httpclose" {
+		return true
+	}
+	return false
+}
+
 func (s *SectionObject) checkOptions(fieldName string, field reflect.Value) (match bool, err error) {
 	if pName := fmt.Sprintf("option %s", misc.DashCase(fieldName)); s.Parser.HasParser(s.Section, pName) {
+		// Skip this field if it's a deprecated one and HTTPConnectionMode is present
+		if isHTTPConnectionModeDeprecatedField(fieldName) && s.httpConnectionModeFlag {
+			return true, nil
+		}
 		if valueIsNil(field) {
 			if err := s.set(pName, nil); err != nil {
 				return true, err
@@ -1636,20 +1709,6 @@ func (s *SectionObject) checkSingleLine(fieldName string, field reflect.Value) (
 		return true, nil
 	}
 	return false, nil
-}
-
-func (s *SectionObject) isNoOption(attribute string) bool {
-	data, err := s.Parser.Get(s.Section, s.Name, attribute)
-	if err != nil {
-		return false
-	}
-
-	simpleOpt, ok := data.(*types.SimpleOption)
-	if !ok {
-		return false
-	}
-
-	return simpleOpt.NoOption
 }
 
 func (s *SectionObject) set(attribute string, data interface{}) error {
@@ -1726,18 +1785,12 @@ func (s *SectionObject) uniqueIDHeader(field reflect.Value) error {
 		return nil
 	}
 	if valueIsNil(field) {
-		if err := s.set("unique-id-header", nil); err != nil {
-			return err
-		}
-		return nil
+		return s.set("unique-id-header", nil)
 	}
 	d := types.UniqueIDHeader{
 		Name: field.String(),
 	}
-	if err := s.set("unique-id-header", &d); err != nil {
-		return err
-	}
-	return nil
+	return s.set("unique-id-header", &d)
 }
 
 func (s *SectionObject) uniqueIDFormat(field reflect.Value) error {
@@ -1745,27 +1798,18 @@ func (s *SectionObject) uniqueIDFormat(field reflect.Value) error {
 		return nil
 	}
 	if valueIsNil(field) {
-		if err := s.set("unique-id-format", nil); err != nil {
-			return err
-		}
-		return nil
+		return s.set("unique-id-format", nil)
 	}
 	d := types.UniqueIDFormat{
 		LogFormat: field.String(),
 	}
-	if err := s.set("unique-id-format", &d); err != nil {
-		return err
-	}
-	return nil
+	return s.set("unique-id-format", &d)
 }
 
 func (s *SectionObject) httpReuse(field reflect.Value) error {
 	if s.Section == parser.Backends || s.Section == parser.Defaults {
 		if valueIsNil(field) {
-			if err := s.set("http-reuse", nil); err != nil {
-				return err
-			}
-			return nil
+			return s.set("http-reuse", nil)
 		}
 
 		b := field.String()
@@ -1783,10 +1827,6 @@ func (s *SectionObject) httpReuse(field reflect.Value) error {
 func (s *SectionObject) httpConnectionMode(field reflect.Value) error {
 	for _, opt := range []string{"httpclose", "http-server-close", "http-keep-alive"} {
 		attribute := fmt.Sprintf("option %s", opt)
-
-		if s.isNoOption(attribute) {
-			continue
-		}
 
 		if err := s.set(attribute, nil); err != nil {
 			return err
@@ -1810,10 +1850,7 @@ func (s *SectionObject) httpConnectionMode(field reflect.Value) error {
 func (s *SectionObject) defaultBackend(field reflect.Value) error {
 	if s.Section == parser.Frontends || s.Section == parser.Defaults {
 		if valueIsNil(field) {
-			if err := s.set("default_backend", nil); err != nil {
-				return err
-			}
-			return nil
+			return s.set("default_backend", nil)
 		}
 		bck := field.String()
 		d := &types.StringC{
@@ -1951,10 +1988,7 @@ func (s *SectionObject) resetCheckOptions() error {
 	if err := s.set("option redis-check", nil); err != nil {
 		return err
 	}
-	if err := s.set("option httpchk", nil); err != nil {
-		return err
-	}
-	return nil
+	return s.set("option httpchk", nil)
 }
 
 func (s *SectionObject) getCheckData(pName string) (common.ParserData, error) {
@@ -2056,10 +2090,7 @@ func (s *SectionObject) getFieldByName(fieldName string) interface{} {
 func (s *SectionObject) stickTable(field reflect.Value) error {
 	if s.Section == parser.Backends || s.Section == parser.Frontends || s.Section == parser.Peers {
 		if valueIsNil(field) {
-			if err := s.set("stick-table", nil); err != nil {
-				return err
-			}
-			return nil
+			return s.set("stick-table", nil)
 		}
 		st, ok := field.Elem().Interface().(models.ConfigStickTable)
 		if !ok {
@@ -2091,10 +2122,7 @@ func (s *SectionObject) stickTable(field reflect.Value) error {
 func (s *SectionObject) defaultServer(field reflect.Value) error {
 	if s.Section == parser.Backends || s.Section == parser.Defaults || s.Section == parser.Peers {
 		if valueIsNil(field) {
-			if err := s.set("default-server", nil); err != nil {
-				return err
-			}
-			return nil
+			return s.set("default-server", nil)
 		}
 		ds, ok := field.Elem().Interface().(models.DefaultServer)
 		if !ok {
@@ -2112,10 +2140,7 @@ func (s *SectionObject) defaultServer(field reflect.Value) error {
 func (s *SectionObject) loadServerStateFromFile(field reflect.Value) error {
 	if s.Section == parser.Backends || s.Section == parser.Defaults {
 		if valueIsNil(field) {
-			if err := s.set("load-server-state-from-file", nil); err != nil {
-				return err
-			}
-			return nil
+			return s.set("load-server-state-from-file", nil)
 		}
 
 		b := field.String()
@@ -2132,10 +2157,7 @@ func (s *SectionObject) loadServerStateFromFile(field reflect.Value) error {
 
 func (s *SectionObject) errorFiles(field reflect.Value) error {
 	if valueIsNil(field) {
-		if err := s.set("errorfile", nil); err != nil {
-			return err
-		}
-		return nil
+		return s.set("errorfile", nil)
 	}
 	efs, ok := field.Interface().([]*models.Errorfile)
 	if !ok {
@@ -2145,18 +2167,12 @@ func (s *SectionObject) errorFiles(field reflect.Value) error {
 	for _, ef := range efs {
 		errorFiles = append(errorFiles, types.ErrorFile{Code: strconv.FormatInt(ef.Code, 10), File: ef.File})
 	}
-	if err := s.set("errorfile", errorFiles); err != nil {
-		return err
-	}
-	return nil
+	return s.set("errorfile", errorFiles)
 }
 
 func (s *SectionObject) errorFilesFromHTTPErrors(field reflect.Value) error {
 	if valueIsNil(field) {
-		if err := s.set("errorfiles", nil); err != nil {
-			return err
-		}
-		return nil
+		return s.set("errorfiles", nil)
 	}
 	efs, ok := field.Interface().([]*models.Errorfiles)
 	if !ok {
@@ -2166,19 +2182,13 @@ func (s *SectionObject) errorFilesFromHTTPErrors(field reflect.Value) error {
 	for i, ef := range efs {
 		errorFiles[i] = types.ErrorFiles{Codes: ef.Codes, Name: ef.Name}
 	}
-	if err := s.set("errorfiles", errorFiles); err != nil {
-		return err
-	}
-	return nil
+	return s.set("errorfiles", errorFiles)
 }
 
 func (s *SectionObject) hashType(field reflect.Value) error {
 	if s.Section == parser.Backends || s.Section == parser.Defaults {
 		if valueIsNil(field) {
-			if err := s.set("hash-type", nil); err != nil {
-				return err
-			}
-			return nil
+			return s.set("hash-type", nil)
 		}
 		b, ok := field.Elem().Interface().(models.HashType)
 		if !ok {
@@ -2199,10 +2209,7 @@ func (s *SectionObject) hashType(field reflect.Value) error {
 func (s *SectionObject) cookie(field reflect.Value) error {
 	if s.Section == parser.Backends || s.Section == parser.Defaults {
 		if valueIsNil(field) {
-			if err := s.set("cookie", nil); err != nil {
-				return err
-			}
-			return nil
+			return s.set("cookie", nil)
 		}
 		d, ok := field.Elem().Interface().(models.Cookie)
 		if !ok {
@@ -2241,10 +2248,7 @@ func (s *SectionObject) cookie(field reflect.Value) error {
 func (s *SectionObject) bindProcess(field reflect.Value) error {
 	if s.Section == parser.Defaults || s.Section == parser.Frontends || s.Section == parser.Backends {
 		if valueIsNil(field) {
-			if err := s.set("bind-process", nil); err != nil {
-				return err
-			}
-			return nil
+			return s.set("bind-process", nil)
 		}
 		b := field.String()
 		d := &types.BindProcess{
@@ -2260,10 +2264,7 @@ func (s *SectionObject) bindProcess(field reflect.Value) error {
 func (s *SectionObject) persistRule(field reflect.Value) error {
 	if s.Section == parser.Backends || s.Section == parser.Defaults {
 		if valueIsNil(field) {
-			if err := s.set("persist", nil); err != nil {
-				return err
-			}
-			return nil
+			return s.set("persist", nil)
 		}
 		b, ok := field.Elem().Interface().(models.PersistRule)
 		if !ok {
@@ -2289,10 +2290,7 @@ func (s *SectionObject) persistRule(field reflect.Value) error {
 func (s *SectionObject) balance(field reflect.Value) error {
 	if s.Section == parser.Backends || s.Section == parser.Defaults {
 		if valueIsNil(field) {
-			if err := s.set("balance", nil); err != nil {
-				return err
-			}
-			return nil
+			return s.set("balance", nil)
 		}
 		b, ok := field.Elem().Interface().(models.Balance)
 		if !ok {
@@ -2344,10 +2342,7 @@ func (s *SectionObject) balance(field reflect.Value) error {
 func (s *SectionObject) redispatch(field reflect.Value) error {
 	if s.Section == parser.Backends || s.Section == parser.Defaults {
 		if valueIsNil(field) {
-			if err := s.set("option redispatch", nil); err != nil {
-				return err
-			}
-			return nil
+			return s.set("option redispatch", nil)
 		}
 		br, ok := field.Elem().Interface().(models.Redispatch)
 		if !ok {
@@ -2369,10 +2364,7 @@ func (s *SectionObject) redispatch(field reflect.Value) error {
 
 func (s *SectionObject) forwardfor(field reflect.Value) error {
 	if valueIsNil(field) {
-		if err := s.set("option forwardfor", nil); err != nil {
-			return err
-		}
-		return nil
+		return s.set("option forwardfor", nil)
 	}
 	ff, ok := field.Elem().Interface().(models.Forwardfor)
 	if !ok {
@@ -2383,10 +2375,7 @@ func (s *SectionObject) forwardfor(field reflect.Value) error {
 		Header: ff.Header,
 		IfNone: ff.Ifnone,
 	}
-	if err := s.set("option forwardfor", d); err != nil {
-		return err
-	}
-	return nil
+	return s.set("option forwardfor", d)
 }
 
 func (s *SectionObject) httpCheck(field reflect.Value) error {
@@ -2495,10 +2484,7 @@ func (s *SectionObject) emailAlert(field reflect.Value) error {
 
 func (s *SectionObject) statsOptions(field reflect.Value) error {
 	if valueIsNil(field) {
-		if err := s.set("stats", nil); err != nil {
-			return err
-		}
-		return nil
+		return s.set("stats", nil)
 	}
 	opt, ok := field.Elem().Interface().(models.StatsOptions)
 	if !ok {
@@ -2598,10 +2584,7 @@ func (s *SectionObject) statsOptions(field reflect.Value) error {
 		}
 		ss = append(ss, s)
 	}
-	if err := s.set("stats", ss); err != nil {
-		return err
-	}
-	return nil
+	return s.set("stats", ss)
 }
 
 func (s *SectionObject) compression(field reflect.Value) error {
@@ -2726,10 +2709,7 @@ func (s *SectionObject) errorloc302(field reflect.Value) error {
 		Code: fmt.Sprintf("%d", *errorLoc.Code),
 		URL:  *errorLoc.URL,
 	}
-	if err := s.set("errorloc302", e); err != nil {
-		return err
-	}
-	return nil
+	return s.set("errorloc302", e)
 }
 
 func (s *SectionObject) errorloc303(field reflect.Value) error {
@@ -2745,10 +2725,8 @@ func (s *SectionObject) errorloc303(field reflect.Value) error {
 		Code: fmt.Sprintf("%d", *errorLoc.Code),
 		URL:  *errorLoc.URL,
 	}
-	if err := s.set("errorloc303", e); err != nil {
-		return err
-	}
-	return nil
+
+	return s.set("errorloc303", e)
 }
 
 func (s *SectionObject) httpRestrictReqHdrNames(field reflect.Value) error {
@@ -2756,10 +2734,7 @@ func (s *SectionObject) httpRestrictReqHdrNames(field reflect.Value) error {
 		return s.set("option http-restrict-req-hdr-names", nil)
 	}
 	t := &types.OptionHTTPRestrictReqHdrNames{Policy: field.String()}
-	if err := s.set("option http-restrict-req-hdr-names", t); err != nil {
-		return err
-	}
-	return nil
+	return s.set("option http-restrict-req-hdr-names", t)
 }
 
 func (s *SectionObject) defaultBind(field reflect.Value) error {
@@ -2767,10 +2742,7 @@ func (s *SectionObject) defaultBind(field reflect.Value) error {
 		return nil
 	}
 	if valueIsNil(field) {
-		if err := s.set("default-bind", nil); err != nil {
-			return err
-		}
-		return nil
+		return s.set("default-bind", nil)
 	}
 	db, ok := field.Elem().Interface().(models.DefaultBind)
 	if !ok {
@@ -2780,10 +2752,7 @@ func (s *SectionObject) defaultBind(field reflect.Value) error {
 		Params: serializeBindParams(db.BindParams, ""),
 	}
 
-	if err := s.set("default-bind", dBind); err != nil {
-		return err
-	}
-	return nil
+	return s.set("default-bind", dBind)
 }
 
 func (s *SectionObject) httpSendNameHeader(field reflect.Value) error {
@@ -2827,10 +2796,7 @@ func (s *SectionObject) ignorePersist(field reflect.Value) error {
 
 func (s *SectionObject) source(field reflect.Value) error {
 	if valueIsNil(field) {
-		if err := s.set("source", nil); err != nil {
-			return err
-		}
-		return nil
+		return s.set("source", nil)
 	}
 	so, ok := field.Elem().Interface().(models.Source)
 	if !ok {
@@ -2907,11 +2873,7 @@ func (c *client) deleteSection(section parser.Section, name string, transactionI
 		return c.HandleError(name, "", "", t, transactionID == "", err)
 	}
 
-	if err := c.SaveData(p, t, transactionID == ""); err != nil {
-		return err
-	}
-
-	return nil
+	return c.SaveData(p, t, transactionID == "")
 }
 
 func (c *client) editSection(section parser.Section, name string, data interface{}, transactionID string, version int64) error {
@@ -2929,11 +2891,7 @@ func (c *client) editSection(section parser.Section, name string, data interface
 		return c.HandleError(name, "", "", t, transactionID == "", err)
 	}
 
-	if err := c.SaveData(p, t, transactionID == ""); err != nil {
-		return err
-	}
-
-	return nil
+	return c.SaveData(p, t, transactionID == "")
 }
 
 func (c *client) createSection(section parser.Section, name string, data interface{}, transactionID string, version int64) error {
@@ -2955,11 +2913,7 @@ func (c *client) createSection(section parser.Section, name string, data interfa
 		return c.HandleError(name, "", "", t, transactionID == "", err)
 	}
 
-	if err := c.SaveData(p, t, transactionID == ""); err != nil {
-		return err
-	}
-
-	return nil
+	return c.SaveData(p, t, transactionID == "")
 }
 
 func (c *client) checkSectionExists(section parser.Section, sectionName string, p parser.Parser) bool {

@@ -2,6 +2,7 @@
 variables:
   DOCKER_HOST: tcp://docker:2375
   GO_VERSION: "1.20"
+  DOCKER_VERSION: "23.0"
 stages:
   - check-commit
   - generate
@@ -56,17 +57,18 @@ yaml-lint:
 generate:
   stage: generate
   image:
-    name: $CI_REGISTRY_GO/docker:stable-go$GO_VERSION
+    name: $CI_REGISTRY_GO/docker:$DOCKER_VERSION-go$GO_VERSION
     entrypoint: [""]
   services:
-    - name: $CI_REGISTRY_GO/docker:20.10-dind
+    - name: $CI_REGISTRY_GO/docker:$DOCKER_VERSION-dind
       alias: docker
   tags:
     - go
   before_script:
-    - make models
+    - rm -rf models/*
+    - make models equal
   script:
-    - test -z "$(git diff 2> /dev/null)" || exit "Models are not generated, issue \`make models\` and commit the result"
+    - test -z "$(git diff 2> /dev/null)" || exit "Models are not generated, issue \`make models equal\` and commit the result"
     - test -z "$(git ls-files --others --exclude-standard 2> /dev/null)" || exit "Models generation created untracked files, cannot proceed"
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
@@ -147,10 +149,10 @@ test:
   needs: ["test"]
   extends: .go-cache
   image:
-    name: $CI_REGISTRY_GO/docker:stable
+    name: $CI_REGISTRY_GO/docker:$DOCKER_VERSION
     entrypoint: [""]
   services:
-    - name: $CI_REGISTRY_GO/docker:20.10.11-dind
+    - name: $CI_REGISTRY_GO/docker:$DOCKER_VERSION-dind
       alias: docker
   tags:
     - go
@@ -196,3 +198,7 @@ HAProxy-2.8:
   extends: .e2e
   variables:
     HAPROXY_VERSION: "2.8"
+HAProxy-2.9:
+  extends: .e2e
+  variables:
+    HAPROXY_VERSION: "2.9"
