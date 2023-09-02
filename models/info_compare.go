@@ -46,15 +46,15 @@ func (s Info) Equal(t Info, opts ...Options) bool {
 
 // Diff checks if two structs of type Info are equal
 //
-// By default empty arrays, maps and slices are equal to nil:
+// By default empty maps and slices are equal to nil:
 //
 //	var a, b Info
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b Info
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		NilSameAsEmpty: true,
 //	})
 func (s Info) Diff(t Info, opts ...Options) map[string][]interface{} {
@@ -62,11 +62,11 @@ func (s Info) Diff(t Info, opts ...Options) map[string][]interface{} {
 
 	diff := make(map[string][]interface{})
 	if !s.API.Equal(*t.API, opt) {
-		diff["API"] = []interface{}{s.API, t.API}
+		diff["API"] = []interface{}{ValueOrNil(s.API), ValueOrNil(t.API)}
 	}
 
 	if !s.System.Equal(*t.System, opt) {
-		diff["System"] = []interface{}{s.System, t.System}
+		diff["System"] = []interface{}{ValueOrNil(s.System), ValueOrNil(t.System)}
 	}
 
 	return diff
@@ -154,15 +154,15 @@ func (s InfoSystem) Equal(t InfoSystem, opts ...Options) bool {
 
 // Diff checks if two structs of type InfoSystem are equal
 //
-// By default empty arrays, maps and slices are equal to nil:
+// By default empty maps and slices are equal to nil:
 //
 //	var a, b InfoSystem
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b InfoSystem
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		NilSameAsEmpty: true,
 //	})
 func (s InfoSystem) Diff(t InfoSystem, opts ...Options) map[string][]interface{} {
@@ -170,7 +170,7 @@ func (s InfoSystem) Diff(t InfoSystem, opts ...Options) map[string][]interface{}
 
 	diff := make(map[string][]interface{})
 	if !s.CPUInfo.Equal(*t.CPUInfo, opt) {
-		diff["CPUInfo"] = []interface{}{s.CPUInfo, t.CPUInfo}
+		diff["CPUInfo"] = []interface{}{ValueOrNil(s.CPUInfo), ValueOrNil(t.CPUInfo)}
 	}
 
 	if s.Hostname != t.Hostname {
@@ -178,7 +178,7 @@ func (s InfoSystem) Diff(t InfoSystem, opts ...Options) map[string][]interface{}
 	}
 
 	if !s.MemInfo.Equal(*t.MemInfo, opt) {
-		diff["MemInfo"] = []interface{}{s.MemInfo, t.MemInfo}
+		diff["MemInfo"] = []interface{}{ValueOrNil(s.MemInfo), ValueOrNil(t.MemInfo)}
 	}
 
 	if s.OsString != t.OsString {
@@ -190,7 +190,7 @@ func (s InfoSystem) Diff(t InfoSystem, opts ...Options) map[string][]interface{}
 	}
 
 	if !equalPointers(s.Uptime, t.Uptime) {
-		diff["Uptime"] = []interface{}{s.Uptime, t.Uptime}
+		diff["Uptime"] = []interface{}{ValueOrNil(s.Uptime), ValueOrNil(t.Uptime)}
 	}
 
 	return diff

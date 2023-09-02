@@ -86,15 +86,15 @@ func (s SslCertEntry) Equal(t SslCertEntry, opts ...Options) bool {
 
 // Diff checks if two structs of type SslCertEntry are equal
 //
-// By default empty arrays, maps and slices are equal to nil:
+// By default empty maps and slices are equal to nil:
 //
 //	var a, b SslCertEntry
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b SslCertEntry
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		NilSameAsEmpty: true,
 //	})
 func (s SslCertEntry) Diff(t SslCertEntry, opts ...Options) map[string][]interface{} {

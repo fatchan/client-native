@@ -50,15 +50,15 @@ func (s Error) Equal(t Error, opts ...Options) bool {
 
 // Diff checks if two structs of type Error are equal
 //
-// By default empty arrays, maps and slices are equal to nil:
+// By default empty maps and slices are equal to nil:
 //
 //	var a, b Error
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b Error
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		NilSameAsEmpty: true,
 //	})
 func (s Error) Diff(t Error, opts ...Options) map[string][]interface{} {
@@ -66,11 +66,11 @@ func (s Error) Diff(t Error, opts ...Options) map[string][]interface{} {
 
 	diff := make(map[string][]interface{})
 	if !equalPointers(s.Code, t.Code) {
-		diff["Code"] = []interface{}{s.Code, t.Code}
+		diff["Code"] = []interface{}{ValueOrNil(s.Code), ValueOrNil(t.Code)}
 	}
 
 	if !equalPointers(s.Message, t.Message) {
-		diff["Message"] = []interface{}{s.Message, t.Message}
+		diff["Message"] = []interface{}{ValueOrNil(s.Message), ValueOrNil(t.Message)}
 	}
 
 	if !equalComparableMap(s.Error, t.Error, opt) {

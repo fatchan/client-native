@@ -50,13 +50,15 @@ func (s Capture) Equal(t Capture, opts ...Options) bool {
 
 // Diff checks if two structs of type Capture are equal
 //
+// By default empty maps and slices are equal to nil:
+//
 //	var a, b Capture
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b Capture
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		SkipIndex: true,
 //	})
 func (s Capture) Diff(t Capture, opts ...Options) map[string][]interface{} {
@@ -64,7 +66,7 @@ func (s Capture) Diff(t Capture, opts ...Options) map[string][]interface{} {
 
 	diff := make(map[string][]interface{})
 	if !opt.SkipIndex && !equalPointers(s.Index, t.Index) {
-		diff["Index"] = []interface{}{s.Index, t.Index}
+		diff["Index"] = []interface{}{ValueOrNil(s.Index), ValueOrNil(t.Index)}
 	}
 
 	if s.Length != t.Length {

@@ -54,15 +54,15 @@ func (s SpoeMessage) Equal(t SpoeMessage, opts ...Options) bool {
 
 // Diff checks if two structs of type SpoeMessage are equal
 //
-// By default empty arrays, maps and slices are equal to nil:
+// By default empty maps and slices are equal to nil:
 //
 //	var a, b SpoeMessage
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b SpoeMessage
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		NilSameAsEmpty: true,
 //	})
 func (s SpoeMessage) Diff(t SpoeMessage, opts ...Options) map[string][]interface{} {
@@ -78,11 +78,11 @@ func (s SpoeMessage) Diff(t SpoeMessage, opts ...Options) map[string][]interface
 	}
 
 	if !s.Event.Equal(*t.Event, opt) {
-		diff["Event"] = []interface{}{s.Event, t.Event}
+		diff["Event"] = []interface{}{ValueOrNil(s.Event), ValueOrNil(t.Event)}
 	}
 
 	if !equalPointers(s.Name, t.Name) {
-		diff["Name"] = []interface{}{s.Name, t.Name}
+		diff["Name"] = []interface{}{ValueOrNil(s.Name), ValueOrNil(t.Name)}
 	}
 
 	return diff
@@ -127,7 +127,7 @@ func (s SpoeMessageEvent) Diff(t SpoeMessageEvent, opts ...Options) map[string][
 	}
 
 	if !equalPointers(s.Name, t.Name) {
-		diff["Name"] = []interface{}{s.Name, t.Name}
+		diff["Name"] = []interface{}{ValueOrNil(s.Name), ValueOrNil(t.Name)}
 	}
 
 	return diff

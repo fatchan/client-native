@@ -37,20 +37,36 @@ import (
 func (s SpoeFiles) Equal(t SpoeFiles, opts ...Options) bool {
 	opt := getOptions(opts...)
 
-	return equalComparableSlice(s, t, opt)
+	if !opt.NilSameAsEmpty {
+		if s == nil && t != nil {
+			return false
+		}
+		if t == nil && s != nil {
+			return false
+		}
+	}
+	if len(s) != len(t) {
+		return false
+	}
+	for i, v := range s {
+		if v != t[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // Diff checks if two structs of type SpoeFiles are equal
 //
-// By default empty arrays, maps and slices are equal to nil:
+// By default empty maps and slices are equal to nil:
 //
 //	var a, b SpoeFiles
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b SpoeFiles
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		NilSameAsEmpty: true,
 //	})
 func (s SpoeFiles) Diff(t SpoeFiles, opts ...Options) map[string][]interface{} {
@@ -59,21 +75,21 @@ func (s SpoeFiles) Diff(t SpoeFiles, opts ...Options) map[string][]interface{} {
 	diff := make(map[string][]interface{})
 	if !opt.NilSameAsEmpty {
 		if s == nil && t != nil {
-			diff["SpoeFiles"] = []interface{}{s, t}
+			diff["Diff"] = []interface{}{s, t}
 			return diff
 		}
 		if t == nil && s != nil {
-			diff["SpoeFiles"] = []interface{}{s, t}
+			diff["Diff"] = []interface{}{s, t}
 			return diff
 		}
 	}
 	if len(s) != len(t) {
-		diff["SpoeFiles"] = []interface{}{s, t}
+		diff["Diff"] = []interface{}{s, t}
 		return diff
 	}
 	for i, v := range s {
 		if v != t[i] {
-			diff[fmt.Sprintf("SpoeFiles[%d]", i)] = []interface{}{v, t[i]}
+			diff[fmt.Sprintf("Diff[%d]", i)] = []interface{}{v, t[i]}
 		}
 	}
 	return diff

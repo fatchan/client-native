@@ -58,15 +58,15 @@ func (s ClusterSettings) Equal(t ClusterSettings, opts ...Options) bool {
 
 // Diff checks if two structs of type ClusterSettings are equal
 //
-// By default empty arrays, maps and slices are equal to nil:
+// By default empty maps and slices are equal to nil:
 //
 //	var a, b ClusterSettings
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b ClusterSettings
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		NilSameAsEmpty: true,
 //	})
 func (s ClusterSettings) Diff(t ClusterSettings, opts ...Options) map[string][]interface{} {
@@ -78,7 +78,7 @@ func (s ClusterSettings) Diff(t ClusterSettings, opts ...Options) map[string][]i
 	}
 
 	if !s.Cluster.Equal(*t.Cluster, opt) {
-		diff["Cluster"] = []interface{}{s.Cluster, t.Cluster}
+		diff["Cluster"] = []interface{}{ValueOrNil(s.Cluster), ValueOrNil(t.Cluster)}
 	}
 
 	if s.Mode != t.Mode {
@@ -110,10 +110,11 @@ func (s ClusterSettingsCluster) Equal(t ClusterSettingsCluster, opts ...Options)
 
 	if !CheckSameNilAndLen(s.ClusterLogTargets, t.ClusterLogTargets, opt) {
 		return false
-	}
-	for i := range s.ClusterLogTargets {
-		if !s.ClusterLogTargets[i].Equal(*t.ClusterLogTargets[i], opt) {
-			return false
+	} else {
+		for i := range s.ClusterLogTargets {
+			if !s.ClusterLogTargets[i].Equal(*t.ClusterLogTargets[i], opt) {
+				return false
+			}
 		}
 	}
 
@@ -146,29 +147,31 @@ func (s ClusterSettingsCluster) Equal(t ClusterSettingsCluster, opts ...Options)
 
 // Diff checks if two structs of type ClusterSettingsCluster are equal
 //
-// By default empty arrays, maps and slices are equal to nil:
+// By default empty maps and slices are equal to nil:
 //
 //	var a, b ClusterSettingsCluster
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b ClusterSettingsCluster
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		NilSameAsEmpty: true,
 //	})
 func (s ClusterSettingsCluster) Diff(t ClusterSettingsCluster, opts ...Options) map[string][]interface{} {
 	opt := getOptions(opts...)
 
 	diff := make(map[string][]interface{})
-	if len(s.ClusterLogTargets) != len(t.ClusterLogTargets) {
+	if !CheckSameNilAndLen(s.ClusterLogTargets, t.ClusterLogTargets, opt) {
 		diff["ClusterLogTargets"] = []interface{}{s.ClusterLogTargets, t.ClusterLogTargets}
 	} else {
 		diff2 := make(map[string][]interface{})
 		for i := range s.ClusterLogTargets {
-			diffSub := s.ClusterLogTargets[i].Diff(*t.ClusterLogTargets[i], opt)
-			if len(diffSub) > 0 {
-				diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+			if !s.ClusterLogTargets[i].Equal(*t.ClusterLogTargets[i], opt) {
+				diffSub := s.ClusterLogTargets[i].Diff(*t.ClusterLogTargets[i], opt)
+				if len(diffSub) > 0 {
+					diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+				}
 			}
 		}
 		if len(diff2) > 0 {
@@ -197,7 +200,7 @@ func (s ClusterSettingsCluster) Diff(t ClusterSettingsCluster, opts ...Options) 
 	}
 
 	if !equalPointers(s.Port, t.Port) {
-		diff["Port"] = []interface{}{s.Port, t.Port}
+		diff["Port"] = []interface{}{ValueOrNil(s.Port), ValueOrNil(t.Port)}
 	}
 
 	return diff
@@ -238,7 +241,7 @@ func (s ClusterLogTarget) Equal(t ClusterLogTarget, opts ...Options) bool {
 func (s ClusterLogTarget) Diff(t ClusterLogTarget, opts ...Options) map[string][]interface{} {
 	diff := make(map[string][]interface{})
 	if !equalPointers(s.Address, t.Address) {
-		diff["Address"] = []interface{}{s.Address, t.Address}
+		diff["Address"] = []interface{}{ValueOrNil(s.Address), ValueOrNil(t.Address)}
 	}
 
 	if s.LogFormat != t.LogFormat {
@@ -246,11 +249,11 @@ func (s ClusterLogTarget) Diff(t ClusterLogTarget, opts ...Options) map[string][
 	}
 
 	if !equalPointers(s.Port, t.Port) {
-		diff["Port"] = []interface{}{s.Port, t.Port}
+		diff["Port"] = []interface{}{ValueOrNil(s.Port), ValueOrNil(t.Port)}
 	}
 
 	if !equalPointers(s.Protocol, t.Protocol) {
-		diff["Protocol"] = []interface{}{s.Protocol, t.Protocol}
+		diff["Protocol"] = []interface{}{ValueOrNil(s.Protocol), ValueOrNil(t.Protocol)}
 	}
 
 	return diff

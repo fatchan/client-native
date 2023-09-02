@@ -182,13 +182,15 @@ func (s TCPRequestRule) Equal(t TCPRequestRule, opts ...Options) bool {
 
 // Diff checks if two structs of type TCPRequestRule are equal
 //
+// By default empty maps and slices are equal to nil:
+//
 //	var a, b TCPRequestRule
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b TCPRequestRule
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		SkipIndex: true,
 //	})
 func (s TCPRequestRule) Diff(t TCPRequestRule, opts ...Options) map[string][]interface{} {
@@ -236,7 +238,7 @@ func (s TCPRequestRule) Diff(t TCPRequestRule, opts ...Options) map[string][]int
 	}
 
 	if !opt.SkipIndex && !equalPointers(s.Index, t.Index) {
-		diff["Index"] = []interface{}{s.Index, t.Index}
+		diff["Index"] = []interface{}{ValueOrNil(s.Index), ValueOrNil(t.Index)}
 	}
 
 	if s.LogLevel != t.LogLevel {
@@ -284,7 +286,7 @@ func (s TCPRequestRule) Diff(t TCPRequestRule, opts ...Options) map[string][]int
 	}
 
 	if !equalPointers(s.ScInt, t.ScInt) {
-		diff["ScInt"] = []interface{}{s.ScInt, t.ScInt}
+		diff["ScInt"] = []interface{}{ValueOrNil(s.ScInt), ValueOrNil(t.ScInt)}
 	}
 
 	if s.ServiceName != t.ServiceName {
@@ -304,7 +306,7 @@ func (s TCPRequestRule) Diff(t TCPRequestRule, opts ...Options) map[string][]int
 	}
 
 	if !equalPointers(s.Timeout, t.Timeout) {
-		diff["Timeout"] = []interface{}{s.Timeout, t.Timeout}
+		diff["Timeout"] = []interface{}{ValueOrNil(s.Timeout), ValueOrNil(t.Timeout)}
 	}
 
 	if s.TosValue != t.TosValue {
@@ -316,7 +318,7 @@ func (s TCPRequestRule) Diff(t TCPRequestRule, opts ...Options) map[string][]int
 	}
 
 	if !equalPointers(s.TrackStickCounter, t.TrackStickCounter) {
-		diff["TrackStickCounter"] = []interface{}{s.TrackStickCounter, t.TrackStickCounter}
+		diff["TrackStickCounter"] = []interface{}{ValueOrNil(s.TrackStickCounter), ValueOrNil(t.TrackStickCounter)}
 	}
 
 	if s.TrackTable != t.TrackTable {

@@ -118,15 +118,15 @@ func (s Consul) Equal(t Consul, opts ...Options) bool {
 
 // Diff checks if two structs of type Consul are equal
 //
-// By default empty arrays, maps and slices are equal to nil:
+// By default empty maps and slices are equal to nil:
 //
 //	var a, b Consul
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b Consul
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		NilSameAsEmpty: true,
 //	})
 func (s Consul) Diff(t Consul, opts ...Options) map[string][]interface{} {
@@ -134,7 +134,7 @@ func (s Consul) Diff(t Consul, opts ...Options) map[string][]interface{} {
 
 	diff := make(map[string][]interface{})
 	if !equalPointers(s.Address, t.Address) {
-		diff["Address"] = []interface{}{s.Address, t.Address}
+		diff["Address"] = []interface{}{ValueOrNil(s.Address), ValueOrNil(t.Address)}
 	}
 
 	if s.Defaults != t.Defaults {
@@ -146,11 +146,11 @@ func (s Consul) Diff(t Consul, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.Enabled, t.Enabled) {
-		diff["Enabled"] = []interface{}{s.Enabled, t.Enabled}
+		diff["Enabled"] = []interface{}{ValueOrNil(s.Enabled), ValueOrNil(t.Enabled)}
 	}
 
 	if !equalPointers(s.HealthCheckPolicy, t.HealthCheckPolicy) {
-		diff["HealthCheckPolicy"] = []interface{}{s.HealthCheckPolicy, t.HealthCheckPolicy}
+		diff["HealthCheckPolicy"] = []interface{}{ValueOrNil(s.HealthCheckPolicy), ValueOrNil(t.HealthCheckPolicy)}
 	}
 
 	if s.HealthCheckPolicyMin != t.HealthCheckPolicyMin {
@@ -158,7 +158,7 @@ func (s Consul) Diff(t Consul, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.ID, t.ID) {
-		diff["ID"] = []interface{}{s.ID, t.ID}
+		diff["ID"] = []interface{}{ValueOrNil(s.ID), ValueOrNil(t.ID)}
 	}
 
 	if s.Name != t.Name {
@@ -170,15 +170,15 @@ func (s Consul) Diff(t Consul, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.Port, t.Port) {
-		diff["Port"] = []interface{}{s.Port, t.Port}
+		diff["Port"] = []interface{}{ValueOrNil(s.Port), ValueOrNil(t.Port)}
 	}
 
 	if !equalPointers(s.RetryTimeout, t.RetryTimeout) {
-		diff["RetryTimeout"] = []interface{}{s.RetryTimeout, t.RetryTimeout}
+		diff["RetryTimeout"] = []interface{}{ValueOrNil(s.RetryTimeout), ValueOrNil(t.RetryTimeout)}
 	}
 
 	if !equalPointers(s.ServerSlotsBase, t.ServerSlotsBase) {
-		diff["ServerSlotsBase"] = []interface{}{s.ServerSlotsBase, t.ServerSlotsBase}
+		diff["ServerSlotsBase"] = []interface{}{ValueOrNil(s.ServerSlotsBase), ValueOrNil(t.ServerSlotsBase)}
 	}
 
 	if s.ServerSlotsGrowthIncrement != t.ServerSlotsGrowthIncrement {
@@ -186,7 +186,7 @@ func (s Consul) Diff(t Consul, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.ServerSlotsGrowthType, t.ServerSlotsGrowthType) {
-		diff["ServerSlotsGrowthType"] = []interface{}{s.ServerSlotsGrowthType, t.ServerSlotsGrowthType}
+		diff["ServerSlotsGrowthType"] = []interface{}{ValueOrNil(s.ServerSlotsGrowthType), ValueOrNil(t.ServerSlotsGrowthType)}
 	}
 
 	if !equalComparableSlice(s.ServiceBlacklist, t.ServiceBlacklist, opt) {

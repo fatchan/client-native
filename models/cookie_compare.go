@@ -39,19 +39,21 @@ func (s Cookie) Equal(t Cookie, opts ...Options) bool {
 
 	if !CheckSameNilAndLen(s.Attrs, t.Attrs, opt) {
 		return false
-	}
-	for i := range s.Attrs {
-		if !s.Attrs[i].Equal(*t.Attrs[i], opt) {
-			return false
+	} else {
+		for i := range s.Attrs {
+			if !s.Attrs[i].Equal(*t.Attrs[i], opt) {
+				return false
+			}
 		}
 	}
 
 	if !CheckSameNilAndLen(s.Domains, t.Domains, opt) {
 		return false
-	}
-	for i := range s.Domains {
-		if !s.Domains[i].Equal(*t.Domains[i], opt) {
-			return false
+	} else {
+		for i := range s.Domains {
+			if !s.Domains[i].Equal(*t.Domains[i], opt) {
+				return false
+			}
 		}
 	}
 
@@ -104,29 +106,31 @@ func (s Cookie) Equal(t Cookie, opts ...Options) bool {
 
 // Diff checks if two structs of type Cookie are equal
 //
-// By default empty arrays, maps and slices are equal to nil:
+// By default empty maps and slices are equal to nil:
 //
 //	var a, b Cookie
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b Cookie
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		NilSameAsEmpty: true,
 //	})
 func (s Cookie) Diff(t Cookie, opts ...Options) map[string][]interface{} {
 	opt := getOptions(opts...)
 
 	diff := make(map[string][]interface{})
-	if len(s.Attrs) != len(t.Attrs) {
+	if !CheckSameNilAndLen(s.Attrs, t.Attrs, opt) {
 		diff["Attrs"] = []interface{}{s.Attrs, t.Attrs}
 	} else {
 		diff2 := make(map[string][]interface{})
 		for i := range s.Attrs {
-			diffSub := s.Attrs[i].Diff(*t.Attrs[i], opt)
-			if len(diffSub) > 0 {
-				diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+			if !s.Attrs[i].Equal(*t.Attrs[i], opt) {
+				diffSub := s.Attrs[i].Diff(*t.Attrs[i], opt)
+				if len(diffSub) > 0 {
+					diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+				}
 			}
 		}
 		if len(diff2) > 0 {
@@ -134,14 +138,16 @@ func (s Cookie) Diff(t Cookie, opts ...Options) map[string][]interface{} {
 		}
 	}
 
-	if len(s.Domains) != len(t.Domains) {
+	if !CheckSameNilAndLen(s.Domains, t.Domains, opt) {
 		diff["Domains"] = []interface{}{s.Domains, t.Domains}
 	} else {
 		diff2 := make(map[string][]interface{})
 		for i := range s.Domains {
-			diffSub := s.Domains[i].Diff(*t.Domains[i], opt)
-			if len(diffSub) > 0 {
-				diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+			if !s.Domains[i].Equal(*t.Domains[i], opt) {
+				diffSub := s.Domains[i].Diff(*t.Domains[i], opt)
+				if len(diffSub) > 0 {
+					diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+				}
 			}
 		}
 		if len(diff2) > 0 {
@@ -170,7 +176,7 @@ func (s Cookie) Diff(t Cookie, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.Name, t.Name) {
-		diff["Name"] = []interface{}{s.Name, t.Name}
+		diff["Name"] = []interface{}{ValueOrNil(s.Name), ValueOrNil(t.Name)}
 	}
 
 	if s.Nocache != t.Nocache {

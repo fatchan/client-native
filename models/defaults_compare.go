@@ -39,19 +39,21 @@ func (s Defaults) Equal(t Defaults, opts ...Options) bool {
 
 	if !CheckSameNilAndLen(s.ErrorFiles, t.ErrorFiles, opt) {
 		return false
-	}
-	for i := range s.ErrorFiles {
-		if !s.ErrorFiles[i].Equal(*t.ErrorFiles[i], opt) {
-			return false
+	} else {
+		for i := range s.ErrorFiles {
+			if !s.ErrorFiles[i].Equal(*t.ErrorFiles[i], opt) {
+				return false
+			}
 		}
 	}
 
 	if !CheckSameNilAndLen(s.ErrorFilesFromHTTPErrors, t.ErrorFilesFromHTTPErrors, opt) {
 		return false
-	}
-	for i := range s.ErrorFilesFromHTTPErrors {
-		if !s.ErrorFilesFromHTTPErrors[i].Equal(*t.ErrorFilesFromHTTPErrors[i], opt) {
-			return false
+	} else {
+		for i := range s.ErrorFilesFromHTTPErrors {
+			if !s.ErrorFilesFromHTTPErrors[i].Equal(*t.ErrorFilesFromHTTPErrors[i], opt) {
+				return false
+			}
 		}
 	}
 
@@ -480,29 +482,31 @@ func (s Defaults) Equal(t Defaults, opts ...Options) bool {
 
 // Diff checks if two structs of type Defaults are equal
 //
-// By default empty arrays, maps and slices are equal to nil:
+// By default empty maps and slices are equal to nil:
 //
 //	var a, b Defaults
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b Defaults
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		NilSameAsEmpty: true,
 //	})
 func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	opt := getOptions(opts...)
 
 	diff := make(map[string][]interface{})
-	if len(s.ErrorFiles) != len(t.ErrorFiles) {
+	if !CheckSameNilAndLen(s.ErrorFiles, t.ErrorFiles, opt) {
 		diff["ErrorFiles"] = []interface{}{s.ErrorFiles, t.ErrorFiles}
 	} else {
 		diff2 := make(map[string][]interface{})
 		for i := range s.ErrorFiles {
-			diffSub := s.ErrorFiles[i].Diff(*t.ErrorFiles[i], opt)
-			if len(diffSub) > 0 {
-				diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+			if !s.ErrorFiles[i].Equal(*t.ErrorFiles[i], opt) {
+				diffSub := s.ErrorFiles[i].Diff(*t.ErrorFiles[i], opt)
+				if len(diffSub) > 0 {
+					diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+				}
 			}
 		}
 		if len(diff2) > 0 {
@@ -510,14 +514,16 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 		}
 	}
 
-	if len(s.ErrorFilesFromHTTPErrors) != len(t.ErrorFilesFromHTTPErrors) {
+	if !CheckSameNilAndLen(s.ErrorFilesFromHTTPErrors, t.ErrorFilesFromHTTPErrors, opt) {
 		diff["ErrorFilesFromHTTPErrors"] = []interface{}{s.ErrorFilesFromHTTPErrors, t.ErrorFilesFromHTTPErrors}
 	} else {
 		diff2 := make(map[string][]interface{})
 		for i := range s.ErrorFilesFromHTTPErrors {
-			diffSub := s.ErrorFilesFromHTTPErrors[i].Diff(*t.ErrorFilesFromHTTPErrors[i], opt)
-			if len(diffSub) > 0 {
-				diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+			if !s.ErrorFilesFromHTTPErrors[i].Equal(*t.ErrorFilesFromHTTPErrors[i], opt) {
+				diffSub := s.ErrorFilesFromHTTPErrors[i].Diff(*t.ErrorFilesFromHTTPErrors[i], opt)
+				if len(diffSub) > 0 {
+					diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+				}
 			}
 		}
 		if len(diff2) > 0 {
@@ -546,11 +552,11 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.Backlog, t.Backlog) {
-		diff["Backlog"] = []interface{}{s.Backlog, t.Backlog}
+		diff["Backlog"] = []interface{}{ValueOrNil(s.Backlog), ValueOrNil(t.Backlog)}
 	}
 
 	if !s.Balance.Equal(*t.Balance, opt) {
-		diff["Balance"] = []interface{}{s.Balance, t.Balance}
+		diff["Balance"] = []interface{}{ValueOrNil(s.Balance), ValueOrNil(t.Balance)}
 	}
 
 	if s.BindProcess != t.BindProcess {
@@ -558,7 +564,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.CheckTimeout, t.CheckTimeout) {
-		diff["CheckTimeout"] = []interface{}{s.CheckTimeout, t.CheckTimeout}
+		diff["CheckTimeout"] = []interface{}{ValueOrNil(s.CheckTimeout), ValueOrNil(t.CheckTimeout)}
 	}
 
 	if s.Checkcache != t.Checkcache {
@@ -570,11 +576,11 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.ClientFinTimeout, t.ClientFinTimeout) {
-		diff["ClientFinTimeout"] = []interface{}{s.ClientFinTimeout, t.ClientFinTimeout}
+		diff["ClientFinTimeout"] = []interface{}{ValueOrNil(s.ClientFinTimeout), ValueOrNil(t.ClientFinTimeout)}
 	}
 
 	if !equalPointers(s.ClientTimeout, t.ClientTimeout) {
-		diff["ClientTimeout"] = []interface{}{s.ClientTimeout, t.ClientTimeout}
+		diff["ClientTimeout"] = []interface{}{ValueOrNil(s.ClientTimeout), ValueOrNil(t.ClientTimeout)}
 	}
 
 	if s.Clitcpka != t.Clitcpka {
@@ -582,23 +588,23 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.ClitcpkaCnt, t.ClitcpkaCnt) {
-		diff["ClitcpkaCnt"] = []interface{}{s.ClitcpkaCnt, t.ClitcpkaCnt}
+		diff["ClitcpkaCnt"] = []interface{}{ValueOrNil(s.ClitcpkaCnt), ValueOrNil(t.ClitcpkaCnt)}
 	}
 
 	if !equalPointers(s.ClitcpkaIdle, t.ClitcpkaIdle) {
-		diff["ClitcpkaIdle"] = []interface{}{s.ClitcpkaIdle, t.ClitcpkaIdle}
+		diff["ClitcpkaIdle"] = []interface{}{ValueOrNil(s.ClitcpkaIdle), ValueOrNil(t.ClitcpkaIdle)}
 	}
 
 	if !equalPointers(s.ClitcpkaIntvl, t.ClitcpkaIntvl) {
-		diff["ClitcpkaIntvl"] = []interface{}{s.ClitcpkaIntvl, t.ClitcpkaIntvl}
+		diff["ClitcpkaIntvl"] = []interface{}{ValueOrNil(s.ClitcpkaIntvl), ValueOrNil(t.ClitcpkaIntvl)}
 	}
 
 	if !s.Compression.Equal(*t.Compression, opt) {
-		diff["Compression"] = []interface{}{s.Compression, t.Compression}
+		diff["Compression"] = []interface{}{ValueOrNil(s.Compression), ValueOrNil(t.Compression)}
 	}
 
 	if !equalPointers(s.ConnectTimeout, t.ConnectTimeout) {
-		diff["ConnectTimeout"] = []interface{}{s.ConnectTimeout, t.ConnectTimeout}
+		diff["ConnectTimeout"] = []interface{}{ValueOrNil(s.ConnectTimeout), ValueOrNil(t.ConnectTimeout)}
 	}
 
 	if s.Contstats != t.Contstats {
@@ -606,7 +612,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !s.Cookie.Equal(*t.Cookie, opt) {
-		diff["Cookie"] = []interface{}{s.Cookie, t.Cookie}
+		diff["Cookie"] = []interface{}{ValueOrNil(s.Cookie), ValueOrNil(t.Cookie)}
 	}
 
 	if s.DefaultBackend != t.DefaultBackend {
@@ -614,7 +620,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !s.DefaultServer.Equal(*t.DefaultServer, opt) {
-		diff["DefaultServer"] = []interface{}{s.DefaultServer, t.DefaultServer}
+		diff["DefaultServer"] = []interface{}{ValueOrNil(s.DefaultServer), ValueOrNil(t.DefaultServer)}
 	}
 
 	if s.DisableH2Upgrade != t.DisableH2Upgrade {
@@ -638,7 +644,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !s.EmailAlert.Equal(*t.EmailAlert, opt) {
-		diff["EmailAlert"] = []interface{}{s.EmailAlert, t.EmailAlert}
+		diff["EmailAlert"] = []interface{}{ValueOrNil(s.EmailAlert), ValueOrNil(t.EmailAlert)}
 	}
 
 	if s.Enabled != t.Enabled {
@@ -650,11 +656,11 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !s.Errorloc302.Equal(*t.Errorloc302, opt) {
-		diff["Errorloc302"] = []interface{}{s.Errorloc302, t.Errorloc302}
+		diff["Errorloc302"] = []interface{}{ValueOrNil(s.Errorloc302), ValueOrNil(t.Errorloc302)}
 	}
 
 	if !s.Errorloc303.Equal(*t.Errorloc303, opt) {
-		diff["Errorloc303"] = []interface{}{s.Errorloc303, t.Errorloc303}
+		diff["Errorloc303"] = []interface{}{ValueOrNil(s.Errorloc303), ValueOrNil(t.Errorloc303)}
 	}
 
 	if s.ExternalCheck != t.ExternalCheck {
@@ -670,7 +676,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !s.Forwardfor.Equal(*t.Forwardfor, opt) {
-		diff["Forwardfor"] = []interface{}{s.Forwardfor, t.Forwardfor}
+		diff["Forwardfor"] = []interface{}{ValueOrNil(s.Forwardfor), ValueOrNil(t.Forwardfor)}
 	}
 
 	if s.From != t.From {
@@ -678,7 +684,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.Fullconn, t.Fullconn) {
-		diff["Fullconn"] = []interface{}{s.Fullconn, t.Fullconn}
+		diff["Fullconn"] = []interface{}{ValueOrNil(s.Fullconn), ValueOrNil(t.Fullconn)}
 	}
 
 	if s.H1CaseAdjustBogusClient != t.H1CaseAdjustBogusClient {
@@ -690,7 +696,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !s.HashType.Equal(*t.HashType, opt) {
-		diff["HashType"] = []interface{}{s.HashType, t.HashType}
+		diff["HashType"] = []interface{}{ValueOrNil(s.HashType), ValueOrNil(t.HashType)}
 	}
 
 	if s.HTTPBufferRequest != t.HTTPBufferRequest {
@@ -698,7 +704,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !s.HTTPCheck.Equal(*t.HTTPCheck, opt) {
-		diff["HTTPCheck"] = []interface{}{s.HTTPCheck, t.HTTPCheck}
+		diff["HTTPCheck"] = []interface{}{ValueOrNil(s.HTTPCheck), ValueOrNil(t.HTTPCheck)}
 	}
 
 	if s.HTTPUseHtx != t.HTTPUseHtx {
@@ -714,7 +720,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.HTTPKeepAliveTimeout, t.HTTPKeepAliveTimeout) {
-		diff["HTTPKeepAliveTimeout"] = []interface{}{s.HTTPKeepAliveTimeout, t.HTTPKeepAliveTimeout}
+		diff["HTTPKeepAliveTimeout"] = []interface{}{ValueOrNil(s.HTTPKeepAliveTimeout), ValueOrNil(t.HTTPKeepAliveTimeout)}
 	}
 
 	if s.HTTPNoDelay != t.HTTPNoDelay {
@@ -726,7 +732,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.HTTPRequestTimeout, t.HTTPRequestTimeout) {
-		diff["HTTPRequestTimeout"] = []interface{}{s.HTTPRequestTimeout, t.HTTPRequestTimeout}
+		diff["HTTPRequestTimeout"] = []interface{}{ValueOrNil(s.HTTPRequestTimeout), ValueOrNil(t.HTTPRequestTimeout)}
 	}
 
 	if s.HTTPRestrictReqHdrNames != t.HTTPRestrictReqHdrNames {
@@ -738,7 +744,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.HTTPSendNameHeader, t.HTTPSendNameHeader) {
-		diff["HTTPSendNameHeader"] = []interface{}{s.HTTPSendNameHeader, t.HTTPSendNameHeader}
+		diff["HTTPSendNameHeader"] = []interface{}{ValueOrNil(s.HTTPSendNameHeader), ValueOrNil(t.HTTPSendNameHeader)}
 	}
 
 	if s.HTTPUseProxyHeader != t.HTTPUseProxyHeader {
@@ -746,7 +752,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !s.HttpchkParams.Equal(*t.HttpchkParams, opt) {
-		diff["HttpchkParams"] = []interface{}{s.HttpchkParams, t.HttpchkParams}
+		diff["HttpchkParams"] = []interface{}{ValueOrNil(s.HttpchkParams), ValueOrNil(t.HttpchkParams)}
 	}
 
 	if s.Httplog != t.Httplog {
@@ -794,11 +800,11 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.MaxKeepAliveQueue, t.MaxKeepAliveQueue) {
-		diff["MaxKeepAliveQueue"] = []interface{}{s.MaxKeepAliveQueue, t.MaxKeepAliveQueue}
+		diff["MaxKeepAliveQueue"] = []interface{}{ValueOrNil(s.MaxKeepAliveQueue), ValueOrNil(t.MaxKeepAliveQueue)}
 	}
 
 	if !equalPointers(s.Maxconn, t.Maxconn) {
-		diff["Maxconn"] = []interface{}{s.Maxconn, t.Maxconn}
+		diff["Maxconn"] = []interface{}{ValueOrNil(s.Maxconn), ValueOrNil(t.Maxconn)}
 	}
 
 	if s.Mode != t.Mode {
@@ -810,7 +816,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !s.MysqlCheckParams.Equal(*t.MysqlCheckParams, opt) {
-		diff["MysqlCheckParams"] = []interface{}{s.MysqlCheckParams, t.MysqlCheckParams}
+		diff["MysqlCheckParams"] = []interface{}{ValueOrNil(s.MysqlCheckParams), ValueOrNil(t.MysqlCheckParams)}
 	}
 
 	if s.Name != t.Name {
@@ -822,7 +828,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !s.Originalto.Equal(*t.Originalto, opt) {
-		diff["Originalto"] = []interface{}{s.Originalto, t.Originalto}
+		diff["Originalto"] = []interface{}{ValueOrNil(s.Originalto), ValueOrNil(t.Originalto)}
 	}
 
 	if s.Persist != t.Persist {
@@ -830,11 +836,11 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !s.PersistRule.Equal(*t.PersistRule, opt) {
-		diff["PersistRule"] = []interface{}{s.PersistRule, t.PersistRule}
+		diff["PersistRule"] = []interface{}{ValueOrNil(s.PersistRule), ValueOrNil(t.PersistRule)}
 	}
 
 	if !s.PgsqlCheckParams.Equal(*t.PgsqlCheckParams, opt) {
-		diff["PgsqlCheckParams"] = []interface{}{s.PgsqlCheckParams, t.PgsqlCheckParams}
+		diff["PgsqlCheckParams"] = []interface{}{ValueOrNil(s.PgsqlCheckParams), ValueOrNil(t.PgsqlCheckParams)}
 	}
 
 	if s.PreferLastServer != t.PreferLastServer {
@@ -842,15 +848,15 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.QueueTimeout, t.QueueTimeout) {
-		diff["QueueTimeout"] = []interface{}{s.QueueTimeout, t.QueueTimeout}
+		diff["QueueTimeout"] = []interface{}{ValueOrNil(s.QueueTimeout), ValueOrNil(t.QueueTimeout)}
 	}
 
 	if !s.Redispatch.Equal(*t.Redispatch, opt) {
-		diff["Redispatch"] = []interface{}{s.Redispatch, t.Redispatch}
+		diff["Redispatch"] = []interface{}{ValueOrNil(s.Redispatch), ValueOrNil(t.Redispatch)}
 	}
 
 	if !equalPointers(s.Retries, t.Retries) {
-		diff["Retries"] = []interface{}{s.Retries, t.Retries}
+		diff["Retries"] = []interface{}{ValueOrNil(s.Retries), ValueOrNil(t.Retries)}
 	}
 
 	if s.RetryOn != t.RetryOn {
@@ -858,15 +864,15 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.ServerFinTimeout, t.ServerFinTimeout) {
-		diff["ServerFinTimeout"] = []interface{}{s.ServerFinTimeout, t.ServerFinTimeout}
+		diff["ServerFinTimeout"] = []interface{}{ValueOrNil(s.ServerFinTimeout), ValueOrNil(t.ServerFinTimeout)}
 	}
 
 	if !equalPointers(s.ServerTimeout, t.ServerTimeout) {
-		diff["ServerTimeout"] = []interface{}{s.ServerTimeout, t.ServerTimeout}
+		diff["ServerTimeout"] = []interface{}{ValueOrNil(s.ServerTimeout), ValueOrNil(t.ServerTimeout)}
 	}
 
 	if !s.SmtpchkParams.Equal(*t.SmtpchkParams, opt) {
-		diff["SmtpchkParams"] = []interface{}{s.SmtpchkParams, t.SmtpchkParams}
+		diff["SmtpchkParams"] = []interface{}{ValueOrNil(s.SmtpchkParams), ValueOrNil(t.SmtpchkParams)}
 	}
 
 	if s.SocketStats != t.SocketStats {
@@ -874,7 +880,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !s.Source.Equal(*t.Source, opt) {
-		diff["Source"] = []interface{}{s.Source, t.Source}
+		diff["Source"] = []interface{}{ValueOrNil(s.Source), ValueOrNil(t.Source)}
 	}
 
 	if s.SpliceAuto != t.SpliceAuto {
@@ -894,23 +900,23 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.SrvtcpkaCnt, t.SrvtcpkaCnt) {
-		diff["SrvtcpkaCnt"] = []interface{}{s.SrvtcpkaCnt, t.SrvtcpkaCnt}
+		diff["SrvtcpkaCnt"] = []interface{}{ValueOrNil(s.SrvtcpkaCnt), ValueOrNil(t.SrvtcpkaCnt)}
 	}
 
 	if !equalPointers(s.SrvtcpkaIdle, t.SrvtcpkaIdle) {
-		diff["SrvtcpkaIdle"] = []interface{}{s.SrvtcpkaIdle, t.SrvtcpkaIdle}
+		diff["SrvtcpkaIdle"] = []interface{}{ValueOrNil(s.SrvtcpkaIdle), ValueOrNil(t.SrvtcpkaIdle)}
 	}
 
 	if !equalPointers(s.SrvtcpkaIntvl, t.SrvtcpkaIntvl) {
-		diff["SrvtcpkaIntvl"] = []interface{}{s.SrvtcpkaIntvl, t.SrvtcpkaIntvl}
+		diff["SrvtcpkaIntvl"] = []interface{}{ValueOrNil(s.SrvtcpkaIntvl), ValueOrNil(t.SrvtcpkaIntvl)}
 	}
 
 	if !s.StatsOptions.Equal(*t.StatsOptions, opt) {
-		diff["StatsOptions"] = []interface{}{s.StatsOptions, t.StatsOptions}
+		diff["StatsOptions"] = []interface{}{ValueOrNil(s.StatsOptions), ValueOrNil(t.StatsOptions)}
 	}
 
 	if !equalPointers(s.TarpitTimeout, t.TarpitTimeout) {
-		diff["TarpitTimeout"] = []interface{}{s.TarpitTimeout, t.TarpitTimeout}
+		diff["TarpitTimeout"] = []interface{}{ValueOrNil(s.TarpitTimeout), ValueOrNil(t.TarpitTimeout)}
 	}
 
 	if s.TCPSmartAccept != t.TCPSmartAccept {
@@ -934,7 +940,7 @@ func (s Defaults) Diff(t Defaults, opts ...Options) map[string][]interface{} {
 	}
 
 	if !equalPointers(s.TunnelTimeout, t.TunnelTimeout) {
-		diff["TunnelTimeout"] = []interface{}{s.TunnelTimeout, t.TunnelTimeout}
+		diff["TunnelTimeout"] = []interface{}{ValueOrNil(s.TunnelTimeout), ValueOrNil(t.TunnelTimeout)}
 	}
 
 	if s.UniqueIDFormat != t.UniqueIDFormat {

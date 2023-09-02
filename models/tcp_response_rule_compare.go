@@ -134,13 +134,15 @@ func (s TCPResponseRule) Equal(t TCPResponseRule, opts ...Options) bool {
 
 // Diff checks if two structs of type TCPResponseRule are equal
 //
+// By default empty maps and slices are equal to nil:
+//
 //	var a, b TCPResponseRule
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure the options (default values are shown):
+// For more advanced use case you can configure these options (default values are shown):
 //
 //	var a, b TCPResponseRule
-//	equal := a.Diff(b,Options{
+//	diff := a.Diff(b,Options{
 //		SkipIndex: true,
 //	})
 func (s TCPResponseRule) Diff(t TCPResponseRule, opts ...Options) map[string][]interface{} {
@@ -176,7 +178,7 @@ func (s TCPResponseRule) Diff(t TCPResponseRule, opts ...Options) map[string][]i
 	}
 
 	if !opt.SkipIndex && !equalPointers(s.Index, t.Index) {
-		diff["Index"] = []interface{}{s.Index, t.Index}
+		diff["Index"] = []interface{}{ValueOrNil(s.Index), ValueOrNil(t.Index)}
 	}
 
 	if s.LogLevel != t.LogLevel {
@@ -212,7 +214,7 @@ func (s TCPResponseRule) Diff(t TCPResponseRule, opts ...Options) map[string][]i
 	}
 
 	if !equalPointers(s.ScInt, t.ScInt) {
-		diff["ScInt"] = []interface{}{s.ScInt, t.ScInt}
+		diff["ScInt"] = []interface{}{ValueOrNil(s.ScInt), ValueOrNil(t.ScInt)}
 	}
 
 	if s.SpoeEngine != t.SpoeEngine {
@@ -224,7 +226,7 @@ func (s TCPResponseRule) Diff(t TCPResponseRule, opts ...Options) map[string][]i
 	}
 
 	if !equalPointers(s.Timeout, t.Timeout) {
-		diff["Timeout"] = []interface{}{s.Timeout, t.Timeout}
+		diff["Timeout"] = []interface{}{ValueOrNil(s.Timeout), ValueOrNil(t.Timeout)}
 	}
 
 	if s.TosValue != t.TosValue {
