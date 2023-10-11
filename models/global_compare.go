@@ -219,11 +219,19 @@ func (s Global) Equal(t Global, opts ...Options) bool {
 		return false
 	}
 
+	if s.HttpclientRetries != t.HttpclientRetries {
+		return false
+	}
+
 	if s.HttpclientSslCaFile != t.HttpclientSslCaFile {
 		return false
 	}
 
 	if !equalPointers(s.HttpclientSslVerify, t.HttpclientSslVerify) {
+		return false
+	}
+
+	if !equalPointers(s.HttpclientTimeoutConnect, t.HttpclientTimeoutConnect) {
 		return false
 	}
 
@@ -443,7 +451,19 @@ func (s Global) Equal(t Global, opts ...Options) bool {
 		return false
 	}
 
+	if s.SslDefaultServerClientSigalgs != t.SslDefaultServerClientSigalgs {
+		return false
+	}
+
+	if s.SslDefaultServerCurves != t.SslDefaultServerCurves {
+		return false
+	}
+
 	if s.SslDefaultServerOptions != t.SslDefaultServerOptions {
+		return false
+	}
+
+	if s.SslDefaultServerSigalgs != t.SslDefaultServerSigalgs {
 		return false
 	}
 
@@ -456,6 +476,18 @@ func (s Global) Equal(t Global, opts ...Options) bool {
 	}
 
 	if s.SslModeAsync != t.SslModeAsync {
+		return false
+	}
+
+	if s.SslPropquery != t.SslPropquery {
+		return false
+	}
+
+	if s.SslProvider != t.SslProvider {
+		return false
+	}
+
+	if s.SslProviderPath != t.SslProviderPath {
 		return false
 	}
 
@@ -780,12 +812,20 @@ func (s Global) Diff(t Global, opts ...Options) map[string][]interface{} {
 		diff["HttpclientResolversPrefer"] = []interface{}{s.HttpclientResolversPrefer, t.HttpclientResolversPrefer}
 	}
 
+	if s.HttpclientRetries != t.HttpclientRetries {
+		diff["HttpclientRetries"] = []interface{}{s.HttpclientRetries, t.HttpclientRetries}
+	}
+
 	if s.HttpclientSslCaFile != t.HttpclientSslCaFile {
 		diff["HttpclientSslCaFile"] = []interface{}{s.HttpclientSslCaFile, t.HttpclientSslCaFile}
 	}
 
 	if !equalPointers(s.HttpclientSslVerify, t.HttpclientSslVerify) {
 		diff["HttpclientSslVerify"] = []interface{}{ValueOrNil(s.HttpclientSslVerify), ValueOrNil(t.HttpclientSslVerify)}
+	}
+
+	if !equalPointers(s.HttpclientTimeoutConnect, t.HttpclientTimeoutConnect) {
+		diff["HttpclientTimeoutConnect"] = []interface{}{ValueOrNil(s.HttpclientTimeoutConnect), ValueOrNil(t.HttpclientTimeoutConnect)}
 	}
 
 	if s.InsecureForkWanted != t.InsecureForkWanted {
@@ -1018,8 +1058,20 @@ func (s Global) Diff(t Global, opts ...Options) map[string][]interface{} {
 		diff["SslDefaultServerCiphersuites"] = []interface{}{s.SslDefaultServerCiphersuites, t.SslDefaultServerCiphersuites}
 	}
 
+	if s.SslDefaultServerClientSigalgs != t.SslDefaultServerClientSigalgs {
+		diff["SslDefaultServerClientSigalgs"] = []interface{}{s.SslDefaultServerClientSigalgs, t.SslDefaultServerClientSigalgs}
+	}
+
+	if s.SslDefaultServerCurves != t.SslDefaultServerCurves {
+		diff["SslDefaultServerCurves"] = []interface{}{s.SslDefaultServerCurves, t.SslDefaultServerCurves}
+	}
+
 	if s.SslDefaultServerOptions != t.SslDefaultServerOptions {
 		diff["SslDefaultServerOptions"] = []interface{}{s.SslDefaultServerOptions, t.SslDefaultServerOptions}
+	}
+
+	if s.SslDefaultServerSigalgs != t.SslDefaultServerSigalgs {
+		diff["SslDefaultServerSigalgs"] = []interface{}{s.SslDefaultServerSigalgs, t.SslDefaultServerSigalgs}
 	}
 
 	if s.SslDhParamFile != t.SslDhParamFile {
@@ -1032,6 +1084,18 @@ func (s Global) Diff(t Global, opts ...Options) map[string][]interface{} {
 
 	if s.SslModeAsync != t.SslModeAsync {
 		diff["SslModeAsync"] = []interface{}{s.SslModeAsync, t.SslModeAsync}
+	}
+
+	if s.SslPropquery != t.SslPropquery {
+		diff["SslPropquery"] = []interface{}{s.SslPropquery, t.SslPropquery}
+	}
+
+	if s.SslProvider != t.SslProvider {
+		diff["SslProvider"] = []interface{}{s.SslProvider, t.SslProvider}
+	}
+
+	if s.SslProviderPath != t.SslProviderPath {
+		diff["SslProviderPath"] = []interface{}{s.SslProviderPath, t.SslProviderPath}
 	}
 
 	if s.SslServerVerify != t.SslServerVerify {

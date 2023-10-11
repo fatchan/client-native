@@ -189,6 +189,9 @@ func TestGetGlobal(t *testing.T) {
 	if global.SslDefaultBindCurves != "X25519:P-256" {
 		t.Errorf("SslDefaultBindCurves is %v, expected X25519:P-256", global.SslDefaultBindCurves)
 	}
+	if global.SslDefaultServerCurves != "brainpoolP384r1,brainpoolP512r1" {
+		t.Errorf("SslDefaultServerCurves is %v, expected brainpoolP384r1,brainpoolP512r1", global.SslDefaultServerCurves)
+	}
 	if global.SslSkipSelfIssuedCa != true {
 		t.Errorf("SslSkipSelfIssuedCa is %v, expected enabled", global.SslSkipSelfIssuedCa)
 	}
@@ -515,11 +518,17 @@ func TestGetGlobal(t *testing.T) {
 	if global.HttpclientResolversPrefer != "ipv4" {
 		t.Errorf("HttpclientResolversPrefer is %v, expected ipv4", global.HttpclientResolversPrefer)
 	}
+	if global.HttpclientRetries != 3 {
+		t.Errorf("HttpclientRetries is %v, expected 3", global.HttpclientRetries)
+	}
 	if global.HttpclientSslCaFile != "my_test_file.ca" {
 		t.Errorf("HttpclientSslCaFile is %v, expected my_test_file.ca", global.HttpclientSslCaFile)
 	}
 	if *global.HttpclientSslVerify != "none" {
 		t.Errorf("HttpclientSslVerify is %v, expected \"\"", global.HttpclientSslVerify)
+	}
+	if *global.HttpclientTimeoutConnect != 2000 {
+		t.Errorf("HttpclientTimeoutConnect is %v, expected 2000", global.HttpclientTimeoutConnect)
 	}
 	if len(global.SslEngines) == 3 {
 		if *global.SslEngines[0].Name != "first" {
@@ -623,6 +632,21 @@ func TestGetGlobal(t *testing.T) {
 	if global.SslDefaultBindClientSigalgs != "ECDSA+SHA256:RSA+SHA256" {
 		t.Errorf("SslDefaultBindClientSigalgs is %v, expected ECDSA+SHA256:RSA+SHA256", global.SslDefaultBindClientSigalgs)
 	}
+	if global.SslDefaultServerSigalgs != "RSA+SHA256" {
+		t.Errorf("SslDefaultServerSigalgs is %v, expected RSA+SHA256", global.SslDefaultServerSigalgs)
+	}
+	if global.SslDefaultServerClientSigalgs != "ECDSA+SHA256:RSA+SHA256" {
+		t.Errorf("SslDefaultServerClientSigalgs is %v, expected ECDSA+SHA256:RSA+SHA256", global.SslDefaultServerClientSigalgs)
+	}
+	if global.SslPropquery != "provider" {
+		t.Errorf("SslPropquery is %v, expected provider", global.SslPropquery)
+	}
+	if global.SslProvider != "default" {
+		t.Errorf("SslProvider is %v, expected default", global.SslProvider)
+	}
+	if global.SslProviderPath != "test" {
+		t.Errorf("SslProviderPath is %v, expected test", global.SslProviderPath)
+	}
 }
 
 func TestPutGlobal(t *testing.T) {
@@ -649,12 +673,13 @@ func TestPutGlobal(t *testing.T) {
 				},
 			},
 		},
-		Maxconn:               1000,
-		SslDefaultBindCiphers: "test",
-		SslDefaultBindOptions: "ssl-min-ver TLSv1.0 no-tls-tickets",
-		StatsTimeout:          &tOut,
-		TuneSslDefaultDhParam: 1024,
-		ExternalCheck:         false,
+		Maxconn:                1000,
+		SslDefaultBindCiphers:  "test",
+		SslDefaultBindOptions:  "ssl-min-ver TLSv1.0 no-tls-tickets",
+		SslDefaultServerCurves: "secp384r1",
+		StatsTimeout:           &tOut,
+		TuneSslDefaultDhParam:  1024,
+		ExternalCheck:          false,
 		LuaPrependPath: []*models.LuaPrependPath{
 			{
 				Path: &luaPrependPath,
@@ -682,7 +707,9 @@ func TestPutGlobal(t *testing.T) {
 		HttpclientResolversDisabled: "disabled",
 		HttpclientResolversPrefer:   "ipv6",
 		HttpclientResolversID:       "my2",
+		HttpclientRetries:           5,
 		HttpclientSslCaFile:         "my_ca_file.ca",
+		HttpclientTimeoutConnect:    misc.Int64P(5000),
 		HttpclientSslVerify:         misc.StringP(""),
 		UID:                         1234,
 		WurflOptions:                &models.GlobalWurflOptions{},
@@ -695,8 +722,13 @@ func TestPutGlobal(t *testing.T) {
 			Type: "origin",
 			Path: "/some/other/path",
 		},
-		NoQuic:        false,
-		ClusterSecret: "",
+		NoQuic:                        false,
+		ClusterSecret:                 "",
+		SslDefaultServerSigalgs:       "ECDSA+SHA256",
+		SslDefaultServerClientSigalgs: "ECDSA+SHA256",
+		SslPropquery:                  "foo",
+		SslProvider:                   "my_provider",
+		SslProviderPath:               "providers/",
 	}
 
 	err := clientTest.PushGlobalConfiguration(g, "", version)

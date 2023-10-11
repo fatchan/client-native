@@ -238,7 +238,10 @@ func (c *client) GetMapsPath(name string) (string, error) {
 	if strings.HasPrefix(name, "#") { // id
 		return name, nil
 	}
+
+	// if not id then sanitize filename
 	name = misc.SanitizeFilename(name)
+
 	// CLI
 	if c.options.MapsDir != nil && *c.options.MapsDir != "" {
 		ext := filepath.Ext(name)

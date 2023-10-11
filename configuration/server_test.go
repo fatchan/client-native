@@ -112,6 +112,9 @@ func TestGetServer(t *testing.T) {
 	if s.Ssl != "enabled" {
 		t.Errorf("%v: Ssl not enabled: %v", s.Name, s.Ssl)
 	}
+	if s.ClientSigalgs != "ECDSA+SHA256:RSA+SHA256" {
+		t.Errorf("%v: ClientSigalgs not ECDSA+SHA256:RSA+SHA256: %v", s.Name, s.ClientSigalgs)
+	}
 	if s.Cookie != "BLAH" {
 		t.Errorf("%v: HTTPCookieID not BLAH: %v", s.Name, s.Cookie)
 	}
@@ -148,6 +151,12 @@ func TestGetServer(t *testing.T) {
 	}
 	if *s.TCPUt != 2000 {
 		t.Errorf("%v: TCPUt not 2000: %v", s.Name, *s.TCPUt)
+	}
+	if s.Curves != "secp384r1" {
+		t.Errorf("%v: Curves not secp384r1: %v", s.Name, s.Curves)
+	}
+	if s.Sigalgs != "ECDSA+SHA256" {
+		t.Errorf("%v: Sigalgs not ECDSA+SHA256: %v", s.Name, s.Sigalgs)
 	}
 
 	_, err = s.MarshalBinary()
@@ -247,6 +256,9 @@ func TestCreateEditDeleteServer(t *testing.T) {
 			OnMarkedUp:     "shutdown-backup-sessions",
 			Slowstart:      &slowStart,
 			ProxyV2Options: []string{"ssl", "unique-id"},
+			Curves:         "brainpoolP384r1",
+			Sigalgs:        "RSA+SHA256",
+			ClientSigalgs:  "ECDSA+SHA256",
 		},
 	}
 

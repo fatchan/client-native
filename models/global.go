@@ -141,12 +141,18 @@ type Global struct {
 	// Enum: [ipv4 ipv6]
 	HttpclientResolversPrefer string `json:"httpclient_resolvers_prefer,omitempty"`
 
+	// httpclient retries
+	HttpclientRetries int64 `json:"httpclient_retries,omitempty"`
+
 	// httpclient ssl ca file
 	HttpclientSslCaFile string `json:"httpclient_ssl_ca_file,omitempty"`
 
 	// httpclient ssl verify
 	// Enum: [ none required]
 	HttpclientSslVerify *string `json:"httpclient_ssl_verify,omitempty"`
+
+	// httpclient timeout connect
+	HttpclientTimeoutConnect *int64 `json:"httpclient_timeout_connect,omitempty"`
 
 	// insecure fork wanted
 	InsecureForkWanted bool `json:"insecure_fork_wanted,omitempty"`
@@ -308,8 +314,17 @@ type Global struct {
 	// ssl default server ciphersuites
 	SslDefaultServerCiphersuites string `json:"ssl_default_server_ciphersuites,omitempty"`
 
+	// ssl default server client sigalgs
+	SslDefaultServerClientSigalgs string `json:"ssl_default_server_client_sigalgs,omitempty"`
+
+	// ssl default server curves
+	SslDefaultServerCurves string `json:"ssl_default_server_curves,omitempty"`
+
 	// ssl default server options
 	SslDefaultServerOptions string `json:"ssl_default_server_options,omitempty"`
+
+	// ssl default server sigalgs
+	SslDefaultServerSigalgs string `json:"ssl_default_server_sigalgs,omitempty"`
 
 	// ssl dh param file
 	SslDhParamFile string `json:"ssl_dh_param_file,omitempty"`
@@ -320,6 +335,15 @@ type Global struct {
 	// ssl mode async
 	// Enum: [enabled disabled]
 	SslModeAsync string `json:"ssl_mode_async,omitempty"`
+
+	// ssl propquery
+	SslPropquery string `json:"ssl_propquery,omitempty"`
+
+	// ssl provider
+	SslProvider string `json:"ssl_provider,omitempty"`
+
+	// ssl provider path
+	SslProviderPath string `json:"ssl_provider_path,omitempty"`
 
 	// ssl server verify
 	// Enum: [none required]

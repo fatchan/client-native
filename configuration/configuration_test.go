@@ -135,6 +135,7 @@ global
   wurfl-patch-file path1,path2
   wurfl-cache-size 64
   ssl-default-bind-curves X25519:P-256
+  ssl-default-server-curves brainpoolP384r1,brainpoolP512r1
   ssl-skip-self-issued-ca
   node node
   description description
@@ -180,8 +181,10 @@ global
   httpclient.resolvers.disabled on
   httpclient.resolvers.prefer ipv4
   httpclient.resolvers.id resolver_1
+  httpclient.retries 3
   httpclient.ssl.ca-file my_test_file.ca
   httpclient.ssl.verify none
+  httpclient.timeout.connect 2s
   prealloc-fd
   ssl-engine first
   ssl-engine second RSA,DSA,DH,EC,RAND
@@ -206,6 +209,11 @@ global
   tune.lua.burst-timeout 205
   ssl-default-bind-sigalgs RSA+SHA256
   ssl-default-bind-client-sigalgs ECDSA+SHA256:RSA+SHA256
+  ssl-default-server-sigalgs RSA+SHA256
+  ssl-default-server-client-sigalgs ECDSA+SHA256:RSA+SHA256
+  ssl-propquery provider
+  ssl-provider default
+  ssl-provider-path test
 
 defaults test_defaults
   maxconn 2000
@@ -618,7 +626,7 @@ backend test
   external-check command /bin/false
   use-server webserv if TRUE
   use-server webserv2 unless TRUE
-  server webserv 192.168.1.1:9200 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128 id 1234 pool-purge-delay 10s tcp-ut 2s
+  server webserv 192.168.1.1:9200 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128 id 1234 pool-purge-delay 10s tcp-ut 2s curves secp384r1 client-sigalgs ECDSA+SHA256:RSA+SHA256 sigalgs ECDSA+SHA256
   server webserv2 192.168.1.1:9300 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128
   http-request set-dst hdr(x-dst)
   http-request set-dst-port int(4000)

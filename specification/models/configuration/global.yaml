@@ -184,6 +184,9 @@ global:
       type: string
       enum: ["ipv4", "ipv6"]
       x-display-name: HTTP Client Resolvers Prefer
+    httpclient_retries:
+      type: integer
+      x-display-name: HTTP Client Retries
     httpclient_ssl_ca_file:
       type: string
       x-display-name: HTTP Client SSL CA File
@@ -191,6 +194,10 @@ global:
       type: string
       enum: ["", "none", "required"]
       x-display-name: HTTP Client SSL Verify
+      x-nullable: true
+    httpclient_timeout_connect:
+      type: integer
+      x-display-name: HTTP Client Connect Timeout
       x-nullable: true
     prealloc-fd:
       type: boolean
@@ -532,6 +539,9 @@ global:
     ssl_default_bind_sigalgs:
       type: string
       x-display-name: SSL Default Bind Sigalgs
+    ssl_default_server_sigalgs:
+      type: string
+      x-display-name: SSL Default Server Sigalgs
     ssl_default_bind_ciphers:
       type: string
       x-display-name: SSL Default Bind Ciphers
@@ -553,15 +563,30 @@ global:
     ssl_default_server_ciphersuites:
       type: string
       x-display-name: SSL Default Server Ciphersuites
+    ssl_default_server_curves:
+      type: string
+      x-display-name: SSL Default Server Curves
     ssl_default_bind_client_sigalgs:
       type: string
       x-display-name: SSL Default Bind Client Sigalgs
+    ssl_default_server_client_sigalgs:
+      type: string
+      x-display-name: SSL Default Server Client Sigalgs
     ssl_mode_async:
       type: string
       enum: [enabled, disabled]
       x-display-name: Asynchronous TLS I/O operations
     ssl_dh_param_file:
       type: string
+    ssl_propquery:
+      type: string
+      x-display-name: SSL Query String Property
+    ssl_provider:
+      type: string
+      x-display-name: SSL Provider
+    ssl_provider_path:
+      type: string
+      x-display-name: SSL Provider Path
     ssl_server_verify:
       type: string
       enum: [none, required]

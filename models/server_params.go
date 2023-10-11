@@ -100,12 +100,18 @@ type ServerParams struct {
 	// ciphersuites
 	Ciphersuites string `json:"ciphersuites,omitempty"`
 
+	// client sigalgs
+	ClientSigalgs string `json:"client_sigalgs,omitempty"`
+
 	// cookie
 	// Pattern: ^[^\s]+$
 	Cookie string `json:"cookie,omitempty"`
 
 	// crl file
 	CrlFile string `json:"crl_file,omitempty"`
+
+	// curves
+	Curves string `json:"curves,omitempty"`
 
 	// downinter
 	Downinter *int64 `json:"downinter,omitempty"`
@@ -277,6 +283,9 @@ type ServerParams struct {
 
 	// shard
 	Shard int64 `json:"shard,omitempty"`
+
+	// sigalgs
+	Sigalgs string `json:"sigalgs,omitempty"`
 
 	// slowstart
 	Slowstart *int64 `json:"slowstart,omitempty"`

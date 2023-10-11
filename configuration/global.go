@@ -446,6 +446,11 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		httpClientResolversPrefer = httpClientResolversPreferParser.Type
 	}
 
+	httpClientRetries, err := parseInt64Option(p, "httpclient.retries")
+	if err != nil {
+		return nil, err
+	}
+
 	httpClientSSLCaFile, err := parseStringOption(p, "httpclient.ssl.ca-file")
 	if err != nil {
 		return nil, err
@@ -460,6 +465,12 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		}
 		httpClientSSLVerify = &httpClientSSLVerifyParser.Type
 	}
+
+	httpClientTimeoutConnectStr, err := parseStringOption(p, "httpclient.timeout.connect")
+	if err != nil {
+		return nil, err
+	}
+	httpClientTimeoutConnect := misc.ParseTimeout(httpClientTimeoutConnectStr)
 
 	preallocFD, err := parseBoolOption(p, "prealloc-fd")
 	if err != nil {
@@ -496,6 +507,16 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		sslDefaultBindCurves = sslDefaultBindCurvesParser.Value
 	}
 
+	var sslDefaultServerCurves string
+	data, err = p.Get(parser.Global, parser.GlobalSectionName, "ssl-default-server-curves")
+	if err == nil {
+		sslDefaultServerCurvesParser, ok := data.(*types.StringC)
+		if !ok {
+			return nil, misc.CreateTypeAssertError("ssl-default-server-curves")
+		}
+		sslDefaultServerCurves = sslDefaultServerCurvesParser.Value
+	}
+
 	_, err = p.Get(parser.Global, parser.GlobalSectionName, "ssl-skip-self-issued-ca")
 	sslSkipSelfIssuedCa := true
 	if errors.Is(err, parser_errors.ErrFetch) {
@@ -530,6 +551,26 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 			return nil, misc.CreateTypeAssertError("ssl-default-bind-client-sigalgs")
 		}
 		sslBindClientSigalgs = sslBindClientSigalgsParser.Value
+	}
+
+	var sslServerSigalgs string
+	data, err = p.Get(parser.Global, parser.GlobalSectionName, "ssl-default-server-sigalgs")
+	if err == nil {
+		sslServerSigalgsParser, ok := data.(*types.StringC)
+		if !ok {
+			return nil, misc.CreateTypeAssertError("ssl-default-server-sigalgs")
+		}
+		sslServerSigalgs = sslServerSigalgsParser.Value
+	}
+
+	var sslServerClientSigalgs string
+	data, err = p.Get(parser.Global, parser.GlobalSectionName, "ssl-default-server-client-sigalgs")
+	if err == nil {
+		sslServerClientSigalgsParser, ok := data.(*types.StringC)
+		if !ok {
+			return nil, misc.CreateTypeAssertError("ssl-default-server-client-sigalgs")
+		}
+		sslServerClientSigalgs = sslServerClientSigalgsParser.Value
 	}
 
 	var sslDefaultServerCiphers string
@@ -576,6 +617,21 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 			return nil, misc.CreateTypeAssertError("ssl-dh-param-file")
 		}
 		sslDhParamFile = sslDhParamFileParser.Value
+	}
+
+	sslPropquery, err := parseStringOption(p, "ssl-propquery")
+	if err != nil {
+		return nil, err
+	}
+
+	sslProvider, err := parseStringOption(p, "ssl-provider")
+	if err != nil {
+		return nil, err
+	}
+
+	sslProviderPath, err := parseStringOption(p, "ssl-provider-path")
+	if err != nil {
+		return nil, err
 	}
 
 	var sslServerVerify string
@@ -1112,17 +1168,23 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		HttpclientResolversDisabled:       httpClientResolversDisabled,
 		HttpclientResolversID:             httpClientResolversID,
 		HttpclientResolversPrefer:         httpClientResolversPrefer,
+		HttpclientRetries:                 httpClientRetries,
 		HttpclientSslCaFile:               httpClientSSLCaFile,
 		HttpclientSslVerify:               httpClientSSLVerify,
+		HttpclientTimeoutConnect:          httpClientTimeoutConnect,
 		PreallocFd:                        preallocFD,
 		SslDefaultBindCiphers:             sslBindCiphers,
 		SslDefaultBindCiphersuites:        sslBindCiphersuites,
 		SslDefaultBindCurves:              sslDefaultBindCurves,
+		SslDefaultServerCurves:            sslDefaultServerCurves,
 		SslDefaultBindOptions:             sslBindOptions,
 		SslDefaultServerCiphers:           sslDefaultServerCiphers,
 		SslDefaultServerCiphersuites:      sslServerCiphersuites,
 		SslDefaultServerOptions:           sslServerOptions,
 		SslModeAsync:                      sslModeAsync,
+		SslPropquery:                      sslPropquery,
+		SslProvider:                       sslProvider,
+		SslProviderPath:                   sslProviderPath,
 		SslSkipSelfIssuedCa:               sslSkipSelfIssuedCa,
 		TuneOptions:                       tuneOptions,
 		TuneSslDefaultDhParam:             dhParam,
@@ -1184,6 +1246,8 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		SetVarFmts:                        setVarFormats,
 		SslDefaultBindSigalgs:             sslBindSigalgs,
 		SslDefaultBindClientSigalgs:       sslBindClientSigalgs,
+		SslDefaultServerSigalgs:           sslServerSigalgs,
+		SslDefaultServerClientSigalgs:     sslServerClientSigalgs,
 	}
 
 	return global, nil
@@ -1435,6 +1499,10 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global) error { //noli
 		return err
 	}
 
+	if err := serializeInt64Option(p, "httpclient.retries", data.HttpclientRetries); err != nil {
+		return err
+	}
+
 	var pHTTPClientSSLCaFile *types.HTTPClientSSLVerify
 	if data.HttpclientSslVerify != nil {
 		pHTTPClientSSLCaFile = &types.HTTPClientSSLVerify{
@@ -1442,6 +1510,10 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global) error { //noli
 		}
 	}
 	if err := p.Set(parser.Global, parser.GlobalSectionName, "httpclient.ssl.verify", pHTTPClientSSLCaFile); err != nil {
+		return err
+	}
+
+	if err := serializeTimeoutSizeOption(p, "httpclient.timeout.connect", data.HttpclientTimeoutConnect); err != nil {
 		return err
 	}
 
@@ -1476,6 +1548,16 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global) error { //noli
 		pSSLDefaultBindCurves = nil
 	}
 	if err := p.Set(parser.Global, parser.GlobalSectionName, "ssl-default-bind-curves", pSSLDefaultBindCurves); err != nil {
+		return err
+	}
+
+	pSSLDefaultServerCurves := &types.StringC{
+		Value: data.SslDefaultServerCurves,
+	}
+	if data.SslDefaultServerCurves == "" {
+		pSSLDefaultServerCurves = nil
+	}
+	if err := p.Set(parser.Global, parser.GlobalSectionName, "ssl-default-server-curves", pSSLDefaultServerCurves); err != nil {
 		return err
 	}
 
@@ -1514,6 +1596,26 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global) error { //noli
 		pSSLBindClientSigalgs = nil
 	}
 	if err := p.Set(parser.Global, parser.GlobalSectionName, "ssl-default-bind-client-sigalgs", pSSLBindClientSigalgs); err != nil {
+		return err
+	}
+
+	pSSLServerSigalgs := &types.StringC{
+		Value: data.SslDefaultServerSigalgs,
+	}
+	if data.SslDefaultServerSigalgs == "" {
+		pSSLServerSigalgs = nil
+	}
+	if err := p.Set(parser.Global, parser.GlobalSectionName, "ssl-default-server-sigalgs", pSSLServerSigalgs); err != nil {
+		return err
+	}
+
+	pSSLServerClientSigalgs := &types.StringC{
+		Value: data.SslDefaultServerClientSigalgs,
+	}
+	if data.SslDefaultServerClientSigalgs == "" {
+		pSSLServerClientSigalgs = nil
+	}
+	if err := p.Set(parser.Global, parser.GlobalSectionName, "ssl-default-server-client-sigalgs", pSSLServerClientSigalgs); err != nil {
 		return err
 	}
 
@@ -1572,6 +1674,18 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global) error { //noli
 		sslModeAsync = nil
 	}
 	if err := p.Set(parser.Global, parser.GlobalSectionName, "ssl-mode-async", sslModeAsync); err != nil {
+		return err
+	}
+
+	if err := serializeStringOption(p, "ssl-propquery", data.SslPropquery); err != nil {
+		return err
+	}
+
+	if err := serializeStringOption(p, "ssl-provider", data.SslProvider); err != nil {
+		return err
+	}
+
+	if err := serializeStringOption(p, "ssl-provider-path", data.SslProviderPath); err != nil {
 		return err
 	}
 

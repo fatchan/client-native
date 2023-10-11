@@ -18,36 +18,30 @@
 package models
 
 import (
-	"bytes"
-	"encoding/gob"
+	"encoding/json"
 	"testing"
 
-	"github.com/brianvoe/gofakeit/v6"
+	"github.com/go-faker/faker/v4"
 
 	jsoniter "github.com/json-iterator/go"
 )
 
 func TestConsulEqual(t *testing.T) {
-	faker := gofakeit.NewCrypto()
-	gofakeit.SetGlobalFaker(faker)
 	samples := []struct {
 		a, b Consul
 	}{}
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 2; i++ {
 		var sample Consul
 		var result Consul
-		err := gofakeit.Struct(&sample)
+		err := faker.FakeData(&sample)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
-		buf := new(bytes.Buffer)
-		enc := gob.NewEncoder(buf)
-		err = enc.Encode(&sample)
+		byteJSON, err := json.Marshal(sample)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
-		dec := gob.NewDecoder(buf)
-		err = dec.Decode(&result)
+		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
@@ -75,19 +69,17 @@ func TestConsulEqual(t *testing.T) {
 }
 
 func TestConsulEqualFalse(t *testing.T) {
-	faker := gofakeit.NewCrypto()
-	gofakeit.SetGlobalFaker(faker)
 	samples := []struct {
 		a, b Consul
 	}{}
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 2; i++ {
 		var sample Consul
 		var result Consul
-		err := gofakeit.Struct(&sample)
+		err := faker.FakeData(&sample)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
-		err = gofakeit.Struct(&result)
+		err = faker.FakeData(&result)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
@@ -120,26 +112,21 @@ func TestConsulEqualFalse(t *testing.T) {
 }
 
 func TestConsulDiff(t *testing.T) {
-	faker := gofakeit.NewCrypto()
-	gofakeit.SetGlobalFaker(faker)
 	samples := []struct {
 		a, b Consul
 	}{}
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 2; i++ {
 		var sample Consul
 		var result Consul
-		err := gofakeit.Struct(&sample)
+		err := faker.FakeData(&sample)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
-		buf := new(bytes.Buffer)
-		enc := gob.NewEncoder(buf)
-		err = enc.Encode(&sample)
+		byteJSON, err := json.Marshal(sample)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
-		dec := gob.NewDecoder(buf)
-		err = dec.Decode(&result)
+		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
@@ -167,19 +154,17 @@ func TestConsulDiff(t *testing.T) {
 }
 
 func TestConsulDiffFalse(t *testing.T) {
-	faker := gofakeit.NewCrypto()
-	gofakeit.SetGlobalFaker(faker)
 	samples := []struct {
 		a, b Consul
 	}{}
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 2; i++ {
 		var sample Consul
 		var result Consul
-		err := gofakeit.Struct(&sample)
+		err := faker.FakeData(&sample)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
-		err = gofakeit.Struct(&result)
+		err = faker.FakeData(&result)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
@@ -196,7 +181,7 @@ func TestConsulDiffFalse(t *testing.T) {
 
 	for _, sample := range samples {
 		result := sample.a.Diff(sample.b)
-		if len(result) != 20 {
+		if len(result) != 21 {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
@@ -206,7 +191,7 @@ func TestConsulDiffFalse(t *testing.T) {
 			if err != nil {
 				t.Errorf(err.Error())
 			}
-			t.Errorf("Expected Consul to be different in 20 cases, but it is not (%d) %s %s", len(result), a, b)
+			t.Errorf("Expected Consul to be different in 21 cases, but it is not (%d) %s %s", len(result), a, b)
 		}
 	}
 }

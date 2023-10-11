@@ -316,7 +316,7 @@ func (t *Transaction) CheckTransactionOrVersion(transactionID string, version in
 	// start an implicit transaction if transaction is not already given
 	tID := ""
 	if transactionID != "" && version != 0 {
-		return "", NewConfError(ErrBothVersionTransaction, "both version and transaction specified, specify only one")
+		return "", NewConfError(ErrBothVersionTransaction, "")
 	}
 	if transactionID == "" && version == 0 {
 		return "", NewConfError(ErrNoVersionTransaction, "version or transaction not specified, specify only one")
@@ -620,7 +620,8 @@ func (t *Transaction) getBackupFile(version int64) (string, error) {
 	if version == 0 {
 		return t.ConfigurationFile, nil
 	}
-	backupFileName := fmt.Sprintf("%v.%v", t.ConfigurationFile, version)
+	fileName := fmt.Sprintf("%v.%v", t.ConfigurationFile, version)
+	backupFileName := filepath.Join(t.BackupsDir, filepath.Base(fileName))
 
 	if _, err := os.Stat(backupFileName); err == nil {
 		return backupFileName, nil
@@ -684,7 +685,7 @@ func (t *Transaction) getFailedTransactionVersion(transactionID string) (int64, 
 
 	ver, err := t.TransactionClient.GetFailedParserTransactionVersion(transactionID)
 	if err != nil {
-		return 0, NewConfError(ErrCannotReadVersion, "cannot read version")
+		return 0, NewConfError(ErrCannotReadVersion, "")
 	}
 	return ver, nil
 }
