@@ -1,3 +1,4 @@
+---
 table:
   type: object
   properties:
@@ -26,4 +27,7 @@ table:
     type_len:
       type: integer
       x-display-name: Type
+      x-nullable: true
+    write_to:
+      type: string
       x-nullable: true

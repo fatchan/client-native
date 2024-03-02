@@ -47,6 +47,7 @@ type Frontend struct {
 
 	// accept invalid http request
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	AcceptInvalidHTTPRequest string `json:"accept_invalid_http_request,omitempty"`
 
 	// backlog
@@ -54,6 +55,7 @@ type Frontend struct {
 
 	// bind process
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	BindProcess string `json:"bind_process,omitempty"`
 
 	// clflog
@@ -67,6 +69,7 @@ type Frontend struct {
 
 	// clitcpka
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Clitcpka string `json:"clitcpka,omitempty"`
 
 	// clitcpka cnt
@@ -83,10 +86,12 @@ type Frontend struct {
 
 	// contstats
 	// Enum: [enabled]
+	// +kubebuilder:validation:Enum=enabled;
 	Contstats string `json:"contstats,omitempty"`
 
 	// default backend
 	// Pattern: ^[A-Za-z0-9-_.:]+$
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9-_.:]+$`
 	DefaultBackend string `json:"default_backend,omitempty"`
 
 	// description
@@ -94,6 +99,7 @@ type Frontend struct {
 
 	// disable h2 upgrade
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	DisableH2Upgrade string `json:"disable_h2_upgrade,omitempty"`
 
 	// disabled
@@ -101,10 +107,12 @@ type Frontend struct {
 
 	// dontlog normal
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	DontlogNormal string `json:"dontlog_normal,omitempty"`
 
 	// dontlognull
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Dontlognull string `json:"dontlognull,omitempty"`
 
 	// email alert
@@ -127,26 +135,32 @@ type Frontend struct {
 
 	// from
 	// Pattern: ^[A-Za-z0-9-_.:]+$
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9-_.:]+$`
 	From string `json:"from,omitempty"`
 
 	// h1 case adjust bogus client
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	H1CaseAdjustBogusClient string `json:"h1_case_adjust_bogus_client,omitempty"`
 
 	// http buffer request
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	HTTPBufferRequest string `json:"http-buffer-request,omitempty"`
 
 	// http use htx
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	HTTPUseHtx string `json:"http-use-htx,omitempty"`
 
 	// http connection mode
 	// Enum: [httpclose http-server-close http-keep-alive]
+	// +kubebuilder:validation:Enum=httpclose;http-server-close;http-keep-alive;
 	HTTPConnectionMode string `json:"http_connection_mode,omitempty"`
 
 	// http ignore probes
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	HTTPIgnoreProbes string `json:"http_ignore_probes,omitempty"`
 
 	// http keep alive timeout
@@ -154,6 +168,7 @@ type Frontend struct {
 
 	// http no delay
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	HTTPNoDelay string `json:"http_no_delay,omitempty"`
 
 	// http request timeout
@@ -161,10 +176,12 @@ type Frontend struct {
 
 	// http restrict req hdr names
 	// Enum: [preserve delete reject]
+	// +kubebuilder:validation:Enum=preserve;delete;reject;
 	HTTPRestrictReqHdrNames string `json:"http_restrict_req_hdr_names,omitempty"`
 
 	// http use proxy header
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	HTTPUseProxyHeader string `json:"http_use_proxy_header,omitempty"`
 
 	// httplog
@@ -172,6 +189,7 @@ type Frontend struct {
 
 	// httpslog
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Httpslog string `json:"httpslog,omitempty"`
 
 	// id
@@ -179,10 +197,12 @@ type Frontend struct {
 
 	// idle close on response
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	IdleCloseOnResponse string `json:"idle_close_on_response,omitempty"`
 
 	// independent streams
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	IndependentStreams string `json:"independent_streams,omitempty"`
 
 	// log format
@@ -193,14 +213,17 @@ type Frontend struct {
 
 	// log separate errors
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	LogSeparateErrors string `json:"log_separate_errors,omitempty"`
 
 	// log tag
 	// Pattern: ^[A-Za-z0-9-_.:]+$
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9-_.:]+$`
 	LogTag string `json:"log_tag,omitempty"`
 
 	// logasap
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Logasap string `json:"logasap,omitempty"`
 
 	// maxconn
@@ -208,6 +231,7 @@ type Frontend struct {
 
 	// mode
 	// Enum: [http tcp]
+	// +kubebuilder:validation:Enum=http;tcp;
 	Mode string `json:"mode,omitempty"`
 
 	// monitor fail
@@ -219,10 +243,12 @@ type Frontend struct {
 	// name
 	// Required: true
 	// Pattern: ^[A-Za-z0-9-_.:]+$
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9-_.:]+$`
 	Name string `json:"name"`
 
 	// nolinger
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Nolinger string `json:"nolinger,omitempty"`
 
 	// originalto
@@ -230,18 +256,22 @@ type Frontend struct {
 
 	// socket stats
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SocketStats string `json:"socket_stats,omitempty"`
 
 	// splice auto
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SpliceAuto string `json:"splice_auto,omitempty"`
 
 	// splice request
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SpliceRequest string `json:"splice_request,omitempty"`
 
 	// splice response
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SpliceResponse string `json:"splice_response,omitempty"`
 
 	// stats options
@@ -255,10 +285,12 @@ type Frontend struct {
 
 	// tcp smart accept
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	TCPSmartAccept string `json:"tcp_smart_accept,omitempty"`
 
 	// tcpka
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Tcpka string `json:"tcpka,omitempty"`
 
 	// tcplog

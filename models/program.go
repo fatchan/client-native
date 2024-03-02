@@ -48,10 +48,12 @@ type Program struct {
 	// name
 	// Required: true
 	// Pattern: ^[A-Za-z0-9-_.:]+$
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9-_.:]+$`
 	Name string `json:"name"`
 
 	// HAProxy stops and recreates child programs at reload.
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	StartOnReload string `json:"start-on-reload,omitempty"`
 
 	// The user to run the command as, if different than the HAProxy user.

@@ -34,10 +34,10 @@ import (
 //
 // swagger:model balance
 type Balance struct {
-
 	// algorithm
 	// Required: true
 	// Enum: [roundrobin static-rr leastconn first source uri url_param hdr random rdp-cookie hash]
+	// +kubebuilder:validation:Enum=roundrobin;static-rr;leastconn;first;source;uri;url_param;hdr;random;rdp-cookie;hash;
 	Algorithm *string `json:"algorithm"`
 
 	// hash expression
@@ -54,6 +54,7 @@ type Balance struct {
 
 	// rdp cookie name
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	RdpCookieName string `json:"rdp_cookie_name,omitempty"`
 
 	// uri depth
@@ -70,6 +71,7 @@ type Balance struct {
 
 	// url param
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	URLParam string `json:"url_param,omitempty"`
 
 	// url param check post

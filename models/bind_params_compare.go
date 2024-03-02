@@ -164,6 +164,10 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 		return false
 	}
 
+	if s.Nbconn != t.Nbconn {
+		return false
+	}
+
 	if s.Nice != t.Nice {
 		return false
 	}
@@ -221,6 +225,10 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 	}
 
 	if s.QuicForceRetry != t.QuicForceRetry {
+		return false
+	}
+
+	if s.QuicSocket != t.QuicSocket {
 		return false
 	}
 
@@ -447,6 +455,10 @@ func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{}
 		diff["Namespace"] = []interface{}{s.Namespace, t.Namespace}
 	}
 
+	if s.Nbconn != t.Nbconn {
+		diff["Nbconn"] = []interface{}{s.Nbconn, t.Nbconn}
+	}
+
 	if s.Nice != t.Nice {
 		diff["Nice"] = []interface{}{s.Nice, t.Nice}
 	}
@@ -505,6 +517,10 @@ func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{}
 
 	if s.QuicForceRetry != t.QuicForceRetry {
 		diff["QuicForceRetry"] = []interface{}{s.QuicForceRetry, t.QuicForceRetry}
+	}
+
+	if s.QuicSocket != t.QuicSocket {
+		diff["QuicSocket"] = []interface{}{s.QuicSocket, t.QuicSocket}
 	}
 
 	if s.SeverityOutput != t.SeverityOutput {

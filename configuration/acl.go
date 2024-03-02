@@ -25,7 +25,7 @@ import (
 	parser_errors "github.com/haproxytech/config-parser/v5/errors"
 	"github.com/haproxytech/config-parser/v5/types"
 
-	"github.com/haproxytech/client-native/v5/models"
+	"github.com/haproxytech/client-native/v6/models"
 )
 
 type ACL interface {
@@ -140,11 +140,11 @@ func (c *client) CreateACL(parentType string, parentName string, data *models.AC
 
 func (c *client) getACLParserFromParent(parent string) (parser.Section, error) {
 	switch parent {
-	case "backend":
+	case BackendParentName:
 		return parser.Backends, nil
-	case "frontend":
+	case FrontendParentName:
 		return parser.Frontends, nil
-	case "fcgi-app":
+	case FCGIAppParentName:
 		return parser.FCGIApp, nil
 	default:
 		return "", fmt.Errorf("unsupported parent: %s", parent)

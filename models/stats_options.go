@@ -41,6 +41,7 @@ type StatsOptions struct {
 
 	// stats admin cond
 	// Enum: [if unless]
+	// +kubebuilder:validation:Enum=if;unless;
 	StatsAdminCond string `json:"stats_admin_cond,omitempty"`
 
 	// stats admin cond test
@@ -60,6 +61,7 @@ type StatsOptions struct {
 
 	// stats maxconn
 	// Minimum: 1
+	// +kubebuilder:validation:Minimum=1
 	StatsMaxconn int64 `json:"stats_maxconn,omitempty"`
 
 	// stats realm
@@ -82,10 +84,12 @@ type StatsOptions struct {
 
 	// stats show node name
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	StatsShowNodeName *string `json:"stats_show_node_name"`
 
 	// stats uri prefix
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	StatsURIPrefix string `json:"stats_uri_prefix,omitempty"`
 }
 

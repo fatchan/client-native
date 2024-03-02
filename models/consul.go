@@ -38,10 +38,10 @@ import (
 //
 // swagger:model consul
 type Consul struct {
-
 	// address
 	// Required: true
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Address *string `json:"address"`
 
 	// Name of the defaults section to be used in backends created by this service
@@ -61,6 +61,7 @@ type Consul struct {
 	//   min: a node is considered valid if the number of 'passing' checks is greater or equal to the 'health_check_policy_min' value.
 	//     If the node has less health checks configured then 'health_check_policy_min' it is considered invalid.
 	// Enum: [none any all min]
+	// +kubebuilder:validation:Enum=none;any;all;min;
 	HealthCheckPolicy *string `json:"health_check_policy,omitempty"`
 
 	// health check policy min
@@ -68,10 +69,12 @@ type Consul struct {
 
 	// Auto generated ID.
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	ID *string `json:"id,omitempty"`
 
 	// mode
 	// Enum: [http https]
+	// +kubebuilder:validation:Enum=http;https;
 	Mode *string `json:"mode,omitempty"`
 
 	// name
@@ -84,11 +87,14 @@ type Consul struct {
 	// Required: true
 	// Maximum: 65535
 	// Minimum: 1
+	// +kubebuilder:validation:Maximum=65535
+	// +kubebuilder:validation:Minimum=1
 	Port *int64 `json:"port"`
 
 	// Duration in seconds in-between data pulling requests to the consul server
 	// Required: true
 	// Minimum: 1
+	// +kubebuilder:validation:Minimum=1
 	RetryTimeout *int64 `json:"retry_timeout"`
 
 	// server slots base
@@ -99,6 +105,7 @@ type Consul struct {
 
 	// server slots growth type
 	// Enum: [linear exponential]
+	// +kubebuilder:validation:Enum=linear;exponential;
 	ServerSlotsGrowthType *string `json:"server_slots_growth_type,omitempty"`
 
 	// deprecated, use service_denylist
@@ -118,6 +125,7 @@ type Consul struct {
 
 	// token
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Token string `json:"token,omitempty"`
 }
 

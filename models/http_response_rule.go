@@ -44,10 +44,12 @@ type HTTPResponseRule struct {
 
 	// acl file
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	ACLFile string `json:"acl_file,omitempty"`
 
 	// acl keyfmt
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	ACLKeyfmt string `json:"acl_keyfmt,omitempty"`
 
 	// bandwidth limit limit
@@ -61,6 +63,7 @@ type HTTPResponseRule struct {
 
 	// cache name
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	CacheName string `json:"cache_name,omitempty"`
 
 	// capture id
@@ -68,10 +71,12 @@ type HTTPResponseRule struct {
 
 	// capture sample
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	CaptureSample string `json:"capture_sample,omitempty"`
 
 	// cond
 	// Enum: [if unless]
+	// +kubebuilder:validation:Enum=if;unless;
 	Cond string `json:"cond,omitempty"`
 
 	// cond test
@@ -80,7 +85,12 @@ type HTTPResponseRule struct {
 	// deny status
 	// Maximum: 599
 	// Minimum: 200
+	// +kubebuilder:validation:Maximum=599
+	// +kubebuilder:validation:Minimum=200
 	DenyStatus *int64 `json:"deny_status,omitempty"`
+
+	// expr
+	Expr string `json:"expr,omitempty"`
 
 	// hdr format
 	HdrFormat string `json:"hdr_format,omitempty"`
@@ -100,10 +110,12 @@ type HTTPResponseRule struct {
 
 	// log level
 	// Enum: [emerg alert crit err warning notice info debug silent]
+	// +kubebuilder:validation:Enum=emerg;alert;crit;err;warning;notice;info;debug;silent;
 	LogLevel string `json:"log_level,omitempty"`
 
 	// lua action
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	LuaAction string `json:"lua_action,omitempty"`
 
 	// lua params
@@ -111,27 +123,34 @@ type HTTPResponseRule struct {
 
 	// map file
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	MapFile string `json:"map_file,omitempty"`
 
 	// map keyfmt
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	MapKeyfmt string `json:"map_keyfmt,omitempty"`
 
 	// map valuefmt
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	MapValuefmt string `json:"map_valuefmt,omitempty"`
 
 	// mark value
 	// Pattern: ^(0x[0-9A-Fa-f]+|[0-9]+)$
+	// +kubebuilder:validation:Pattern=`^(0x[0-9A-Fa-f]+|[0-9]+)$`
 	MarkValue string `json:"mark_value,omitempty"`
 
 	// nice value
 	// Maximum: 1024
 	// Minimum: -1024
+	// +kubebuilder:validation:Maximum=1024
+	// +kubebuilder:validation:Minimum=-1024
 	NiceValue int64 `json:"nice_value,omitempty"`
 
 	// redir code
 	// Enum: [301 302 303 307 308]
+	// +kubebuilder:validation:Enum=301;302;303;307;308;
 	RedirCode *int64 `json:"redir_code,omitempty"`
 
 	// redir option
@@ -139,17 +158,20 @@ type HTTPResponseRule struct {
 
 	// redir type
 	// Enum: [location prefix scheme]
+	// +kubebuilder:validation:Enum=location;prefix;scheme;
 	RedirType string `json:"redir_type,omitempty"`
 
 	// redir value
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	RedirValue string `json:"redir_value,omitempty"`
 
 	// return content
 	ReturnContent string `json:"return_content,omitempty"`
 
 	// return content format
-	// Enum: [default-errorfile errorfile errorfiles file lf-file string lf-string]
+	// Enum: [default-errorfiles errorfile errorfiles file lf-file string lf-string]
+	// +kubebuilder:validation:Enum=default-errorfiles;errorfile;errorfiles;file;lf-file;string;lf-string;
 	ReturnContentFormat string `json:"return_content_format,omitempty"`
 
 	// return content type
@@ -158,6 +180,8 @@ type HTTPResponseRule struct {
 	// return status code
 	// Maximum: 599
 	// Minimum: 200
+	// +kubebuilder:validation:Maximum=599
+	// +kubebuilder:validation:Minimum=200
 	ReturnStatusCode *int64 `json:"return_status_code,omitempty"`
 
 	// sc expr
@@ -174,15 +198,19 @@ type HTTPResponseRule struct {
 
 	// spoe engine
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	SpoeEngine string `json:"spoe_engine,omitempty"`
 
 	// spoe group
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	SpoeGroup string `json:"spoe_group,omitempty"`
 
 	// status
 	// Maximum: 999
 	// Minimum: 100
+	// +kubebuilder:validation:Maximum=999
+	// +kubebuilder:validation:Minimum=100
 	Status int64 `json:"status,omitempty"`
 
 	// status reason
@@ -190,38 +218,55 @@ type HTTPResponseRule struct {
 
 	// strict mode
 	// Enum: [on off]
+	// +kubebuilder:validation:Enum=on;off;
 	StrictMode string `json:"strict_mode,omitempty"`
+
+	// timeout
+	Timeout string `json:"timeout,omitempty"`
+
+	// timeout type
+	// Enum: [server tunnel client]
+	// +kubebuilder:validation:Enum=server;tunnel;client;
+	TimeoutType string `json:"timeout_type,omitempty"`
 
 	// tos value
 	// Pattern: ^(0x[0-9A-Fa-f]+|[0-9]+)$
+	// +kubebuilder:validation:Pattern=`^(0x[0-9A-Fa-f]+|[0-9]+)$`
 	TosValue string `json:"tos_value,omitempty"`
 
 	// track sc0 key
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	TrackSc0Key string `json:"track-sc0-key,omitempty"`
 
 	// track sc0 table
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	TrackSc0Table string `json:"track-sc0-table,omitempty"`
 
 	// track sc1 key
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	TrackSc1Key string `json:"track-sc1-key,omitempty"`
 
 	// track sc1 table
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	TrackSc1Table string `json:"track-sc1-table,omitempty"`
 
 	// track sc2 key
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	TrackSc2Key string `json:"track-sc2-key,omitempty"`
 
 	// track sc2 table
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	TrackSc2Table string `json:"track-sc2-table,omitempty"`
 
 	// track sc key
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	TrackScKey string `json:"track_sc_key,omitempty"`
 
 	// track sc stick counter
@@ -229,11 +274,13 @@ type HTTPResponseRule struct {
 
 	// track sc table
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	TrackScTable string `json:"track_sc_table,omitempty"`
 
 	// type
 	// Required: true
-	// Enum: [add-acl add-header allow cache-store capture del-acl del-header del-map deny lua redirect replace-header replace-value return sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt0 send-spoe-group set-header set-log-level set-map set-mark set-nice set-status set-tos set-var set-var-fmt silent-drop strict-mode track-sc0 track-sc1 track-sc2 track-sc unset-var wait-for-body set-bandwidth-limit]
+	// Enum: [add-acl add-header allow cache-store capture del-acl del-header del-map deny lua redirect replace-header replace-value return sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt0 send-spoe-group set-fc-mark set-fc-tos set-header set-log-level set-map set-mark set-nice set-status set-timeout set-tos set-var set-var-fmt silent-drop strict-mode track-sc0 track-sc1 track-sc2 track-sc unset-var wait-for-body set-bandwidth-limit]
+	// +kubebuilder:validation:Enum=add-acl;add-header;allow;cache-store;capture;del-acl;del-header;del-map;deny;lua;redirect;replace-header;replace-value;return;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt0;send-spoe-group;set-fc-mark;set-fc-tos;set-header;set-log-level;set-map;set-mark;set-nice;set-status;set-timeout;set-tos;set-var;set-var-fmt;silent-drop;strict-mode;track-sc0;track-sc1;track-sc2;track-sc;unset-var;wait-for-body;set-bandwidth-limit;
 	Type string `json:"type"`
 
 	// var expr
@@ -244,10 +291,12 @@ type HTTPResponseRule struct {
 
 	// var name
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	VarName string `json:"var_name,omitempty"`
 
 	// var scope
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	VarScope string `json:"var_scope,omitempty"`
 
 	// wait at least
@@ -354,6 +403,10 @@ func (m *HTTPResponseRule) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateStrictMode(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTimeoutType(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -785,7 +838,7 @@ var httpResponseRuleTypeReturnContentFormatPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["default-errorfile","errorfile","errorfiles","file","lf-file","string","lf-string"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["default-errorfiles","errorfile","errorfiles","file","lf-file","string","lf-string"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -795,8 +848,8 @@ func init() {
 
 const (
 
-	// HTTPResponseRuleReturnContentFormatDefaultDashErrorfile captures enum value "default-errorfile"
-	HTTPResponseRuleReturnContentFormatDefaultDashErrorfile string = "default-errorfile"
+	// HTTPResponseRuleReturnContentFormatDefaultDashErrorfiles captures enum value "default-errorfiles"
+	HTTPResponseRuleReturnContentFormatDefaultDashErrorfiles string = "default-errorfiles"
 
 	// HTTPResponseRuleReturnContentFormatErrorfile captures enum value "errorfile"
 	HTTPResponseRuleReturnContentFormatErrorfile string = "errorfile"
@@ -936,6 +989,51 @@ func (m *HTTPResponseRule) validateStrictMode(formats strfmt.Registry) error {
 	return nil
 }
 
+var httpResponseRuleTypeTimeoutTypePropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["server","tunnel","client"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		httpResponseRuleTypeTimeoutTypePropEnum = append(httpResponseRuleTypeTimeoutTypePropEnum, v)
+	}
+}
+
+const (
+
+	// HTTPResponseRuleTimeoutTypeServer captures enum value "server"
+	HTTPResponseRuleTimeoutTypeServer string = "server"
+
+	// HTTPResponseRuleTimeoutTypeTunnel captures enum value "tunnel"
+	HTTPResponseRuleTimeoutTypeTunnel string = "tunnel"
+
+	// HTTPResponseRuleTimeoutTypeClient captures enum value "client"
+	HTTPResponseRuleTimeoutTypeClient string = "client"
+)
+
+// prop value enum
+func (m *HTTPResponseRule) validateTimeoutTypeEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, httpResponseRuleTypeTimeoutTypePropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *HTTPResponseRule) validateTimeoutType(formats strfmt.Registry) error {
+	if swag.IsZero(m.TimeoutType) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateTimeoutTypeEnum("timeout_type", "body", m.TimeoutType); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *HTTPResponseRule) validateTosValue(formats strfmt.Registry) error {
 	if swag.IsZero(m.TosValue) { // not required
 		return nil
@@ -1048,7 +1146,7 @@ var httpResponseRuleTypeTypePropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["add-acl","add-header","allow","cache-store","capture","del-acl","del-header","del-map","deny","lua","redirect","replace-header","replace-value","return","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt0","send-spoe-group","set-header","set-log-level","set-map","set-mark","set-nice","set-status","set-tos","set-var","set-var-fmt","silent-drop","strict-mode","track-sc0","track-sc1","track-sc2","track-sc","unset-var","wait-for-body","set-bandwidth-limit"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["add-acl","add-header","allow","cache-store","capture","del-acl","del-header","del-map","deny","lua","redirect","replace-header","replace-value","return","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt0","send-spoe-group","set-fc-mark","set-fc-tos","set-header","set-log-level","set-map","set-mark","set-nice","set-status","set-timeout","set-tos","set-var","set-var-fmt","silent-drop","strict-mode","track-sc0","track-sc1","track-sc2","track-sc","unset-var","wait-for-body","set-bandwidth-limit"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -1118,6 +1216,12 @@ const (
 	// HTTPResponseRuleTypeSendDashSpoeDashGroup captures enum value "send-spoe-group"
 	HTTPResponseRuleTypeSendDashSpoeDashGroup string = "send-spoe-group"
 
+	// HTTPResponseRuleTypeSetDashFcDashMark captures enum value "set-fc-mark"
+	HTTPResponseRuleTypeSetDashFcDashMark string = "set-fc-mark"
+
+	// HTTPResponseRuleTypeSetDashFcDashTos captures enum value "set-fc-tos"
+	HTTPResponseRuleTypeSetDashFcDashTos string = "set-fc-tos"
+
 	// HTTPResponseRuleTypeSetDashHeader captures enum value "set-header"
 	HTTPResponseRuleTypeSetDashHeader string = "set-header"
 
@@ -1135,6 +1239,9 @@ const (
 
 	// HTTPResponseRuleTypeSetDashStatus captures enum value "set-status"
 	HTTPResponseRuleTypeSetDashStatus string = "set-status"
+
+	// HTTPResponseRuleTypeSetDashTimeout captures enum value "set-timeout"
+	HTTPResponseRuleTypeSetDashTimeout string = "set-timeout"
 
 	// HTTPResponseRuleTypeSetDashTos captures enum value "set-tos"
 	HTTPResponseRuleTypeSetDashTos string = "set-tos"

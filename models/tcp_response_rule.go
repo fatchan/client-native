@@ -37,9 +37,9 @@ import (
 //
 // swagger:model tcp_response_rule
 type TCPResponseRule struct {
-
 	// action
-	// Enum: [accept reject lua set-bandwidth-limit close sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt0 send-spoe-group set-log-level set-mark set-nice set-tos silent-drop unset-var]
+	// Enum: [accept reject lua set-bandwidth-limit close sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt0 send-spoe-group set-log-level set-mark set-nice set-tos set-fc-mark set-fc-tos silent-drop unset-var]
+	// +kubebuilder:validation:Enum=accept;reject;lua;set-bandwidth-limit;close;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt0;send-spoe-group;set-log-level;set-mark;set-nice;set-tos;set-fc-mark;set-fc-tos;silent-drop;unset-var;
 	Action string `json:"action,omitempty"`
 
 	// bandwidth limit limit
@@ -53,6 +53,7 @@ type TCPResponseRule struct {
 
 	// cond
 	// Enum: [if unless]
+	// +kubebuilder:validation:Enum=if;unless;
 	Cond string `json:"cond,omitempty"`
 
 	// cond test
@@ -67,10 +68,12 @@ type TCPResponseRule struct {
 
 	// log level
 	// Enum: [emerg alert crit err warning notice info debug silent]
+	// +kubebuilder:validation:Enum=emerg;alert;crit;err;warning;notice;info;debug;silent;
 	LogLevel string `json:"log_level,omitempty"`
 
 	// lua action
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	LuaAction string `json:"lua_action,omitempty"`
 
 	// lua params
@@ -78,11 +81,14 @@ type TCPResponseRule struct {
 
 	// mark value
 	// Pattern: ^(0x[0-9A-Fa-f]+|[0-9]+)$
+	// +kubebuilder:validation:Pattern=`^(0x[0-9A-Fa-f]+|[0-9]+)$`
 	MarkValue string `json:"mark_value,omitempty"`
 
 	// nice value
 	// Maximum: 1024
 	// Minimum: -1024
+	// +kubebuilder:validation:Maximum=1024
+	// +kubebuilder:validation:Minimum=-1024
 	NiceValue int64 `json:"nice_value,omitempty"`
 
 	// sc expr
@@ -99,10 +105,12 @@ type TCPResponseRule struct {
 
 	// spoe engine
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	SpoeEngine string `json:"spoe_engine,omitempty"`
 
 	// spoe group
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	SpoeGroup string `json:"spoe_group,omitempty"`
 
 	// timeout
@@ -110,19 +118,23 @@ type TCPResponseRule struct {
 
 	// tos value
 	// Pattern: ^(0x[0-9A-Fa-f]+|[0-9]+)$
+	// +kubebuilder:validation:Pattern=`^(0x[0-9A-Fa-f]+|[0-9]+)$`
 	TosValue string `json:"tos_value,omitempty"`
 
 	// type
 	// Required: true
 	// Enum: [content inspect-delay]
+	// +kubebuilder:validation:Enum=content;inspect-delay;
 	Type string `json:"type"`
 
 	// var name
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	VarName string `json:"var_name,omitempty"`
 
 	// var scope
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	VarScope string `json:"var_scope,omitempty"`
 }
 
@@ -192,7 +204,7 @@ var tcpResponseRuleTypeActionPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["accept","reject","lua","set-bandwidth-limit","close","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt0","send-spoe-group","set-log-level","set-mark","set-nice","set-tos","silent-drop","unset-var"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["accept","reject","lua","set-bandwidth-limit","close","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt0","send-spoe-group","set-log-level","set-mark","set-nice","set-tos","set-fc-mark","set-fc-tos","silent-drop","unset-var"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -246,6 +258,12 @@ const (
 
 	// TCPResponseRuleActionSetDashTos captures enum value "set-tos"
 	TCPResponseRuleActionSetDashTos string = "set-tos"
+
+	// TCPResponseRuleActionSetDashFcDashMark captures enum value "set-fc-mark"
+	TCPResponseRuleActionSetDashFcDashMark string = "set-fc-mark"
+
+	// TCPResponseRuleActionSetDashFcDashTos captures enum value "set-fc-tos"
+	TCPResponseRuleActionSetDashFcDashTos string = "set-fc-tos"
 
 	// TCPResponseRuleActionSilentDashDrop captures enum value "silent-drop"
 	TCPResponseRuleActionSilentDashDrop string = "silent-drop"

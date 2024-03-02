@@ -28,10 +28,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
-	native_errors "github.com/haproxytech/client-native/v5/errors"
-	"github.com/haproxytech/client-native/v5/misc"
-	"github.com/haproxytech/client-native/v5/models"
-	"github.com/haproxytech/client-native/v5/runtime/options"
+	native_errors "github.com/haproxytech/client-native/v6/errors"
+	"github.com/haproxytech/client-native/v6/misc"
+	"github.com/haproxytech/client-native/v6/models"
+	"github.com/haproxytech/client-native/v6/runtime/options"
 )
 
 // Client handles multiple HAProxy clients
@@ -49,11 +49,12 @@ const (
 	maxBufSize = 8192
 )
 
-func (c *client) initWithSockets(ctx context.Context, socketPath map[int]string) error {
+func (c *client) initWithSockets(ctx context.Context, opt options.RuntimeOptions) error {
+	socketPath := opt.Sockets
 	c.runtimes = make([]SingleRuntime, 0)
 	for process, path := range socketPath {
 		runtime := SingleRuntime{}
-		err := runtime.Init(ctx, path, 0, process)
+		err := runtime.Init(ctx, path, 0, process, opt)
 		if err != nil {
 			return err
 		}
@@ -63,7 +64,9 @@ func (c *client) initWithSockets(ctx context.Context, socketPath map[int]string)
 	return nil
 }
 
-func (c *client) initWithMasterSocket(ctx context.Context, masterSocketPath string, nbproc int) error {
+func (c *client) initWithMasterSocket(ctx context.Context, opt options.RuntimeOptions) error {
+	masterSocketPath := opt.MasterSocketData.MasterSocketPath
+	nbproc := c.options.MasterSocketData.Nbproc
 	if nbproc == 0 {
 		nbproc = 1
 	}
@@ -73,7 +76,7 @@ func (c *client) initWithMasterSocket(ctx context.Context, masterSocketPath stri
 	c.runtimes = make([]SingleRuntime, nbproc)
 	for i := 1; i <= nbproc; i++ {
 		runtime := SingleRuntime{}
-		err := runtime.Init(ctx, masterSocketPath, i, i)
+		err := runtime.Init(ctx, masterSocketPath, i, i, opt)
 		if err != nil {
 			return err
 		}

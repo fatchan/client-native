@@ -37,14 +37,15 @@ import (
 //
 // swagger:model runtime_server
 type RuntimeServer struct {
-
 	// address
 	// Read Only: true
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Address string `json:"address,omitempty"`
 
 	// admin state
 	// Enum: [ready maint drain]
+	// +kubebuilder:validation:Enum=ready;maint;drain;
 	AdminState string `json:"admin_state,omitempty"`
 
 	// id
@@ -57,12 +58,15 @@ type RuntimeServer struct {
 
 	// operational state
 	// Enum: [up down stopping]
+	// +kubebuilder:validation:Enum=up;down;stopping;
 	OperationalState string `json:"operational_state,omitempty"`
 
 	// port
 	// Read Only: true
 	// Maximum: 65535
 	// Minimum: 1
+	// +kubebuilder:validation:Maximum=65535
+	// +kubebuilder:validation:Minimum=1
 	Port *int64 `json:"port,omitempty"`
 }
 

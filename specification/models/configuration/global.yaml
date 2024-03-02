@@ -53,6 +53,8 @@ global:
       type: string
     h2_workaround_bogus_websocket_clients:
       type: boolean
+    limited_quic:
+      type: boolean
     lua_load_per_thread:
       type: string
     mworker_max_reloads:
@@ -295,9 +297,24 @@ global:
         comp_maxlevel:
           type: integer
           x-display-name: Maximum Compression Level
+        disable_zero_copy_forwarding:
+          type: boolean
+          x-display-name: Disable zero-copy forwarding
+        events_max_events_at_once:
+          type: integer
+          minimum: 1
+          maximum: 10000
         fail_alloc:
           type: boolean
           x-display-name: Failed Allocation Chance
+        h1_zero_copy_fwd_recv:
+          type: string
+          enum: [enabled, disabled]
+          x-display-name: enable or disable the zero-copy receives of data for the HTTP/1 multiplexer
+        h1_zero_copy_fwd_send:
+          type: string
+          enum: [enabled, disabled]
+          x-display-name: enable or disable the zero-copy sends of data for the HTTP/1 multiplexer
         h2_header_table_size:
           type: integer
           x-display-name: HTTP/2 Dynamic Header Table Size
@@ -324,6 +341,10 @@ global:
         h2_fe_max_concurrent_streams:
           type: integer
           x-display-name: Maximum number of concurrent streams per incoming connection
+        h2_zero_copy_fwd_send:
+          type: string
+          enum: [enabled, disabled]
+          x-display-name: enable or disable the zero-copy sends of data for the HTTP/2 multiplexer
         http_cookielen:
           type: integer
           x-display-name: Maximum Cookie Length
@@ -356,6 +377,14 @@ global:
         lua_forced_yield:
           type: integer
           x-display-name: Lua Forced Yield
+        lua_log_loggers:
+          type: string
+          enum: ["enabled", "disabled"]
+          x-display-name: Send Lua Logs to the Loggers
+        lua_log_stderr:
+          type: string
+          enum: ["auto", "enabled", "disabled"]
+          x-display-name: Send Lua Logs to stderr
         lua_maxmem:
           type: boolean
           x-display-name: Lua Maximum Memory Usage
@@ -375,6 +404,10 @@ global:
           type: integer
           x-display-name: Lua Service timeout
           x-nullable: true
+        max_checks_per_thread:
+          type: integer
+          x-nullable: true
+          x-display-name: Maximum checks per thread
         maxaccept:
           type: integer
           x-display-name: Maximum Accept Events
@@ -404,13 +437,25 @@ global:
         pool_low_fd_ratio:
           type: integer
           x-display-name: Max Used Low FD Ratio
+        pt_zero_copy_forwarding:
+          type: string
+          enum: [enabled, disabled]
+          x-display-name: enable or disable the zero-copy forwarding of data for the pass-through multiplexer
+        rcvbuf_backend:
+          type: integer
+          x-display-name: Backend Receive Buffer Size
+          x-nullable: true
         rcvbuf_client:
           type: integer
-          x-display-name: Receive Buffer Client Size
+          x-display-name: Client Receive Buffer Size
+          x-nullable: true
+        rcvbuf_frontend:
+          type: integer
+          x-display-name: Frontend Receive Buffer Size
           x-nullable: true
         rcvbuf_server:
           type: integer
-          x-display-name: Receive Buffer Server Size
+          x-display-name: Server Receive Buffer Size
           x-nullable: true
         recv_enough:
           type: integer
@@ -422,13 +467,21 @@ global:
           type: string
           enum: [enabled, disabled]
           x-display-name: Low Latency Task Scheduler
+        sndbuf_backend:
+          type: integer
+          x-display-name: Backend Send Buffer Size
+          x-nullable: true
         sndbuf_client:
           type: integer
-          x-display-name: Send Buffer Client Size
+          x-display-name: Client Send Buffer Size
+          x-nullable: true
+        sndbuf_frontend:
+          type: integer
+          x-display-name: Frontend Send Buffer Size
           x-nullable: true
         sndbuf_server:
           type: integer
-          x-display-name: Send Buffer Server Size
+          x-display-name: Server Send Buffer Size
           x-nullable: true
         ssl_cachesize:
           type: integer
@@ -615,16 +668,16 @@ global:
       x-display-name: Runtime APIs
       x-go-name: RuntimeAPIs
       items:
-        type: object
         x-go-name: RuntimeAPI
-        required:
-          - address
-        properties:
-          address:
-            type: string
-            pattern: '^[^\s]+$'
         allOf:
           - $ref: '#/definitions/bind_params'
+          - type: object
+            required:
+              - address
+            properties:
+              address:
+                type: string
+                pattern: '^[^\s]+$'
     stats_timeout:
       type: integer
       x-nullable: true
@@ -784,9 +837,6 @@ global:
     unsetenv:
       type: string
       x-display-name: Removes environment variables specified in arguments
-    load_server_state_from_file:
-      type: string
-      enum: [global, local, none]
     default_path:
       type: object
       required:
@@ -802,4 +852,9 @@ global:
           x-dependency:
             type:
               value: origin
+    setcap:
+      type: string
+      pattern: '^[^\s]+$'
+      x-omitempty: true
+      x-display-name: OS Capabilities
   additionalProperties: false

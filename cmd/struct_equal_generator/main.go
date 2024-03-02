@@ -71,7 +71,7 @@ func scanAllTypes(fileName string) []string {
 	return typesInFile
 }
 
-func generate(fileName string, args Args) (string, error) { //nolint:gocognit
+func generate(fileName string, args Args) (string, error) { //nolint:gocognit,maintidx
 	fset := token.NewFileSet()
 	var packageName string
 
@@ -165,6 +165,12 @@ func generate(fileName string, args Args) (string, error) { //nolint:gocognit
 				needsOptions := false
 				needsOptionsIndex := false
 				fields, needsOptions, needsOptionsIndex = getFields(fields, currType, imports)
+				for _, f := range fields {
+					if strings.HasPrefix(f.Type, "*") && (f.HasEqualOpt || f.HasEqual) {
+						needsOptions = true
+						break
+					}
+				}
 				hasTests = true
 				err = generateEqualAndDiff(generateEqualAndDiffOptions{
 					PackageName:       packageName,
@@ -292,6 +298,8 @@ func getFields(fields []Field, node *ast.StructType, imports map[string]string) 
 				HasEqualOpt:  res.HasEqualOpt,
 				IsArray:      res.IsArray,
 				IsMap:        res.IsMap,
+				MapKeyType:   res.MapKeyType,
+				MapItemType:  res.MapItemType,
 			}
 			if res.SubType != nil {
 				f.SubType = &Field{
@@ -306,6 +314,8 @@ func getFields(fields []Field, node *ast.StructType, imports map[string]string) 
 					HasEqualOpt: res.SubType.HasEqualOpt,
 					IsArray:     res.SubType.IsArray,
 					IsMap:       res.SubType.IsMap,
+					//  MapKeyType:  res.MapKeyType,
+					//  MapItemType: res.MapItemType,
 				}
 			}
 			fields = append(fields, f)
@@ -330,6 +340,8 @@ func getFields(fields []Field, node *ast.StructType, imports map[string]string) 
 				HasString:    res.HasStringer,
 				HasEqual:     res.HasEqual,
 				HasEqualOpt:  res.HasEqualOpt,
+				//  MapKeyType:   res.MapKeyType,
+				//  MapItemType:  res.MapItemType,
 			})
 			if res.Name == "Index" {
 				needsOptionsIndex = true

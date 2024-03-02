@@ -37,9 +37,9 @@ import (
 //
 // swagger:model tcp_request_rule
 type TCPRequestRule struct {
-
 	// action
-	// Enum: [accept capture do-resolve expect-netscaler-cip expect-proxy reject sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt0 send-spoe-group set-dst-port set-dst set-priority set-src set-var silent-drop track-sc0 track-sc1 track-sc2 track-sc unset-var use-service lua set-bandwidth-limit set-src-port set-mark set-tos set-var-fmt set-log-level set-nice switch-mode]
+	// Enum: [accept attach-srv capture do-resolve expect-netscaler-cip expect-proxy reject sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt0 send-spoe-group set-dst-port set-dst set-priority set-src set-var silent-drop track-sc0 track-sc1 track-sc2 track-sc unset-var use-service lua set-bandwidth-limit set-src-port set-mark set-tos set-var-fmt set-log-level set-nice switch-mode set-bc-mark set-bc-tos set-fc-mark set-fc-tos]
+	// +kubebuilder:validation:Enum=accept;attach-srv;capture;do-resolve;expect-netscaler-cip;expect-proxy;reject;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt0;send-spoe-group;set-dst-port;set-dst;set-priority;set-src;set-var;silent-drop;track-sc0;track-sc1;track-sc2;track-sc;unset-var;use-service;lua;set-bandwidth-limit;set-src-port;set-mark;set-tos;set-var-fmt;set-log-level;set-nice;switch-mode;set-bc-mark;set-bc-tos;set-fc-mark;set-fc-tos;
 	Action string `json:"action,omitempty"`
 
 	// bandwidth limit limit
@@ -56,10 +56,12 @@ type TCPRequestRule struct {
 
 	// capture sample
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	CaptureSample string `json:"capture_sample,omitempty"`
 
 	// cond
 	// Enum: [if unless]
+	// +kubebuilder:validation:Enum=if;unless;
 	Cond string `json:"cond,omitempty"`
 
 	// cond test
@@ -77,10 +79,12 @@ type TCPRequestRule struct {
 
 	// log level
 	// Enum: [emerg alert crit err warning notice info debug silent]
+	// +kubebuilder:validation:Enum=emerg;alert;crit;err;warning;notice;info;debug;silent;
 	LogLevel string `json:"log_level,omitempty"`
 
 	// lua action
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	LuaAction string `json:"lua_action,omitempty"`
 
 	// lua params
@@ -88,19 +92,24 @@ type TCPRequestRule struct {
 
 	// mark value
 	// Pattern: ^(0x[0-9A-Fa-f]+|[0-9]+)$
+	// +kubebuilder:validation:Pattern=`^(0x[0-9A-Fa-f]+|[0-9]+)$`
 	MarkValue string `json:"mark_value,omitempty"`
 
 	// nice value
 	// Maximum: 1024
 	// Minimum: -1024
+	// +kubebuilder:validation:Maximum=1024
+	// +kubebuilder:validation:Minimum=-1024
 	NiceValue int64 `json:"nice_value,omitempty"`
 
 	// priority type
 	// Enum: [class offset]
+	// +kubebuilder:validation:Enum=class;offset;
 	PriorityType string `json:"priority_type,omitempty"`
 
 	// resolve protocol
 	// Enum: [ipv4 ipv6]
+	// +kubebuilder:validation:Enum=ipv4;ipv6;
 	ResolveProtocol string `json:"resolve_protocol,omitempty"`
 
 	// resolve resolvers
@@ -117,6 +126,9 @@ type TCPRequestRule struct {
 
 	// sc int
 	ScInt *int64 `json:"sc_int,omitempty"`
+
+	// server name
+	ServerName string `json:"server_name,omitempty"`
 
 	// service name
 	ServiceName string `json:"service_name,omitempty"`
@@ -135,6 +147,7 @@ type TCPRequestRule struct {
 
 	// tos value
 	// Pattern: ^(0x[0-9A-Fa-f]+|[0-9]+)$
+	// +kubebuilder:validation:Pattern=`^(0x[0-9A-Fa-f]+|[0-9]+)$`
 	TosValue string `json:"tos_value,omitempty"`
 
 	// track key
@@ -149,6 +162,7 @@ type TCPRequestRule struct {
 	// type
 	// Required: true
 	// Enum: [connection content inspect-delay session]
+	// +kubebuilder:validation:Enum=connection;content;inspect-delay;session;
 	Type string `json:"type"`
 
 	// var format
@@ -156,10 +170,12 @@ type TCPRequestRule struct {
 
 	// var name
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	VarName string `json:"var_name,omitempty"`
 
 	// var scope
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	VarScope string `json:"var_scope,omitempty"`
 }
 
@@ -233,7 +249,7 @@ var tcpRequestRuleTypeActionPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["accept","capture","do-resolve","expect-netscaler-cip","expect-proxy","reject","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt0","send-spoe-group","set-dst-port","set-dst","set-priority","set-src","set-var","silent-drop","track-sc0","track-sc1","track-sc2","track-sc","unset-var","use-service","lua","set-bandwidth-limit","set-src-port","set-mark","set-tos","set-var-fmt","set-log-level","set-nice","switch-mode"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["accept","attach-srv","capture","do-resolve","expect-netscaler-cip","expect-proxy","reject","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt0","send-spoe-group","set-dst-port","set-dst","set-priority","set-src","set-var","silent-drop","track-sc0","track-sc1","track-sc2","track-sc","unset-var","use-service","lua","set-bandwidth-limit","set-src-port","set-mark","set-tos","set-var-fmt","set-log-level","set-nice","switch-mode","set-bc-mark","set-bc-tos","set-fc-mark","set-fc-tos"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -245,6 +261,9 @@ const (
 
 	// TCPRequestRuleActionAccept captures enum value "accept"
 	TCPRequestRuleActionAccept string = "accept"
+
+	// TCPRequestRuleActionAttachDashSrv captures enum value "attach-srv"
+	TCPRequestRuleActionAttachDashSrv string = "attach-srv"
 
 	// TCPRequestRuleActionCapture captures enum value "capture"
 	TCPRequestRuleActionCapture string = "capture"
@@ -341,6 +360,18 @@ const (
 
 	// TCPRequestRuleActionSwitchDashMode captures enum value "switch-mode"
 	TCPRequestRuleActionSwitchDashMode string = "switch-mode"
+
+	// TCPRequestRuleActionSetDashBcDashMark captures enum value "set-bc-mark"
+	TCPRequestRuleActionSetDashBcDashMark string = "set-bc-mark"
+
+	// TCPRequestRuleActionSetDashBcDashTos captures enum value "set-bc-tos"
+	TCPRequestRuleActionSetDashBcDashTos string = "set-bc-tos"
+
+	// TCPRequestRuleActionSetDashFcDashMark captures enum value "set-fc-mark"
+	TCPRequestRuleActionSetDashFcDashMark string = "set-fc-mark"
+
+	// TCPRequestRuleActionSetDashFcDashTos captures enum value "set-fc-tos"
+	TCPRequestRuleActionSetDashFcDashTos string = "set-fc-tos"
 )
 
 // prop value enum

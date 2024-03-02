@@ -20,8 +20,8 @@ import (
 	"io"
 	"mime/multipart"
 
-	"github.com/haproxytech/client-native/v5/models"
-	"github.com/haproxytech/client-native/v5/runtime/options"
+	"github.com/haproxytech/client-native/v6/models"
+	"github.com/haproxytech/client-native/v6/runtime/options"
 )
 
 type Maps interface {
@@ -167,9 +167,9 @@ func New(ctx context.Context, opt ...options.RuntimeOption) (Runtime, error) {
 	}
 
 	if c.options.MasterSocketData != nil {
-		err = c.initWithMasterSocket(ctx, c.options.MasterSocketData.MasterSocketPath, c.options.MasterSocketData.Nbproc)
+		err = c.initWithMasterSocket(ctx, c.options)
 	} else {
-		err = c.initWithSockets(ctx, c.options.Sockets)
+		err = c.initWithSockets(ctx, c.options)
 	}
 	if err != nil {
 		return nil, err

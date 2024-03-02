@@ -35,13 +35,14 @@ import (
 //
 // swagger:model server_params
 type ServerParams struct {
-
 	// agent addr
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	AgentAddr string `json:"agent-addr,omitempty"`
 
 	// agent check
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	AgentCheck string `json:"agent-check,omitempty"`
 
 	// agent inter
@@ -50,6 +51,8 @@ type ServerParams struct {
 	// agent port
 	// Maximum: 65535
 	// Minimum: 1
+	// +kubebuilder:validation:Maximum=65535
+	// +kubebuilder:validation:Minimum=1
 	AgentPort *int64 `json:"agent-port,omitempty"`
 
 	// agent send
@@ -60,38 +63,47 @@ type ServerParams struct {
 
 	// alpn
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Alpn string `json:"alpn,omitempty"`
 
 	// backup
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Backup string `json:"backup,omitempty"`
 
 	// check
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Check string `json:"check,omitempty"`
 
 	// check send proxy
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	CheckSendProxy string `json:"check-send-proxy,omitempty"`
 
 	// check sni
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	CheckSni string `json:"check-sni,omitempty"`
 
 	// check ssl
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	CheckSsl string `json:"check-ssl,omitempty"`
 
 	// check alpn
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	CheckAlpn string `json:"check_alpn,omitempty"`
 
 	// check proto
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	CheckProto string `json:"check_proto,omitempty"`
 
 	// check via socks4
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	CheckViaSocks4 string `json:"check_via_socks4,omitempty"`
 
 	// ciphers
@@ -105,6 +117,7 @@ type ServerParams struct {
 
 	// cookie
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Cookie string `json:"cookie,omitempty"`
 
 	// crl file
@@ -127,46 +140,60 @@ type ServerParams struct {
 
 	// force sslv3
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceSslv3 string `json:"force_sslv3,omitempty"`
 
 	// force tlsv10
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceTlsv10 string `json:"force_tlsv10,omitempty"`
 
 	// force tlsv11
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceTlsv11 string `json:"force_tlsv11,omitempty"`
 
 	// force tlsv12
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceTlsv12 string `json:"force_tlsv12,omitempty"`
 
 	// force tlsv13
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceTlsv13 string `json:"force_tlsv13,omitempty"`
 
 	// health check address
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	HealthCheckAddress string `json:"health_check_address,omitempty"`
 
 	// health check port
 	// Maximum: 65535
 	// Minimum: 1
+	// +kubebuilder:validation:Maximum=65535
+	// +kubebuilder:validation:Minimum=1
 	HealthCheckPort *int64 `json:"health_check_port,omitempty"`
 
 	// init addr
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	InitAddr *string `json:"init-addr,omitempty"`
 
 	// inter
 	Inter *int64 `json:"inter,omitempty"`
 
+	// log bufsize
+	LogBufsize *int64 `json:"log-bufsize,omitempty"`
+
 	// log proto
 	// Enum: [legacy octet-count]
+	// +kubebuilder:validation:Enum=legacy;octet-count;
 	LogProto string `json:"log_proto,omitempty"`
 
 	// maintenance
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Maintenance string `json:"maintenance,omitempty"`
 
 	// max reuse
@@ -186,26 +213,32 @@ type ServerParams struct {
 
 	// no sslv3
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoSslv3 string `json:"no_sslv3,omitempty"`
 
 	// no tlsv10
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoTlsv10 string `json:"no_tlsv10,omitempty"`
 
 	// no tlsv11
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoTlsv11 string `json:"no_tlsv11,omitempty"`
 
 	// no tlsv12
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoTlsv12 string `json:"no_tlsv12,omitempty"`
 
 	// no tlsv13
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoTlsv13 string `json:"no_tlsv13,omitempty"`
 
 	// no verifyhost
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoVerifyhost string `json:"no_verifyhost,omitempty"`
 
 	// npn
@@ -213,18 +246,22 @@ type ServerParams struct {
 
 	// observe
 	// Enum: [layer4 layer7]
+	// +kubebuilder:validation:Enum=layer4;layer7;
 	Observe string `json:"observe,omitempty"`
 
 	// on error
 	// Enum: [fastinter fail-check sudden-death mark-down]
+	// +kubebuilder:validation:Enum=fastinter;fail-check;sudden-death;mark-down;
 	OnError string `json:"on-error,omitempty"`
 
 	// on marked down
 	// Enum: [shutdown-sessions]
+	// +kubebuilder:validation:Enum=shutdown-sessions;
 	OnMarkedDown string `json:"on-marked-down,omitempty"`
 
 	// on marked up
 	// Enum: [shutdown-backup-sessions]
+	// +kubebuilder:validation:Enum=shutdown-backup-sessions;
 	OnMarkedUp string `json:"on-marked-up,omitempty"`
 
 	// pool low conn
@@ -238,6 +275,7 @@ type ServerParams struct {
 
 	// proto
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Proto string `json:"proto,omitempty"`
 
 	// proxy v2 options
@@ -248,18 +286,22 @@ type ServerParams struct {
 
 	// resolve net
 	// Pattern: ^([A-Za-z0-9.:/]+)(,[A-Za-z0-9.:/]+)*$
+	// +kubebuilder:validation:Pattern=`^([A-Za-z0-9.:/]+)(,[A-Za-z0-9.:/]+)*$`
 	ResolveNet string `json:"resolve-net,omitempty"`
 
 	// resolve prefer
 	// Enum: [ipv4 ipv6]
+	// +kubebuilder:validation:Enum=ipv4;ipv6;
 	ResolvePrefer string `json:"resolve-prefer,omitempty"`
 
 	// resolve opts
 	// Pattern: ^(allow-dup-ip|ignore-weight|prevent-dup-ip)(,(allow-dup-ip|ignore-weight|prevent-dup-ip))*$
+	// +kubebuilder:validation:Pattern=`^(allow-dup-ip|ignore-weight|prevent-dup-ip)(,(allow-dup-ip|ignore-weight|prevent-dup-ip))*$`
 	ResolveOpts string `json:"resolve_opts,omitempty"`
 
 	// resolvers
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Resolvers string `json:"resolvers,omitempty"`
 
 	// rise
@@ -267,19 +309,26 @@ type ServerParams struct {
 
 	// send proxy
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendProxy string `json:"send-proxy,omitempty"`
 
 	// send proxy v2
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendProxyV2 string `json:"send-proxy-v2,omitempty"`
 
 	// send proxy v2 ssl
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendProxyV2Ssl string `json:"send_proxy_v2_ssl,omitempty"`
 
 	// send proxy v2 ssl cn
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendProxyV2SslCn string `json:"send_proxy_v2_ssl_cn,omitempty"`
+
+	// set proxy v2 tlv fmt
+	SetProxyV2TlvFmt *ServerParamsSetProxyV2TlvFmt `json:"set-proxy-v2-tlv-fmt,omitempty"`
 
 	// shard
 	Shard int64 `json:"shard,omitempty"`
@@ -292,10 +341,12 @@ type ServerParams struct {
 
 	// sni
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Sni string `json:"sni,omitempty"`
 
 	// socks4
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Socks4 string `json:"socks4,omitempty"`
 
 	// source
@@ -303,30 +354,37 @@ type ServerParams struct {
 
 	// ssl
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Ssl string `json:"ssl,omitempty"`
 
 	// ssl cafile
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	SslCafile string `json:"ssl_cafile,omitempty"`
 
 	// ssl certificate
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	SslCertificate string `json:"ssl_certificate,omitempty"`
 
 	// ssl max ver
 	// Enum: [SSLv3 TLSv1.0 TLSv1.1 TLSv1.2 TLSv1.3]
+	// +kubebuilder:validation:Enum=SSLv3;TLSv1.0;TLSv1.1;TLSv1.2;TLSv1.3;
 	SslMaxVer string `json:"ssl_max_ver,omitempty"`
 
 	// ssl min ver
 	// Enum: [SSLv3 TLSv1.0 TLSv1.1 TLSv1.2 TLSv1.3]
+	// +kubebuilder:validation:Enum=SSLv3;TLSv1.0;TLSv1.1;TLSv1.2;TLSv1.3;
 	SslMinVer string `json:"ssl_min_ver,omitempty"`
 
 	// ssl reuse
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SslReuse string `json:"ssl_reuse,omitempty"`
 
 	// stick
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Stick string `json:"stick,omitempty"`
 
 	// tcp ut
@@ -334,10 +392,12 @@ type ServerParams struct {
 
 	// tfo
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Tfo string `json:"tfo,omitempty"`
 
 	// tls tickets
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	TLSTickets string `json:"tls_tickets,omitempty"`
 
 	// track
@@ -345,6 +405,7 @@ type ServerParams struct {
 
 	// verify
 	// Enum: [none required]
+	// +kubebuilder:validation:Enum=none;required;
 	Verify string `json:"verify,omitempty"`
 
 	// verifyhost
@@ -355,6 +416,7 @@ type ServerParams struct {
 
 	// ws
 	// Enum: [auto h1 h2]
+	// +kubebuilder:validation:Enum=auto;h1;h2;
 	Ws string `json:"ws,omitempty"`
 }
 
@@ -531,6 +593,10 @@ func (m *ServerParams) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateSendProxyV2SslCn(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateSetProxyV2TlvFmt(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -1980,6 +2046,25 @@ func (m *ServerParams) validateSendProxyV2SslCn(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *ServerParams) validateSetProxyV2TlvFmt(formats strfmt.Registry) error {
+	if swag.IsZero(m.SetProxyV2TlvFmt) { // not required
+		return nil
+	}
+
+	if m.SetProxyV2TlvFmt != nil {
+		if err := m.SetProxyV2TlvFmt.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("set-proxy-v2-tlv-fmt")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("set-proxy-v2-tlv-fmt")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (m *ServerParams) validateSni(formats strfmt.Registry) error {
 	if swag.IsZero(m.Sni) { // not required
 		return nil
@@ -2427,8 +2512,33 @@ func (m *ServerParams) validateWs(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this server params based on context it is used
+// ContextValidate validate this server params based on the context it is used
 func (m *ServerParams) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.contextValidateSetProxyV2TlvFmt(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *ServerParams) contextValidateSetProxyV2TlvFmt(ctx context.Context, formats strfmt.Registry) error {
+
+	if m.SetProxyV2TlvFmt != nil {
+		if err := m.SetProxyV2TlvFmt.ContextValidate(ctx, formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("set-proxy-v2-tlv-fmt")
+			} else if ce, ok := err.(*errors.CompositeError); ok {
+				return ce.ValidateName("set-proxy-v2-tlv-fmt")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -2443,6 +2553,79 @@ func (m *ServerParams) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (m *ServerParams) UnmarshalBinary(b []byte) error {
 	var res ServerParams
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*m = res
+	return nil
+}
+
+// ServerParamsSetProxyV2TlvFmt server params set proxy v2 tlv fmt
+//
+// swagger:model ServerParamsSetProxyV2TlvFmt
+type ServerParamsSetProxyV2TlvFmt struct {
+
+	// id
+	// Required: true
+	ID *string `json:"id"`
+
+	// value
+	// Required: true
+	Value *string `json:"value"`
+}
+
+// Validate validates this server params set proxy v2 tlv fmt
+func (m *ServerParamsSetProxyV2TlvFmt) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.validateID(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateValue(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *ServerParamsSetProxyV2TlvFmt) validateID(formats strfmt.Registry) error {
+
+	if err := validate.Required("set-proxy-v2-tlv-fmt"+"."+"id", "body", m.ID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *ServerParamsSetProxyV2TlvFmt) validateValue(formats strfmt.Registry) error {
+
+	if err := validate.Required("set-proxy-v2-tlv-fmt"+"."+"value", "body", m.Value); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ContextValidate validates this server params set proxy v2 tlv fmt based on context it is used
+func (m *ServerParamsSetProxyV2TlvFmt) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (m *ServerParamsSetProxyV2TlvFmt) MarshalBinary() ([]byte, error) {
+	if m == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(m)
+}
+
+// UnmarshalBinary interface implementation
+func (m *ServerParamsSetProxyV2TlvFmt) UnmarshalBinary(b []byte) error {
+	var res ServerParamsSetProxyV2TlvFmt
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

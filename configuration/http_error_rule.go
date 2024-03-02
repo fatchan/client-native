@@ -26,8 +26,8 @@ import (
 	http_actions "github.com/haproxytech/config-parser/v5/parsers/http/actions"
 	"github.com/haproxytech/config-parser/v5/types"
 
-	"github.com/haproxytech/client-native/v5/misc"
-	"github.com/haproxytech/client-native/v5/models"
+	"github.com/haproxytech/client-native/v6/misc"
+	"github.com/haproxytech/client-native/v6/models"
 )
 
 type HTTPErrorRule interface {
@@ -74,14 +74,14 @@ func (c *client) GetHTTPErrorRule(id int64, parentType, parentName string, trans
 
 	var section parser.Section
 	switch parentType {
-	case "defaults":
+	case DefaultsParentName:
 		section = parser.Defaults
 		if parentName == "" {
 			parentName = parser.DefaultSectionName
 		}
-	case "frontend":
+	case FrontendParentName:
 		section = parser.Frontends
-	case "backend":
+	case BackendParentName:
 		section = parser.Backends
 	}
 
@@ -106,14 +106,14 @@ func (c *client) DeleteHTTPErrorRule(id int64, parentType string, parentName str
 
 	var section parser.Section
 	switch parentType {
-	case "defaults":
+	case DefaultsParentName:
 		section = parser.Defaults
 		if parentName == "" {
 			parentName = parser.DefaultSectionName
 		}
-	case "frontend":
+	case FrontendParentName:
 		section = parser.Frontends
-	case "backend":
+	case BackendParentName:
 		section = parser.Backends
 	}
 
@@ -140,14 +140,14 @@ func (c *client) CreateHTTPErrorRule(parentType string, parentName string, data 
 
 	var section parser.Section
 	switch parentType {
-	case "defaults":
+	case DefaultsParentName:
 		section = parser.Defaults
 		if parentName == "" {
 			parentName = parser.DefaultSectionName
 		}
-	case "frontend":
+	case FrontendParentName:
 		section = parser.Frontends
-	case "backend":
+	case BackendParentName:
 		section = parser.Backends
 	}
 
@@ -179,14 +179,14 @@ func (c *client) EditHTTPErrorRule(id int64, parentType string, parentName strin
 
 	var section parser.Section
 	switch parentType {
-	case "defaults":
+	case DefaultsParentName:
 		section = parser.Defaults
 		if parentName == "" {
 			parentName = parser.DefaultSectionName
 		}
-	case "frontend":
+	case FrontendParentName:
 		section = parser.Frontends
-	case "backend":
+	case BackendParentName:
 		section = parser.Backends
 	}
 
@@ -208,14 +208,14 @@ func (c *client) EditHTTPErrorRule(id int64, parentType string, parentName strin
 func ParseHTTPErrorRules(t, pName string, p parser.Parser) (models.HTTPErrorRules, error) {
 	var section parser.Section
 	switch t {
-	case "defaults":
+	case DefaultsParentName:
 		section = parser.Defaults
 		if pName == "" {
 			pName = parser.DefaultSectionName
 		}
-	case "frontend":
+	case FrontendParentName:
 		section = parser.Frontends
-	case "backend":
+	case BackendParentName:
 		section = parser.Backends
 	default:
 		return nil, NewConfError(ErrValidationError, fmt.Sprintf("unsupported section in http_error: %s", t))

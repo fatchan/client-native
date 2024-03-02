@@ -1,3 +1,4 @@
+---
 server_params:
   type: object
   properties:
@@ -142,6 +143,9 @@ server_params:
     log_proto:
       type: string
       enum: [legacy, octet-count]
+    log-bufsize:
+      type: integer
+      x-nullable: true
     maxconn:
       type: integer
       x-display-name: Max Concurrent Connections
@@ -235,6 +239,16 @@ server_params:
     send-proxy-v2:
       type: string
       enum: [enabled, disabled]
+    set-proxy-v2-tlv-fmt:
+      type: object
+      required:
+        - id
+        - value
+      properties:
+        id:
+          type: string
+        value:
+          type: string
     proxy-v2-options:
       type: array
       x-omitempty: true

@@ -34,9 +34,9 @@ import (
 //
 // swagger:model table
 type Table struct {
-
 	// expire
 	// Pattern: ^\d+(ms|s|m|h|d)?$
+	// +kubebuilder:validation:Pattern=`^\d+(ms|s|m|h|d)?$`
 	Expire *string `json:"expire,omitempty"`
 
 	// name
@@ -47,6 +47,7 @@ type Table struct {
 
 	// size
 	// Pattern: ^\d+(k|K|m|M|g|G)?$
+	// +kubebuilder:validation:Pattern=`^\d+(k|K|m|M|g|G)?$`
 	Size string `json:"size,omitempty"`
 
 	// store
@@ -54,10 +55,14 @@ type Table struct {
 
 	// type
 	// Enum: [ip integer string binary]
+	// +kubebuilder:validation:Enum=ip;integer;string;binary;
 	Type string `json:"type,omitempty"`
 
 	// type len
 	TypeLen *int64 `json:"type_len,omitempty"`
+
+	// write to
+	WriteTo *string `json:"write_to,omitempty"`
 }
 
 // Validate validates this table

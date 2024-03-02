@@ -60,6 +60,7 @@ type Cookie struct {
 	// name
 	// Required: true
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Name *string `json:"name"`
 
 	// nocache
@@ -76,6 +77,7 @@ type Cookie struct {
 
 	// type
 	// Enum: [rewrite insert prefix]
+	// +kubebuilder:validation:Enum=rewrite;insert;prefix;
 	Type string `json:"type,omitempty"`
 }
 
@@ -295,9 +297,9 @@ func (m *Cookie) UnmarshalBinary(b []byte) error {
 //
 // swagger:model Attr
 type Attr struct {
-
 	// value
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Value string `json:"value,omitempty"`
 }
 
@@ -354,9 +356,9 @@ func (m *Attr) UnmarshalBinary(b []byte) error {
 //
 // swagger:model Domain
 type Domain struct {
-
 	// value
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Value string `json:"value,omitempty"`
 }
 

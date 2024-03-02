@@ -36,14 +36,15 @@ import (
 //
 // swagger:model email_alert
 type EmailAlert struct {
-
 	// from
 	// Required: true
 	// Pattern: ^\S+@\S+$
+	// +kubebuilder:validation:Pattern=`^\S+@\S+$`
 	From *string `json:"from"`
 
 	// level
 	// Enum: [emerg alert crit err warning notice info debug]
+	// +kubebuilder:validation:Enum=emerg;alert;crit;err;warning;notice;info;debug;
 	Level string `json:"level,omitempty"`
 
 	// mailers
@@ -56,6 +57,7 @@ type EmailAlert struct {
 	// to
 	// Required: true
 	// Pattern: ^\S+@\S+$
+	// +kubebuilder:validation:Pattern=`^\S+@\S+$`
 	To *string `json:"to"`
 }
 

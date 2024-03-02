@@ -37,9 +37,9 @@ import (
 //
 // swagger:model stick_rule
 type StickRule struct {
-
 	// cond
 	// Enum: [if unless]
+	// +kubebuilder:validation:Enum=if;unless;
 	Cond string `json:"cond,omitempty"`
 
 	// cond test
@@ -52,15 +52,18 @@ type StickRule struct {
 	// pattern
 	// Required: true
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Pattern string `json:"pattern"`
 
 	// table
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Table string `json:"table,omitempty"`
 
 	// type
 	// Required: true
 	// Enum: [match on store-request store-response]
+	// +kubebuilder:validation:Enum=match;on;store-request;store-response;
 	Type string `json:"type"`
 }
 

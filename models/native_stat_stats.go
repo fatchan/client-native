@@ -31,7 +31,7 @@ import (
 )
 
 // NativeStatStats native stat stats
-// Example: {"bin":4326578,"bout":889901290,"comp_byp":0,"comp_in":0,"comp_out":0,"comp_rsp":0,"conn_rate":12,"conn_rate_max":456,"conn_tot":45682,"dcon":0,"dreq":4,"dresp":1,"dses":0,"ereq":54,"hrsp_1xx":0,"hrsp_2xx":165,"hrsp_3xx":12,"hrsp_4xx":50,"hrsp_5xx":4,"hrsp_other":0,"iid":0,"intercepted":346,"mode":"http","pid":3204,"rate":64,"rate_lim":20000,"rate_max":4000,"req_rate":49,"req_rate_max":3965,"req_total":1254786,"scur":129,"slim":2000,"smax":2000,"status":"UP","stot":12902}
+// Example: {"bin":4326578,"bout":889901290,"comp_byp":0,"comp_in":0,"comp_out":0,"comp_rsp":0,"conn_rate":12,"conn_rate_max":456,"conn_tot":45682,"dcon":0,"dreq":4,"dresp":1,"dses":0,"ereq":54,"hrsp_1xx":0,"hrsp_2xx":165,"hrsp_3xx":12,"hrsp_4xx":50,"hrsp_5xx":4,"hrsp_other":0,"iid":0,"intercepted":346,"last_chk":"L4OK in 0ms","mode":"http","pid":3204,"rate":64,"rate_lim":20000,"rate_max":4000,"req_rate":49,"req_rate_max":3965,"req_total":1254786,"scur":129,"slim":2000,"smax":2000,"status":"UP","stot":12902}
 //
 // swagger:model native_stat_stats
 type NativeStatStats struct {
@@ -62,6 +62,7 @@ type NativeStatStats struct {
 
 	// agent status
 	// Enum: [UNK INI SOCKERR L4OK L4TOUT L4CON L7OK L7STS]
+	// +kubebuilder:validation:Enum=UNK;INI;SOCKERR;L4OK;L4TOUT;L4CON;L7OK;L7STS;
 	AgentStatus string `json:"agent_status,omitempty"`
 
 	// algo
@@ -96,6 +97,7 @@ type NativeStatStats struct {
 
 	// check status
 	// Enum: [UNK INI SOCKERR L4OK L4TOUT L4CON L6OK L6TOUT L6RSP L7OK L7OKC L7TOUT L7RSP L7STS]
+	// +kubebuilder:validation:Enum=UNK;INI;SOCKERR;L4OK;L4TOUT;L4CON;L6OK;L6TOUT;L6RSP;L7OK;L7OKC;L7TOUT;L7RSP;L7STS;
 	CheckStatus string `json:"check_status,omitempty"`
 
 	// chkdown
@@ -185,6 +187,9 @@ type NativeStatStats struct {
 	// intercepted
 	Intercepted *int64 `json:"intercepted,omitempty"`
 
+	// last chk
+	LastChk *string `json:"last_chk,omitempty"`
+
 	// lastchg
 	Lastchg *int64 `json:"lastchg,omitempty"`
 
@@ -196,6 +201,7 @@ type NativeStatStats struct {
 
 	// mode
 	// Enum: [tcp http health unknown]
+	// +kubebuilder:validation:Enum=tcp;http;health;unknown;
 	Mode string `json:"mode,omitempty"`
 
 	// pid
@@ -251,6 +257,7 @@ type NativeStatStats struct {
 
 	// status
 	// Enum: [UP DOWN NOLB MAINT no check]
+	// +kubebuilder:validation:Enum=UP;DOWN;NOLB;MAINT;no;check;
 	Status string `json:"status,omitempty"`
 
 	// stot

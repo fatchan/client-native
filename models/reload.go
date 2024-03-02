@@ -37,9 +37,9 @@ import (
 //
 // swagger:model reload
 type Reload struct {
-
 	// id
 	// Pattern: ^\d{4}-\d{2}-\d{2}-\d+$
+	// +kubebuilder:validation:Pattern=`^\d{4}-\d{2}-\d{2}-\d+$`
 	ID string `json:"id,omitempty"`
 
 	// reload timestamp
@@ -50,6 +50,7 @@ type Reload struct {
 
 	// status
 	// Enum: [failed in_progress succeeded]
+	// +kubebuilder:validation:Enum=failed;in_progress;succeeded;
 	Status string `json:"status,omitempty"`
 }
 

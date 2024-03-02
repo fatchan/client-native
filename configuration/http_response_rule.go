@@ -29,8 +29,8 @@ import (
 	http_actions "github.com/haproxytech/config-parser/v5/parsers/http/actions"
 	"github.com/haproxytech/config-parser/v5/types"
 
-	"github.com/haproxytech/client-native/v5/misc"
-	"github.com/haproxytech/client-native/v5/models"
+	"github.com/haproxytech/client-native/v6/misc"
+	"github.com/haproxytech/client-native/v6/models"
 )
 
 type HTTPResponseRule interface {
@@ -76,9 +76,9 @@ func (c *client) GetHTTPResponseRule(id int64, parentType, parentName string, tr
 	}
 
 	var section parser.Section
-	if parentType == "backend" {
+	if parentType == BackendParentName {
 		section = parser.Backends
-	} else if parentType == "frontend" {
+	} else if parentType == FrontendParentName {
 		section = parser.Frontends
 	}
 
@@ -102,9 +102,9 @@ func (c *client) DeleteHTTPResponseRule(id int64, parentType string, parentName 
 	}
 
 	var section parser.Section
-	if parentType == "backend" {
+	if parentType == BackendParentName {
 		section = parser.Backends
-	} else if parentType == "frontend" {
+	} else if parentType == FrontendParentName {
 		section = parser.Frontends
 	}
 
@@ -130,9 +130,9 @@ func (c *client) CreateHTTPResponseRule(parentType string, parentName string, da
 	}
 
 	var section parser.Section
-	if parentType == "backend" {
+	if parentType == BackendParentName {
 		section = parser.Backends
-	} else if parentType == "frontend" {
+	} else if parentType == FrontendParentName {
 		section = parser.Frontends
 	}
 
@@ -165,9 +165,9 @@ func (c *client) EditHTTPResponseRule(id int64, parentType string, parentName st
 	}
 
 	var section parser.Section
-	if parentType == "backend" {
+	if parentType == BackendParentName {
 		section = parser.Backends
-	} else if parentType == "frontend" {
+	} else if parentType == FrontendParentName {
 		section = parser.Frontends
 	}
 
@@ -188,9 +188,9 @@ func (c *client) EditHTTPResponseRule(id int64, parentType string, parentName st
 
 func ParseHTTPResponseRules(t, pName string, p parser.Parser) (models.HTTPResponseRules, error) {
 	section := parser.Global
-	if t == "frontend" {
+	if t == FrontendParentName {
 		section = parser.Frontends
-	} else if t == "backend" {
+	} else if t == BackendParentName {
 		section = parser.Backends
 	}
 
@@ -456,6 +456,14 @@ func ParseHTTPResponseRule(f types.Action) *models.HTTPResponseRule { //nolint:m
 			r.Status = status
 		}
 		return r
+	case *http_actions.SetTimeout:
+		return &models.HTTPResponseRule{
+			Type:        models.HTTPResponseRuleTypeSetDashTimeout,
+			Timeout:     v.Timeout,
+			TimeoutType: v.Type,
+			Cond:        v.Cond,
+			CondTest:    v.CondTest,
+		}
 	case *actions.SetTos:
 		return &models.HTTPResponseRule{
 			Type:     "set-tos",
@@ -525,6 +533,20 @@ func ParseHTTPResponseRule(f types.Action) *models.HTTPResponseRule { //nolint:m
 			BandwidthLimitPeriod: v.Period.String(),
 			Cond:                 v.Cond,
 			CondTest:             v.CondTest,
+		}
+	case *actions.SetFcMark:
+		return &models.HTTPResponseRule{
+			Type:     models.HTTPResponseRuleTypeSetDashFcDashMark,
+			Expr:     v.Expr.String(),
+			Cond:     v.Cond,
+			CondTest: v.CondTest,
+		}
+	case *actions.SetFcTos:
+		return &models.HTTPResponseRule{
+			Type:     models.HTTPResponseRuleTypeSetDashFcDashTos,
+			Expr:     v.Expr.String(),
+			Cond:     v.Cond,
+			CondTest: v.CondTest,
 		}
 	}
 	return nil
@@ -746,6 +768,13 @@ func SerializeHTTPResponseRule(f models.HTTPResponseRule) (rule types.Action, er
 			Cond:     f.Cond,
 			CondTest: f.CondTest,
 		}
+	case "set-timeout":
+		rule = &http_actions.SetTimeout{
+			Timeout:  f.Timeout,
+			Type:     f.TimeoutType,
+			Cond:     f.Cond,
+			CondTest: f.CondTest,
+		}
 	case "set-tos":
 		rule = &actions.SetTos{
 			Value:    f.TosValue,
@@ -837,6 +866,18 @@ func SerializeHTTPResponseRule(f models.HTTPResponseRule) (rule types.Action, er
 			Name:     f.BandwidthLimitName,
 			Limit:    common.Expression{Expr: strings.Split(f.BandwidthLimitLimit, " ")},
 			Period:   common.Expression{Expr: strings.Split(f.BandwidthLimitPeriod, " ")},
+			Cond:     f.Cond,
+			CondTest: f.CondTest,
+		}
+	case "set-fc-mark":
+		rule = &actions.SetFcMark{
+			Expr:     common.Expression{Expr: strings.Split(f.Expr+f.MarkValue, " ")},
+			Cond:     f.Cond,
+			CondTest: f.CondTest,
+		}
+	case "set-fc-tos":
+		rule = &actions.SetFcTos{
+			Expr:     common.Expression{Expr: strings.Split(f.Expr+f.TosValue, " ")},
 			Cond:     f.Cond,
 			CondTest: f.CondTest,
 		}

@@ -37,17 +37,19 @@ import (
 //
 // swagger:model http_after_response_rule
 type HTTPAfterResponseRule struct {
-
 	// acl file
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	ACLFile string `json:"acl_file,omitempty"`
 
 	// acl keyfmt
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	ACLKeyfmt string `json:"acl_keyfmt,omitempty"`
 
 	// cond
 	// Enum: [if unless]
+	// +kubebuilder:validation:Enum=if;unless;
 	Cond string `json:"cond,omitempty"`
 
 	// cond test
@@ -71,18 +73,22 @@ type HTTPAfterResponseRule struct {
 
 	// log level
 	// Enum: [emerg alert crit err warning notice info debug silent]
+	// +kubebuilder:validation:Enum=emerg;alert;crit;err;warning;notice;info;debug;silent;
 	LogLevel string `json:"log_level,omitempty"`
 
 	// map file
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	MapFile string `json:"map_file,omitempty"`
 
 	// map keyfmt
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	MapKeyfmt string `json:"map_keyfmt,omitempty"`
 
 	// map valuefmt
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	MapValuefmt string `json:"map_valuefmt,omitempty"`
 
 	// sc expr
@@ -100,6 +106,8 @@ type HTTPAfterResponseRule struct {
 	// status
 	// Maximum: 999
 	// Minimum: 100
+	// +kubebuilder:validation:Maximum=999
+	// +kubebuilder:validation:Minimum=100
 	Status int64 `json:"status,omitempty"`
 
 	// status reason
@@ -107,11 +115,13 @@ type HTTPAfterResponseRule struct {
 
 	// strict mode
 	// Enum: [on off]
+	// +kubebuilder:validation:Enum=on;off;
 	StrictMode string `json:"strict_mode,omitempty"`
 
 	// type
 	// Required: true
 	// Enum: [add-header allow del-acl del-header del-map replace-header replace-value sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt0 set-header set-log-level set-map set-status set-var strict-mode unset-var]
+	// +kubebuilder:validation:Enum=add-header;allow;del-acl;del-header;del-map;replace-header;replace-value;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt0;set-header;set-log-level;set-map;set-status;set-var;strict-mode;unset-var;
 	Type string `json:"type"`
 
 	// var expr
@@ -119,10 +129,12 @@ type HTTPAfterResponseRule struct {
 
 	// var name
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	VarName string `json:"var_name,omitempty"`
 
 	// var scope
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	VarScope string `json:"var_scope,omitempty"`
 }
 

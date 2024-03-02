@@ -34,17 +34,19 @@ import (
 //
 // swagger:model hash_type
 type HashType struct {
-
 	// function
-	// Enum: [sdbm djb2 wt6 crc32]
+	// Enum: [sdbm djb2 wt6 crc32 none]
+	// +kubebuilder:validation:Enum=sdbm;djb2;wt6;crc32;none;
 	Function string `json:"function,omitempty"`
 
 	// method
 	// Enum: [map-based consistent]
+	// +kubebuilder:validation:Enum=map-based;consistent;
 	Method string `json:"method,omitempty"`
 
 	// modifier
 	// Enum: [avalanche]
+	// +kubebuilder:validation:Enum=avalanche;
 	Modifier string `json:"modifier,omitempty"`
 }
 
@@ -74,7 +76,7 @@ var hashTypeTypeFunctionPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["sdbm","djb2","wt6","crc32"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["sdbm","djb2","wt6","crc32","none"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -95,6 +97,9 @@ const (
 
 	// HashTypeFunctionCrc32 captures enum value "crc32"
 	HashTypeFunctionCrc32 string = "crc32"
+
+	// HashTypeFunctionNone captures enum value "none"
+	HashTypeFunctionNone string = "none"
 )
 
 // prop value enum

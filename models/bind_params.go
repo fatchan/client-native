@@ -46,6 +46,7 @@ type BindParams struct {
 
 	// alpn
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Alpn string `json:"alpn,omitempty"`
 
 	// backlog
@@ -126,6 +127,7 @@ type BindParams struct {
 	// level
 	// Example: user
 	// Enum: [user operator admin]
+	// +kubebuilder:validation:Enum=user;operator;admin;
 	Level string `json:"level,omitempty"`
 
 	// maxconn
@@ -140,11 +142,15 @@ type BindParams struct {
 
 	// name
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Name string `json:"name,omitempty"`
 
 	// namespace
 	// Example: app
 	Namespace string `json:"namespace,omitempty"`
+
+	// nbconn
+	Nbconn int64 `json:"nbconn,omitempty"`
 
 	// nice
 	// Example: 1
@@ -182,6 +188,7 @@ type BindParams struct {
 
 	// process
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Process string `json:"process,omitempty"`
 
 	// proto
@@ -189,14 +196,21 @@ type BindParams struct {
 
 	// quic cc algo
 	// Enum: [cubic newreno]
+	// +kubebuilder:validation:Enum=cubic;newreno;
 	QuicCcAlgo string `json:"quic-cc-algo,omitempty"`
 
 	// quic force retry
 	QuicForceRetry bool `json:"quic-force-retry,omitempty"`
 
+	// quic socket
+	// Enum: [connection listener]
+	// +kubebuilder:validation:Enum=connection;listener;
+	QuicSocket string `json:"quic-socket,omitempty"`
+
 	// severity output
 	// Example: none
 	// Enum: [none number string]
+	// +kubebuilder:validation:Enum=none;number;string;
 	SeverityOutput string `json:"severity_output,omitempty"`
 
 	// sigalgs
@@ -207,18 +221,22 @@ type BindParams struct {
 
 	// ssl cafile
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	SslCafile string `json:"ssl_cafile,omitempty"`
 
 	// ssl certificate
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	SslCertificate string `json:"ssl_certificate,omitempty"`
 
 	// ssl max ver
 	// Enum: [SSLv3 TLSv1.0 TLSv1.1 TLSv1.2 TLSv1.3]
+	// +kubebuilder:validation:Enum=SSLv3;TLSv1.0;TLSv1.1;TLSv1.2;TLSv1.3;
 	SslMaxVer string `json:"ssl_max_ver,omitempty"`
 
 	// ssl min ver
 	// Enum: [SSLv3 TLSv1.0 TLSv1.1 TLSv1.2 TLSv1.3]
+	// +kubebuilder:validation:Enum=SSLv3;TLSv1.0;TLSv1.1;TLSv1.2;TLSv1.3;
 	SslMinVer string `json:"ssl_min_ver,omitempty"`
 
 	// strict sni
@@ -254,6 +272,7 @@ type BindParams struct {
 	// verify
 	// Example: none
 	// Enum: [none optional required]
+	// +kubebuilder:validation:Enum=none;optional;required;
 	Verify string `json:"verify,omitempty"`
 }
 
@@ -278,6 +297,10 @@ func (m *BindParams) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateQuicCcAlgo(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateQuicSocket(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -428,6 +451,48 @@ func (m *BindParams) validateQuicCcAlgo(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateQuicCcAlgoEnum("quic-cc-algo", "body", m.QuicCcAlgo); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var bindParamsTypeQuicSocketPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["connection","listener"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		bindParamsTypeQuicSocketPropEnum = append(bindParamsTypeQuicSocketPropEnum, v)
+	}
+}
+
+const (
+
+	// BindParamsQuicSocketConnection captures enum value "connection"
+	BindParamsQuicSocketConnection string = "connection"
+
+	// BindParamsQuicSocketListener captures enum value "listener"
+	BindParamsQuicSocketListener string = "listener"
+)
+
+// prop value enum
+func (m *BindParams) validateQuicSocketEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, bindParamsTypeQuicSocketPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *BindParams) validateQuicSocket(formats strfmt.Registry) error {
+	if swag.IsZero(m.QuicSocket) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateQuicSocketEnum("quic-socket", "body", m.QuicSocket); err != nil {
 		return err
 	}
 

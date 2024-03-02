@@ -42,6 +42,7 @@ type Ring struct {
 
 	// format
 	// Enum: [iso local raw rfc3164 rfc5424 short priority timed]
+	// +kubebuilder:validation:Enum=iso;local;raw;rfc3164;rfc5424;short;priority;timed;
 	Format string `json:"format,omitempty"`
 
 	// maxlen
@@ -50,6 +51,7 @@ type Ring struct {
 	// name
 	// Required: true
 	// Pattern: ^[A-Za-z0-9-_.:]+$
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9-_.:]+$`
 	Name string `json:"name"`
 
 	// size

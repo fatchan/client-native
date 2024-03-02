@@ -26,12 +26,13 @@ import (
 	"github.com/haproxytech/config-parser/v5/common"
 	parser_errors "github.com/haproxytech/config-parser/v5/errors"
 	"github.com/haproxytech/config-parser/v5/parsers/actions"
+	http_actions "github.com/haproxytech/config-parser/v5/parsers/http/actions"
 	tcp_actions "github.com/haproxytech/config-parser/v5/parsers/tcp/actions"
 	tcp_types "github.com/haproxytech/config-parser/v5/parsers/tcp/types"
 	"github.com/haproxytech/config-parser/v5/types"
 
-	"github.com/haproxytech/client-native/v5/misc"
-	"github.com/haproxytech/client-native/v5/models"
+	"github.com/haproxytech/client-native/v6/misc"
+	"github.com/haproxytech/client-native/v6/models"
 )
 
 type TCPRequestRule interface {
@@ -77,9 +78,9 @@ func (c *client) GetTCPRequestRule(id int64, parentType, parentName string, tran
 	}
 
 	var section parser.Section
-	if parentType == "backend" {
+	if parentType == BackendParentName {
 		section = parser.Backends
-	} else if parentType == "frontend" {
+	} else if parentType == FrontendParentName {
 		section = parser.Frontends
 	}
 
@@ -105,9 +106,9 @@ func (c *client) DeleteTCPRequestRule(id int64, parentType string, parentName st
 		return err
 	}
 	var section parser.Section
-	if parentType == "backend" {
+	if parentType == BackendParentName {
 		section = parser.Backends
-	} else if parentType == "frontend" {
+	} else if parentType == FrontendParentName {
 		section = parser.Frontends
 	}
 
@@ -134,9 +135,9 @@ func (c *client) CreateTCPRequestRule(parentType string, parentName string, data
 	}
 
 	var section parser.Section
-	if parentType == "backend" {
+	if parentType == BackendParentName {
 		section = parser.Backends
-	} else if parentType == "frontend" {
+	} else if parentType == FrontendParentName {
 		section = parser.Frontends
 	}
 
@@ -169,9 +170,9 @@ func (c *client) EditTCPRequestRule(id int64, parentType string, parentName stri
 	}
 
 	var section parser.Section
-	if parentType == "backend" {
+	if parentType == BackendParentName {
 		section = parser.Backends
-	} else if parentType == "frontend" {
+	} else if parentType == FrontendParentName {
 		section = parser.Frontends
 	}
 
@@ -193,9 +194,9 @@ func (c *client) EditTCPRequestRule(id int64, parentType string, parentName stri
 
 func ParseTCPRequestRules(t, pName string, p parser.Parser) (models.TCPRequestRules, error) {
 	section := parser.Global
-	if t == "frontend" {
+	if t == FrontendParentName {
 		section = parser.Frontends
-	} else if t == "backend" {
+	} else if t == BackendParentName {
 		section = parser.Backends
 	}
 
@@ -299,6 +300,16 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 			rule.Expr = a.Expr.String()
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
+		case *actions.SetFcMark:
+			rule.Action = models.TCPRequestRuleActionSetDashFcDashMark
+			rule.Expr = a.Expr.String()
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
+		case *actions.SetFcTos:
+			rule.Action = models.TCPRequestRuleActionSetDashFcDashTos
+			rule.Expr = a.Expr.String()
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
 		case *tcp_actions.SetSrc:
 			rule.Action = models.TCPRequestRuleActionSetDashSrc
 			rule.Expr = a.Expr.String()
@@ -337,6 +348,13 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 		case *actions.SetDstPort:
 			rule.Action = models.TCPRequestRuleActionSetDashDstDashPort
 			rule.Expr = a.Expr.String()
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
+		case *actions.SetVarFmt:
+			rule.Action = models.TCPRequestRuleActionSetDashVarDashFmt
+			rule.VarName = a.VarName
+			rule.VarFormat = strings.Join(a.Fmt.Expr, " ")
+			rule.VarScope = a.VarScope
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
 		case *actions.UnsetVar:
@@ -484,6 +502,26 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 			rule.MarkValue = a.Value
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
+		case *actions.SetBcMark:
+			rule.Action = models.TCPRequestRuleActionSetDashBcDashMark
+			rule.Expr = a.Expr.String()
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
+		case *actions.SetBcTos:
+			rule.Action = models.TCPRequestRuleActionSetDashBcDashTos
+			rule.Expr = a.Expr.String()
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
+		case *actions.SetFcMark:
+			rule.Action = models.TCPRequestRuleActionSetDashFcDashMark
+			rule.Expr = a.Expr.String()
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
+		case *actions.SetFcTos:
+			rule.Action = models.TCPRequestRuleActionSetDashFcDashTos
+			rule.Expr = a.Expr.String()
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
 		case *actions.SetSrcPort:
 			rule.Action = models.TCPRequestRuleActionSetDashSrcDashPort
 			rule.Expr = a.Expr.String()
@@ -532,6 +570,12 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 			rule.Action = models.TCPRequestRuleActionAccept
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
+		case *tcp_actions.AttachSrv:
+			rule.Action = models.TCPRequestRuleActionAttachDashSrv
+			rule.ServerName = a.Server
+			rule.Expr = a.Name.String()
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
 		case *actions.Reject:
 			rule.Action = models.TCPRequestRuleActionAccept
 			rule.Cond = a.Cond
@@ -573,6 +617,16 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 			rule.Action = models.TCPRequestRuleActionScDashSetDashGpt0
 			rule.ScIncID = a.ID
 			rule.GptValue = a.Expr.String()
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
+		case *actions.SetFcMark:
+			rule.Action = models.TCPRequestRuleActionSetDashFcDashMark
+			rule.Expr = a.Expr.String()
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
+		case *actions.SetFcTos:
+			rule.Action = models.TCPRequestRuleActionSetDashFcDashTos
+			rule.Expr = a.Expr.String()
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
 		case *actions.SetVar:
@@ -780,6 +834,38 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 					Fmt:      common.Expression{Expr: strings.Split(f.VarFormat, " ")},
 					VarName:  f.VarName,
 					VarScope: f.VarScope,
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
+		case models.TCPRequestRuleActionSetDashSrc:
+			return &tcp_types.Connection{
+				Action: &http_actions.SetSrc{
+					Expr:     common.Expression{Expr: strings.Split(f.Expr, " ")},
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
+		case models.TCPRequestRuleActionSetDashDst:
+			return &tcp_types.Connection{
+				Action: &actions.SetDst{
+					Expr:     common.Expression{Expr: strings.Split(f.Expr, " ")},
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
+		case models.TCPRequestRuleActionSetDashFcDashMark:
+			return &tcp_types.Connection{
+				Action: &actions.SetFcMark{
+					Expr:     common.Expression{Expr: strings.Split(f.Expr+f.MarkValue, " ")},
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
+		case models.TCPRequestRuleActionSetDashFcDashTos:
+			return &tcp_types.Connection{
+				Action: &actions.SetFcTos{
+					Expr:     common.Expression{Expr: strings.Split(f.Expr+f.TosValue, " ")},
 					Cond:     f.Cond,
 					CondTest: f.CondTest,
 				},
@@ -1066,6 +1152,38 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 					CondTest: f.CondTest,
 				},
 			}, nil
+		case models.TCPRequestRuleActionSetDashBcDashMark:
+			return &tcp_types.Content{
+				Action: &actions.SetBcMark{
+					Expr:     common.Expression{Expr: strings.Split(f.Expr+f.MarkValue, " ")},
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
+		case models.TCPRequestRuleActionSetDashBcDashTos:
+			return &tcp_types.Content{
+				Action: &actions.SetBcTos{
+					Expr:     common.Expression{Expr: strings.Split(f.Expr+f.TosValue, " ")},
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
+		case models.TCPRequestRuleActionSetDashFcDashMark:
+			return &tcp_types.Content{
+				Action: &actions.SetFcMark{
+					Expr:     common.Expression{Expr: strings.Split(f.Expr+f.MarkValue, " ")},
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
+		case models.TCPRequestRuleActionSetDashFcDashTos:
+			return &tcp_types.Content{
+				Action: &actions.SetFcTos{
+					Expr:     common.Expression{Expr: strings.Split(f.Expr+f.TosValue, " ")},
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
 		}
 		return nil, NewConfError(ErrValidationError, fmt.Sprintf("unsupported action '%T' in tcp_request_rule", f.Action))
 	case models.TCPRequestRuleTypeSession:
@@ -1073,6 +1191,15 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 		case models.TCPRequestRuleActionAccept:
 			return &tcp_types.Session{
 				Action: &tcp_actions.Accept{
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
+		case models.TCPRequestRuleActionAttachDashSrv:
+			return &tcp_types.Session{
+				Action: &tcp_actions.AttachSrv{
+					Server:   f.ServerName,
+					Name:     common.Expression{Expr: []string{f.Expr}},
 					Cond:     f.Cond,
 					CondTest: f.CondTest,
 				},
@@ -1207,6 +1334,22 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 		case models.TCPRequestRuleActionSilentDashDrop:
 			return &tcp_types.Session{
 				Action: &actions.SilentDrop{
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
+		case models.TCPRequestRuleActionSetDashFcDashMark:
+			return &tcp_types.Session{
+				Action: &actions.SetFcMark{
+					Expr:     common.Expression{Expr: strings.Split(f.Expr+f.MarkValue, " ")},
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
+		case models.TCPRequestRuleActionSetDashFcDashTos:
+			return &tcp_types.Session{
+				Action: &actions.SetFcTos{
+					Expr:     common.Expression{Expr: strings.Split(f.Expr+f.TosValue, " ")},
 					Cond:     f.Cond,
 					CondTest: f.CondTest,
 				},

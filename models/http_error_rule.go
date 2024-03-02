@@ -50,7 +50,8 @@ type HTTPErrorRule struct {
 	ReturnContent string `json:"return_content,omitempty"`
 
 	// return content format
-	// Enum: [default-errorfile errorfile errorfiles file lf-file string lf-string]
+	// Enum: [default-errorfiles errorfile errorfiles file lf-file string lf-string]
+	// +kubebuilder:validation:Enum=default-errorfiles;errorfile;errorfiles;file;lf-file;string;lf-string;
 	ReturnContentFormat string `json:"return_content_format,omitempty"`
 
 	// return content type
@@ -59,11 +60,13 @@ type HTTPErrorRule struct {
 	// status
 	// Required: true
 	// Enum: [200 400 401 403 404 405 407 408 410 413 425 429 500 501 502 503 504]
+	// +kubebuilder:validation:Enum=200;400;401;403;404;405;407;408;410;413;425;429;500;501;502;503;504;
 	Status int64 `json:"status"`
 
 	// type
 	// Required: true
 	// Enum: [status]
+	// +kubebuilder:validation:Enum=status;
 	Type string `json:"type"`
 }
 
@@ -136,7 +139,7 @@ var httpErrorRuleTypeReturnContentFormatPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["default-errorfile","errorfile","errorfiles","file","lf-file","string","lf-string"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["default-errorfiles","errorfile","errorfiles","file","lf-file","string","lf-string"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -146,8 +149,8 @@ func init() {
 
 const (
 
-	// HTTPErrorRuleReturnContentFormatDefaultDashErrorfile captures enum value "default-errorfile"
-	HTTPErrorRuleReturnContentFormatDefaultDashErrorfile string = "default-errorfile"
+	// HTTPErrorRuleReturnContentFormatDefaultDashErrorfiles captures enum value "default-errorfiles"
+	HTTPErrorRuleReturnContentFormatDefaultDashErrorfiles string = "default-errorfiles"
 
 	// HTTPErrorRuleReturnContentFormatErrorfile captures enum value "errorfile"
 	HTTPErrorRuleReturnContentFormatErrorfile string = "errorfile"

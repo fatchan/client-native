@@ -43,10 +43,12 @@ type Transaction struct {
 
 	// id
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	ID string `json:"id,omitempty"`
 
 	// status
 	// Enum: [failed outdated in_progress success]
+	// +kubebuilder:validation:Enum=failed;outdated;in_progress;success;
 	Status string `json:"status,omitempty"`
 }
 

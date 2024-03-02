@@ -16,10 +16,15 @@ limitations under the License.
 
 package options
 
+import "time"
+
 type RuntimeOptions struct {
-	MapsDir          *string
-	MasterSocketData *masterSocketData
-	Sockets          map[int]string
+	MapsDir                 *string
+	MasterSocketData        *masterSocketData
+	Sockets                 map[int]string
+	DoNotCheckRuntimeOnInit bool
+	AllowDelayedStartMax    *time.Duration
+	AllowDelayedStartTick   *time.Duration
 }
 
 type RuntimeOption interface {

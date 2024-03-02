@@ -36,17 +36,19 @@ import (
 //
 // swagger:model spoe_agent
 type SpoeAgent struct {
-
 	// async
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Async string `json:"async,omitempty"`
 
 	// continue on error
 	// Enum: [enabled]
+	// +kubebuilder:validation:Enum=enabled;
 	ContinueOnError string `json:"continue-on-error,omitempty"`
 
 	// dontlog normal
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	DontlogNormal string `json:"dontlog-normal,omitempty"`
 
 	// engine name
@@ -54,6 +56,7 @@ type SpoeAgent struct {
 
 	// force set var
 	// Enum: [enabled]
+	// +kubebuilder:validation:Enum=enabled;
 	ForceSetVar string `json:"force-set-var,omitempty"`
 
 	// groups
@@ -89,22 +92,27 @@ type SpoeAgent struct {
 
 	// option set on error
 	// Pattern: ^[A-Za-z0-9-_.]+$
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9-_.]+$`
 	OptionSetOnError string `json:"option_set-on-error,omitempty"`
 
 	// option set process time
 	// Pattern: ^[A-Za-z0-9-_.]+$
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9-_.]+$`
 	OptionSetProcessTime string `json:"option_set-process-time,omitempty"`
 
 	// option set total time
 	// Pattern: ^[A-Za-z0-9-_.]+$
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9-_.]+$`
 	OptionSetTotalTime string `json:"option_set-total-time,omitempty"`
 
 	// option var prefix
 	// Pattern: ^[A-Za-z0-9-_.]+$
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9-_.]+$`
 	OptionVarPrefix string `json:"option_var-prefix,omitempty"`
 
 	// pipelining
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Pipelining string `json:"pipelining,omitempty"`
 
 	// processing timeout
@@ -115,6 +123,7 @@ type SpoeAgent struct {
 
 	// send frag payload
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendFragPayload string `json:"send-frag-payload,omitempty"`
 
 	// use backend

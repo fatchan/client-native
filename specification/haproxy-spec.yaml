@@ -5,7 +5,7 @@ info:
   description: |
     API for editing and managing haproxy instances. Provides process information, configuration management,
     haproxy stats and logs.
-  version: '2.8'
+  version: '3.0'
   contact:
     name: HAProxy Support
     url: https://my.haproxy.com/portal/cust/login
@@ -648,7 +648,7 @@ parameters:
 securityDefinitions:
   basic_auth:
     type: basic
-basePath: /v2
+basePath: /v3
 schemes:
   - http
   - https
@@ -788,10 +788,8 @@ paths:
     $ref: "paths/configuration/global.yaml#/global"
   /services/haproxy/configuration/defaults:
     $ref: "paths/configuration/defaults.yaml#/defaults"
-  /services/haproxy/configuration/named_defaults:
-    $ref: "paths/configuration/named_defaults.yaml#/defaults"
-  /services/haproxy/configuration/named_defaults/{name}:
-    $ref: "paths/configuration/named_defaults.yaml#/defaults_one"
+  /services/haproxy/configuration/defaults/{name}:
+    $ref: "paths/configuration/defaults.yaml#/defaults_one"
   /services/haproxy/configuration/frontends:
     $ref: "paths/configuration/frontend.yaml#/frontends"
   /services/haproxy/configuration/frontends/{name}:

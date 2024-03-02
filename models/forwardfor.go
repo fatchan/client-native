@@ -34,18 +34,20 @@ import (
 //
 // swagger:model forwardfor
 type Forwardfor struct {
-
 	// enabled
 	// Required: true
 	// Enum: [enabled]
+	// +kubebuilder:validation:Enum=enabled;
 	Enabled *string `json:"enabled"`
 
 	// except
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Except string `json:"except,omitempty"`
 
 	// header
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Header string `json:"header,omitempty"`
 
 	// ifnone

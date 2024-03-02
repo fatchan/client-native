@@ -27,8 +27,8 @@ import (
 	"github.com/haproxytech/config-parser/v5/params"
 	"github.com/haproxytech/config-parser/v5/types"
 
-	"github.com/haproxytech/client-native/v5/misc"
-	"github.com/haproxytech/client-native/v5/models"
+	"github.com/haproxytech/client-native/v6/misc"
+	"github.com/haproxytech/client-native/v6/models"
 )
 
 type Bind interface {
@@ -219,7 +219,7 @@ func ParseBind(ondiskBind types.Bind) *models.Bind {
 	return b
 }
 
-func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //nolint:gocyclo,cyclop,maintidx
+func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //nolint:gocyclo,cyclop,maintidx,gocognit
 	for _, p := range bindOptions {
 		switch v := p.(type) {
 		case *params.BindOptionDoubleWord:
@@ -352,6 +352,11 @@ func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //
 				b.Mss = v.Value
 			case "namespace":
 				b.Namespace = v.Value
+			case "nbconn":
+				n, err := strconv.ParseInt(v.Value, 10, 64)
+				if err == nil {
+					b.Nbconn = n
+				}
 			case "nice":
 				n, err := strconv.ParseInt(v.Value, 10, 64)
 				if err == nil {
@@ -377,6 +382,8 @@ func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //
 				b.User = v.Value
 			case "quic-cc-algo":
 				b.QuicCcAlgo = v.Value
+			case "quic-socket":
+				b.QuicSocket = v.Value
 			}
 		}
 	}
@@ -535,6 +542,9 @@ func serializeBindParams(b models.BindParams, path string) (options []params.Bin
 	if b.Namespace != "" {
 		options = append(options, &params.BindOptionValue{Name: "namespace", Value: b.Namespace})
 	}
+	if b.Nbconn != 0 {
+		options = append(options, &params.BindOptionValue{Name: "nbconn", Value: strconv.FormatInt(b.Nbconn, 10)})
+	}
 	if b.NoCaNames {
 		options = append(options, &params.ServerOptionWord{Name: "no-ca-names"})
 	}
@@ -601,6 +611,9 @@ func serializeBindParams(b models.BindParams, path string) (options []params.Bin
 	if b.QuicForceRetry {
 		options = append(options, &params.BindOptionWord{Name: "quic-force-retry"})
 	}
+	if b.QuicSocket != "" {
+		options = append(options, &params.BindOptionValue{Name: "quic-socket", Value: b.QuicSocket})
+	}
 	if b.NoAlpn {
 		options = append(options, &params.BindOptionWord{Name: "no-alpn"})
 	}
@@ -640,11 +653,11 @@ func validateParams(data *models.Bind) error {
 func bindSectionType(parentType string) parser.Section {
 	var sectionType parser.Section
 	switch parentType {
-	case "frontend":
+	case FrontendParentName:
 		sectionType = parser.Frontends
-	case "log_forward":
+	case LogForwardParentName:
 		sectionType = parser.LogForward
-	case "peers":
+	case PeersParentName:
 		sectionType = parser.Peers
 	}
 	return sectionType

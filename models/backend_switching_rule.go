@@ -37,9 +37,9 @@ import (
 //
 // swagger:model backend_switching_rule
 type BackendSwitchingRule struct {
-
 	// cond
 	// Enum: [if unless]
+	// +kubebuilder:validation:Enum=if;unless;
 	Cond string `json:"cond,omitempty"`
 
 	// cond test
@@ -52,6 +52,7 @@ type BackendSwitchingRule struct {
 	// name
 	// Required: true
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Name string `json:"name"`
 }
 

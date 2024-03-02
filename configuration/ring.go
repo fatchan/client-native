@@ -25,8 +25,8 @@ import (
 	parsererrors "github.com/haproxytech/config-parser/v5/errors"
 	"github.com/haproxytech/config-parser/v5/types"
 
-	"github.com/haproxytech/client-native/v5/misc"
-	"github.com/haproxytech/client-native/v5/models"
+	"github.com/haproxytech/client-native/v6/misc"
+	"github.com/haproxytech/client-native/v6/models"
 )
 
 type Ring interface {
@@ -285,7 +285,7 @@ func SerializeRingSection(p parser.Parser, data *models.Ring) error { //nolint:g
 			return err
 		}
 	} else {
-		d := types.StringC{Value: fmt.Sprint(*data.Size)}
+		d := types.StringC{Value: strconv.FormatInt(*data.Size, 10)}
 		if err = p.Set(parser.Ring, data.Name, "size", d); err != nil {
 			return err
 		}

@@ -29,8 +29,8 @@ import (
 	tcp_types "github.com/haproxytech/config-parser/v5/parsers/tcp/types"
 	"github.com/haproxytech/config-parser/v5/types"
 
-	"github.com/haproxytech/client-native/v5/misc"
-	"github.com/haproxytech/client-native/v5/models"
+	"github.com/haproxytech/client-native/v6/misc"
+	"github.com/haproxytech/client-native/v6/models"
 )
 
 type TCPResponseRule interface {
@@ -56,7 +56,7 @@ func (c *client) GetTCPResponseRules(backend string, transactionID string) (int6
 
 	tcpRules, err := ParseTCPResponseRules(backend, p)
 	if err != nil {
-		return v, nil, c.HandleError("", "backend", backend, "", false, err)
+		return v, nil, c.HandleError("", BackendParentName, backend, "", false, err)
 	}
 
 	return v, tcpRules, nil
@@ -77,7 +77,7 @@ func (c *client) GetTCPResponseRule(id int64, backend string, transactionID stri
 
 	data, err := p.GetOne(parser.Backends, backend, "tcp-response", int(id))
 	if err != nil {
-		return v, nil, c.HandleError(strconv.FormatInt(id, 10), "backend", backend, "", false, err)
+		return v, nil, c.HandleError(strconv.FormatInt(id, 10), BackendParentName, backend, "", false, err)
 	}
 
 	tcpRule, parseErr := ParseTCPResponseRule(data.(types.TCPType))
@@ -98,7 +98,7 @@ func (c *client) DeleteTCPResponseRule(id int64, backend string, transactionID s
 	}
 
 	if err := p.Delete(parser.Backends, backend, "tcp-response", int(id)); err != nil {
-		return c.HandleError(strconv.FormatInt(id, 10), "backend", backend, t, transactionID == "", err)
+		return c.HandleError(strconv.FormatInt(id, 10), BackendParentName, backend, t, transactionID == "", err)
 	}
 
 	return c.SaveData(p, t, transactionID == "")
@@ -123,7 +123,7 @@ func (c *client) CreateTCPResponseRule(backend string, data *models.TCPResponseR
 		return serializeErr
 	}
 	if err := p.Insert(parser.Backends, backend, "tcp-response", tcpRule, int(*data.Index)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), "backend", backend, t, transactionID == "", err)
+		return c.HandleError(strconv.FormatInt(*data.Index, 10), BackendParentName, backend, t, transactionID == "", err)
 	}
 
 	return c.SaveData(p, t, transactionID == "")
@@ -144,7 +144,7 @@ func (c *client) EditTCPResponseRule(id int64, backend string, data *models.TCPR
 	}
 
 	if _, err := p.GetOne(parser.Backends, backend, "tcp-response", int(id)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), "backend", backend, t, transactionID == "", err)
+		return c.HandleError(strconv.FormatInt(*data.Index, 10), BackendParentName, backend, t, transactionID == "", err)
 	}
 
 	tcpRule, serializeErr := SerializeTCPResponseRule(*data)
@@ -152,7 +152,7 @@ func (c *client) EditTCPResponseRule(id int64, backend string, data *models.TCPR
 		return serializeErr
 	}
 	if err := p.Set(parser.Backends, backend, "tcp-response", tcpRule, int(id)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), "backend", backend, t, transactionID == "", err)
+		return c.HandleError(strconv.FormatInt(*data.Index, 10), BackendParentName, backend, t, transactionID == "", err)
 	}
 
 	return c.SaveData(p, t, transactionID == "")
@@ -187,6 +187,7 @@ func ParseTCPResponseRules(backend string, p parser.Parser) (models.TCPResponseR
 	return tcpResRules, nil
 }
 
+//nolint:maintidx
 func ParseTCPResponseRule(t types.TCPType) (*models.TCPResponseRule, error) {
 	switch v := t.(type) {
 	case *tcp_types.InspectDelay:
@@ -343,6 +344,22 @@ func ParseTCPResponseRule(t types.TCPType) (*models.TCPResponseRule, error) {
 				Type:     models.TCPResponseRuleTypeContent,
 				Action:   models.TCPResponseRuleActionSetDashTos,
 				TosValue: a.Value,
+				Cond:     a.Cond,
+				CondTest: a.CondTest,
+			}, nil
+		case *actions.SetFcMark:
+			return &models.TCPResponseRule{
+				Type:     models.TCPResponseRuleTypeContent,
+				Action:   models.TCPResponseRuleActionSetDashFcDashMark,
+				Expr:     a.Expr.String(),
+				Cond:     a.Cond,
+				CondTest: a.CondTest,
+			}, nil
+		case *actions.SetFcTos:
+			return &models.TCPResponseRule{
+				Type:     models.TCPResponseRuleTypeContent,
+				Action:   models.TCPResponseRuleActionSetDashFcDashTos,
+				Expr:     a.Expr.String(),
 				Cond:     a.Cond,
 				CondTest: a.CondTest,
 			}, nil
@@ -522,6 +539,22 @@ func SerializeTCPResponseRule(t models.TCPResponseRule) (types.TCPType, error) {
 				Action: &actions.UnsetVar{
 					Name:     t.VarName,
 					Scope:    t.VarScope,
+					Cond:     t.Cond,
+					CondTest: t.CondTest,
+				},
+			}, nil
+		case models.TCPResponseRuleActionSetDashFcDashMark:
+			return &tcp_types.Content{
+				Action: &actions.SetFcMark{
+					Expr:     common.Expression{Expr: strings.Split(t.Expr+t.MarkValue, " ")},
+					Cond:     t.Cond,
+					CondTest: t.CondTest,
+				},
+			}, nil
+		case models.TCPResponseRuleActionSetDashFcDashTos:
+			return &tcp_types.Content{
+				Action: &actions.SetFcTos{
+					Expr:     common.Expression{Expr: strings.Split(t.Expr+t.TosValue, " ")},
 					Cond:     t.Cond,
 					CondTest: t.CondTest,
 				},

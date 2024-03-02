@@ -27,8 +27,8 @@ import (
 	"github.com/haproxytech/config-parser/v5/params"
 	"github.com/haproxytech/config-parser/v5/types"
 
-	"github.com/haproxytech/client-native/v5/misc"
-	"github.com/haproxytech/client-native/v5/models"
+	"github.com/haproxytech/client-native/v6/misc"
+	"github.com/haproxytech/client-native/v6/models"
 )
 
 type Server interface {
@@ -185,7 +185,7 @@ func ParseServers(parentType string, parentName string, p parser.Parser) (models
 	return servers, nil
 }
 
-func parseAddress(address string) (ipOrAddress string, port *int64) {
+func ParseAddress(address string) (ipOrAddress string, port *int64) {
 	if strings.HasPrefix(address, "[") && strings.ContainsRune(address, ']') { // IPv6 with port [2001:0DB8:0000:0000:0000:0000:1428:57ab]:80
 		split := strings.Split(address, "]")
 		split[0] = strings.TrimPrefix(split[0], "[")
@@ -365,6 +365,11 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 				serverParams.Fastinter = misc.ParseTimeout(v.Value)
 			case "downinter":
 				serverParams.Downinter = misc.ParseTimeout(v.Value)
+			case "log-bufsize":
+				l, err := strconv.ParseInt(v.Value, 10, 64)
+				if err == nil {
+					serverParams.LogBufsize = &l
+				}
 			case "log-proto":
 				serverParams.LogProto = v.Value
 			case "maxconn":
@@ -473,6 +478,13 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 			case "ws":
 				serverParams.Ws = v.Value
 			}
+		case *params.ServerOptionIDValue:
+			if v.Name == "set-proxy-v2-tlv-fmt" {
+				serverParams.SetProxyV2TlvFmt = &models.ServerParamsSetProxyV2TlvFmt{
+					ID:    &v.ID,
+					Value: &v.Value,
+				}
+			}
 		}
 	}
 	// Add corresponding arguments to the source option.
@@ -485,7 +497,7 @@ func ParseServer(ondiskServer types.Server) *models.Server {
 	s := &models.Server{
 		Name: ondiskServer.Name,
 	}
-	address, port := parseAddress(ondiskServer.Address)
+	address, port := ParseAddress(ondiskServer.Address)
 	if address == "" {
 		return nil
 	}
@@ -699,6 +711,9 @@ func serializeServerParams(s models.ServerParams) (options []params.ServerOption
 	if s.Downinter != nil {
 		options = append(options, &params.ServerOptionValue{Name: "downinter", Value: strconv.FormatInt(*s.Downinter, 10)})
 	}
+	if s.LogBufsize != nil {
+		options = append(options, &params.ServerOptionValue{Name: "log-bufsize", Value: strconv.FormatInt(*s.LogBufsize, 10)})
+	}
 	if s.LogProto != "" {
 		options = append(options, &params.ServerOptionValue{Name: "log-proto", Value: s.LogProto})
 	}
@@ -795,6 +810,9 @@ func serializeServerParams(s models.ServerParams) (options []params.ServerOption
 	if s.Socks4 != "" {
 		options = append(options, &params.ServerOptionValue{Name: "socks4", Value: s.Socks4})
 	}
+	if s.SetProxyV2TlvFmt != nil && s.SetProxyV2TlvFmt.ID != nil && s.SetProxyV2TlvFmt.Value != nil {
+		options = append(options, &params.ServerOptionIDValue{Name: "set-proxy-v2-tlv-fmt", ID: *s.SetProxyV2TlvFmt.ID, Value: *s.SetProxyV2TlvFmt.Value})
+	}
 	if s.TCPUt != nil {
 		options = append(options, &params.ServerOptionValue{Name: "tcp-ut", Value: strconv.FormatInt(*s.TCPUt, 10)})
 	}
@@ -850,11 +868,11 @@ func GetServerByName(name string, parentType string, parentName string, p parser
 func sectionType(parentType string) parser.Section {
 	var sectionType parser.Section
 	switch parentType {
-	case "backend":
+	case BackendParentName:
 		sectionType = parser.Backends
-	case "ring":
+	case RingParentName:
 		sectionType = parser.Ring
-	case "peers":
+	case PeersParentName:
 		sectionType = parser.Peers
 	}
 	return sectionType

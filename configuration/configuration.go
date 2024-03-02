@@ -32,8 +32,20 @@ import (
 	"github.com/haproxytech/config-parser/v5/types"
 	"github.com/pkg/errors"
 
-	"github.com/haproxytech/client-native/v5/misc"
-	"github.com/haproxytech/client-native/v5/models"
+	"github.com/haproxytech/client-native/v6/misc"
+	"github.com/haproxytech/client-native/v6/models"
+)
+
+const (
+	BackendParentName    = "backend"
+	FrontendParentName   = "frontend"
+	DefaultsParentName   = "defaults"
+	LogForwardParentName = "log_forward"
+	PeersParentName      = "peers"
+	RingParentName       = "ring"
+	GlobalParentName     = "global"
+	FCGIAppParentName    = "fcgi-app"
+	ResolverParentName   = "resolvers"
 )
 
 // ClientParams is just a placeholder for all client options
@@ -783,6 +795,12 @@ func (s *SectionParser) stickTable() interface{} {
 	if d.NoPurge {
 		bst.Nopurge = true
 	}
+	if d.SrvKey != "" {
+		bst.Srvkey = &d.SrvKey
+	}
+	if d.WriteTo != "" {
+		bst.WriteTo = &d.WriteTo
+	}
 	return bst
 }
 
@@ -1140,7 +1158,7 @@ func (s *SectionParser) monitorFail() interface{} {
 	return nil
 }
 
-func (s *SectionParser) compression() interface{} {
+func (s *SectionParser) compression() interface{} { //nolint:gocognit
 	compressionFound := false
 	compression := &models.Compression{}
 
@@ -1154,6 +1172,24 @@ func (s *SectionParser) compression() interface{} {
 		}
 	}
 
+	data, err = s.get("compression algo-req", false)
+	if err == nil {
+		d, ok := data.(*types.StringC)
+		if ok && d != nil {
+			compressionFound = true
+			compression.AlgoReq = d.Value
+		}
+	}
+
+	data, err = s.get("compression algo-res", false)
+	if err == nil {
+		d, ok := data.(*types.StringSliceC)
+		if ok && d != nil && len(d.Value) > 0 {
+			compressionFound = true
+			compression.AlgosRes = d.Value
+		}
+	}
+
 	data, err = s.get("compression type", false)
 	if err == nil {
 		d, ok := data.(*types.StringSliceC)
@@ -1163,12 +1199,39 @@ func (s *SectionParser) compression() interface{} {
 		}
 	}
 
+	data, err = s.get("compression type-req", false)
+	if err == nil {
+		d, ok := data.(*types.StringSliceC)
+		if ok && d != nil && len(d.Value) > 0 {
+			compressionFound = true
+			compression.TypesReq = d.Value
+		}
+	}
+
+	data, err = s.get("compression type-res", false)
+	if err == nil {
+		d, ok := data.(*types.StringSliceC)
+		if ok && d != nil && len(d.Value) > 0 {
+			compressionFound = true
+			compression.TypesRes = d.Value
+		}
+	}
+
 	data, err = s.get("compression offload", false)
 	if err == nil {
 		d, ok := data.(*types.Enabled)
 		if ok && d != nil {
 			compressionFound = true
 			compression.Offload = true
+		}
+	}
+
+	data, err = s.get("compression direction", false)
+	if err == nil {
+		d, ok := data.(*types.StringC)
+		if ok && d != nil {
+			compressionFound = true
+			compression.Direction = d.Value
 		}
 	}
 
@@ -2110,6 +2173,12 @@ func (s *SectionObject) stickTable(field reflect.Value) error {
 		if st.Size != nil {
 			d.Size = strconv.FormatInt(*st.Size, 10)
 		}
+		if st.Srvkey != nil {
+			d.SrvKey = *st.Srvkey
+		}
+		if st.WriteTo != nil {
+			d.WriteTo = *st.WriteTo
+		}
 		if err := s.set("stick-table", d); err != nil {
 			return err
 		}
@@ -2585,10 +2654,18 @@ func (s *SectionObject) statsOptions(field reflect.Value) error {
 	return s.set("stats", ss)
 }
 
-func (s *SectionObject) compression(field reflect.Value) error {
+func (s *SectionObject) compression(field reflect.Value) error { //nolint:gocognit
 	var err error
 	if valueIsNil(field) {
 		err = s.set("compression algo", nil)
+		if err != nil {
+			return err
+		}
+		err = s.set("compression algo-req", nil)
+		if err != nil {
+			return err
+		}
+		err = s.set("compression algo-res", nil)
 		if err != nil {
 			return err
 		}
@@ -2596,8 +2673,26 @@ func (s *SectionObject) compression(field reflect.Value) error {
 		if err != nil {
 			return err
 		}
+		err = s.set("compression type-req", nil)
+		if err != nil {
+			return err
+		}
+		err = s.set("compression type-res", nil)
+		if err != nil {
+			return err
+		}
 		err = s.set("compression offload", nil)
 		if err != nil {
+			return err
+		}
+
+		err = s.set("compression direction", nil)
+		if err != nil {
+			// compression direction does not exist on Frontends
+			var setErr error
+			if errors.As(parser_errors.ErrAttributeNotFound, &setErr) {
+				return nil
+			}
 			return err
 		}
 		return nil
@@ -2613,14 +2708,44 @@ func (s *SectionObject) compression(field reflect.Value) error {
 			return err
 		}
 	}
+	if len(compression.AlgoReq) > 0 {
+		err = s.set("compression algo-req", &types.StringC{Value: compression.AlgoReq})
+		if err != nil {
+			return err
+		}
+	}
+	if len(compression.AlgosRes) > 0 {
+		err = s.set("compression algo-res", &types.StringSliceC{Value: compression.AlgosRes})
+		if err != nil {
+			return err
+		}
+	}
 	if len(compression.Types) > 0 {
 		err = s.set("compression type", &types.StringSliceC{Value: compression.Types})
 		if err != nil {
 			return err
 		}
 	}
+	if len(compression.TypesReq) > 0 {
+		err = s.set("compression type-req", &types.StringSliceC{Value: compression.TypesReq})
+		if err != nil {
+			return err
+		}
+	}
+	if len(compression.TypesRes) > 0 {
+		err = s.set("compression type-res", &types.StringSliceC{Value: compression.TypesRes})
+		if err != nil {
+			return err
+		}
+	}
 	if compression.Offload {
 		err = s.set("compression offload", &types.Enabled{})
+		if err != nil {
+			return err
+		}
+	}
+	if len(compression.Direction) > 0 {
+		err = s.set("compression direction", &types.StringC{Value: compression.Direction})
 		if err != nil {
 			return err
 		}
@@ -2704,7 +2829,7 @@ func (s *SectionObject) errorloc302(field reflect.Value) error {
 	}
 
 	e := &types.ErrorLoc302{
-		Code: fmt.Sprintf("%d", *errorLoc.Code),
+		Code: strconv.FormatInt(*errorLoc.Code, 10),
 		URL:  *errorLoc.URL,
 	}
 	return s.set("errorloc302", e)
@@ -2720,7 +2845,7 @@ func (s *SectionObject) errorloc303(field reflect.Value) error {
 	}
 
 	e := &types.ErrorLoc303{
-		Code: fmt.Sprintf("%d", *errorLoc.Code),
+		Code: strconv.FormatInt(*errorLoc.Code, 10),
 		URL:  *errorLoc.URL,
 	}
 

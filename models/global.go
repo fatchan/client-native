@@ -68,6 +68,8 @@ type Global struct {
 	// anonkey
 	// Maximum: 4.294967295e+09
 	// Minimum: 0
+	// +kubebuilder:validation:Maximum=4.294967295e+09
+	// +kubebuilder:validation:Minimum=0
 	Anonkey *int64 `json:"anonkey,omitempty"`
 
 	// busy polling
@@ -78,6 +80,7 @@ type Global struct {
 
 	// chroot
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Chroot string `json:"chroot,omitempty"`
 
 	// close spread time
@@ -91,6 +94,7 @@ type Global struct {
 
 	// daemon
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Daemon string `json:"daemon,omitempty"`
 
 	// default path
@@ -119,6 +123,7 @@ type Global struct {
 
 	// group
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Group string `json:"group,omitempty"`
 
 	// h1 case adjust file
@@ -132,6 +137,7 @@ type Global struct {
 
 	// httpclient resolvers disabled
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	HttpclientResolversDisabled string `json:"httpclient_resolvers_disabled,omitempty"`
 
 	// httpclient resolvers id
@@ -139,6 +145,7 @@ type Global struct {
 
 	// httpclient resolvers prefer
 	// Enum: [ipv4 ipv6]
+	// +kubebuilder:validation:Enum=ipv4;ipv6;
 	HttpclientResolversPrefer string `json:"httpclient_resolvers_prefer,omitempty"`
 
 	// httpclient retries
@@ -149,6 +156,7 @@ type Global struct {
 
 	// httpclient ssl verify
 	// Enum: [ none required]
+	// +kubebuilder:validation:Enum="";none;required;
 	HttpclientSslVerify *string `json:"httpclient_ssl_verify,omitempty"`
 
 	// httpclient timeout connect
@@ -163,12 +171,12 @@ type Global struct {
 	// issuers chain path
 	IssuersChainPath string `json:"issuers_chain_path,omitempty"`
 
-	// load server state from file
-	// Enum: [global local none]
-	LoadServerStateFromFile string `json:"load_server_state_from_file,omitempty"`
+	// limited quic
+	LimitedQuic bool `json:"limited_quic,omitempty"`
 
 	// localpeer
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Localpeer string `json:"localpeer,omitempty"`
 
 	// log send hostname
@@ -218,6 +226,7 @@ type Global struct {
 
 	// mworker max reloads
 	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	MworkerMaxReloads *int64 `json:"mworker_max_reloads,omitempty"`
 
 	// nbproc
@@ -255,6 +264,7 @@ type Global struct {
 
 	// numa cpu mapping
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	NumaCPUMapping string `json:"numa_cpu_mapping,omitempty"`
 
 	// pidfile
@@ -268,6 +278,7 @@ type Global struct {
 
 	// profiling tasks
 	// Enum: [auto on off]
+	// +kubebuilder:validation:Enum=auto;on;off;
 	ProfilingTasks string `json:"profiling_tasks,omitempty"`
 
 	// quiet
@@ -278,14 +289,21 @@ type Global struct {
 
 	// server state base
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	ServerStateBase string `json:"server_state_base,omitempty"`
 
 	// server state file
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	ServerStateFile string `json:"server_state_file,omitempty"`
 
 	// set dumpable
 	SetDumpable bool `json:"set_dumpable,omitempty"`
+
+	// setcap
+	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
+	Setcap string `json:"setcap,omitempty"`
 
 	// spread checks
 	SpreadChecks int64 `json:"spread_checks,omitempty"`
@@ -334,6 +352,7 @@ type Global struct {
 
 	// ssl mode async
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SslModeAsync string `json:"ssl_mode_async,omitempty"`
 
 	// ssl propquery
@@ -347,6 +366,7 @@ type Global struct {
 
 	// ssl server verify
 	// Enum: [none required]
+	// +kubebuilder:validation:Enum=none;required;
 	SslServerVerify string `json:"ssl_server_verify,omitempty"`
 
 	// ssl skip self issued ca
@@ -381,6 +401,7 @@ type Global struct {
 
 	// user
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	User string `json:"user,omitempty"`
 
 	// wurfl options
@@ -470,10 +491,6 @@ func (m *Global) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateLoadServerStateFromFile(formats); err != nil {
-		res = append(res, err)
-	}
-
 	if err := m.validateLocalpeer(formats); err != nil {
 		res = append(res, err)
 	}
@@ -507,6 +524,10 @@ func (m *Global) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateServerStateFile(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateSetcap(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -1038,51 +1059,6 @@ func (m *Global) validateHttpclientSslVerify(formats strfmt.Registry) error {
 	return nil
 }
 
-var globalTypeLoadServerStateFromFilePropEnum []interface{}
-
-func init() {
-	var res []string
-	if err := json.Unmarshal([]byte(`["global","local","none"]`), &res); err != nil {
-		panic(err)
-	}
-	for _, v := range res {
-		globalTypeLoadServerStateFromFilePropEnum = append(globalTypeLoadServerStateFromFilePropEnum, v)
-	}
-}
-
-const (
-
-	// GlobalLoadServerStateFromFileGlobal captures enum value "global"
-	GlobalLoadServerStateFromFileGlobal string = "global"
-
-	// GlobalLoadServerStateFromFileLocal captures enum value "local"
-	GlobalLoadServerStateFromFileLocal string = "local"
-
-	// GlobalLoadServerStateFromFileNone captures enum value "none"
-	GlobalLoadServerStateFromFileNone string = "none"
-)
-
-// prop value enum
-func (m *Global) validateLoadServerStateFromFileEnum(path, location string, value string) error {
-	if err := validate.EnumCase(path, location, value, globalTypeLoadServerStateFromFilePropEnum, true); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *Global) validateLoadServerStateFromFile(formats strfmt.Registry) error {
-	if swag.IsZero(m.LoadServerStateFromFile) { // not required
-		return nil
-	}
-
-	// value enum
-	if err := m.validateLoadServerStateFromFileEnum("load_server_state_from_file", "body", m.LoadServerStateFromFile); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (m *Global) validateLocalpeer(formats strfmt.Registry) error {
 	if swag.IsZero(m.Localpeer) { // not required
 		return nil
@@ -1283,6 +1259,18 @@ func (m *Global) validateServerStateFile(formats strfmt.Registry) error {
 	}
 
 	if err := validate.Pattern("server_state_file", "body", m.ServerStateFile, `^[^\s]+$`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Global) validateSetcap(formats strfmt.Registry) error {
+	if swag.IsZero(m.Setcap) { // not required
+		return nil
+	}
+
+	if err := validate.Pattern("setcap", "body", m.Setcap, `^[^\s]+$`); err != nil {
 		return err
 	}
 
@@ -1912,14 +1900,15 @@ func (m *CPUMap) UnmarshalBinary(b []byte) error {
 //
 // swagger:model GlobalDefaultPath
 type GlobalDefaultPath struct {
-
 	// path
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Path string `json:"path,omitempty"`
 
 	// type
 	// Required: true
 	// Enum: [current config parent origin]
+	// +kubebuilder:validation:Enum=current;config;parent;origin;
 	Type string `json:"type"`
 }
 
@@ -2194,14 +2183,15 @@ func (m *H1CaseAdjust) UnmarshalBinary(b []byte) error {
 //
 // swagger:model GlobalLogSendHostname
 type GlobalLogSendHostname struct {
-
 	// enabled
 	// Required: true
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	Enabled *string `json:"enabled"`
 
 	// param
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Param string `json:"param,omitempty"`
 }
 
@@ -2305,10 +2295,10 @@ func (m *GlobalLogSendHostname) UnmarshalBinary(b []byte) error {
 //
 // swagger:model LuaLoad
 type LuaLoad struct {
-
 	// file
 	// Required: true
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	File *string `json:"file"`
 }
 
@@ -2366,14 +2356,15 @@ func (m *LuaLoad) UnmarshalBinary(b []byte) error {
 //
 // swagger:model LuaPrependPath
 type LuaPrependPath struct {
-
 	// path
 	// Required: true
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Path *string `json:"path"`
 
 	// type
 	// Enum: [path cpath]
+	// +kubebuilder:validation:Enum=path;cpath;
 	Type string `json:"type,omitempty"`
 }
 
@@ -2550,11 +2541,12 @@ func (m *PresetEnv) UnmarshalBinary(b []byte) error {
 //
 // swagger:model RuntimeAPI
 type RuntimeAPI struct {
-	BindParams
+	BindParams `json:",inline"`
 
 	// address
 	// Required: true
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Address *string `json:"address"`
 }
 
@@ -2567,39 +2559,39 @@ func (m *RuntimeAPI) UnmarshalJSON(raw []byte) error {
 	}
 	m.BindParams = aO0
 
-	// now for regular properties
-	var propsRuntimeAPI struct {
+	// AO1
+	var dataAO1 struct {
 		Address *string `json:"address"`
 	}
-	if err := swag.ReadJSON(raw, &propsRuntimeAPI); err != nil {
+	if err := swag.ReadJSON(raw, &dataAO1); err != nil {
 		return err
 	}
-	m.Address = propsRuntimeAPI.Address
+
+	m.Address = dataAO1.Address
 
 	return nil
 }
 
 // MarshalJSON marshals this object to a JSON structure
 func (m RuntimeAPI) MarshalJSON() ([]byte, error) {
-	_parts := make([][]byte, 0, 1)
+	_parts := make([][]byte, 0, 2)
 
 	aO0, err := swag.WriteJSON(m.BindParams)
 	if err != nil {
 		return nil, err
 	}
 	_parts = append(_parts, aO0)
-
-	// now for regular properties
-	var propsRuntimeAPI struct {
+	var dataAO1 struct {
 		Address *string `json:"address"`
 	}
-	propsRuntimeAPI.Address = m.Address
 
-	jsonDataPropsRuntimeAPI, errRuntimeAPI := swag.WriteJSON(propsRuntimeAPI)
-	if errRuntimeAPI != nil {
-		return nil, errRuntimeAPI
+	dataAO1.Address = m.Address
+
+	jsonDataAO1, errAO1 := swag.WriteJSON(dataAO1)
+	if errAO1 != nil {
+		return nil, errAO1
 	}
-	_parts = append(_parts, jsonDataPropsRuntimeAPI)
+	_parts = append(_parts, jsonDataAO1)
 	return swag.ConcatJSON(_parts...), nil
 }
 
@@ -3029,6 +3021,7 @@ type GlobalTuneOptions struct {
 
 	// buffers reserve
 	// Minimum: 2
+	// +kubebuilder:validation:Minimum=2
 	BuffersReserve int64 `json:"buffers_reserve,omitempty"`
 
 	// bufsize
@@ -3037,12 +3030,33 @@ type GlobalTuneOptions struct {
 	// comp maxlevel
 	CompMaxlevel int64 `json:"comp_maxlevel,omitempty"`
 
+	// disable zero copy forwarding
+	DisableZeroCopyForwarding bool `json:"disable_zero_copy_forwarding,omitempty"`
+
+	// events max events at once
+	// Maximum: 10000
+	// Minimum: 1
+	// +kubebuilder:validation:Maximum=10000
+	// +kubebuilder:validation:Minimum=1
+	EventsMaxEventsAtOnce int64 `json:"events_max_events_at_once,omitempty"`
+
 	// fail alloc
 	FailAlloc bool `json:"fail_alloc,omitempty"`
 
 	// fd edge triggered
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	FdEdgeTriggered string `json:"fd_edge_triggered,omitempty"`
+
+	// h1 zero copy fwd recv
+	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	H1ZeroCopyFwdRecv string `json:"h1_zero_copy_fwd_recv,omitempty"`
+
+	// h1 zero copy fwd send
+	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	H1ZeroCopyFwdSend string `json:"h1_zero_copy_fwd_send,omitempty"`
 
 	// h2 be initial window size
 	H2BeInitialWindowSize int64 `json:"h2_be_initial_window_size,omitempty"`
@@ -3058,6 +3072,7 @@ type GlobalTuneOptions struct {
 
 	// h2 header table size
 	// Maximum: 65535
+	// +kubebuilder:validation:Maximum=65535
 	H2HeaderTableSize int64 `json:"h2_header_table_size,omitempty"`
 
 	// h2 initial window size
@@ -3069,6 +3084,11 @@ type GlobalTuneOptions struct {
 	// h2 max frame size
 	H2MaxFrameSize int64 `json:"h2_max_frame_size,omitempty"`
 
+	// h2 zero copy fwd send
+	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	H2ZeroCopyFwdSend string `json:"h2_zero_copy_fwd_send,omitempty"`
+
 	// http cookielen
 	HTTPCookielen int64 `json:"http_cookielen,omitempty"`
 
@@ -3078,23 +3098,30 @@ type GlobalTuneOptions struct {
 	// http maxhdr
 	// Maximum: 32767
 	// Minimum: 1
+	// +kubebuilder:validation:Maximum=32767
+	// +kubebuilder:validation:Minimum=1
 	HTTPMaxhdr int64 `json:"http_maxhdr,omitempty"`
 
 	// idle pool shared
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	IdlePoolShared string `json:"idle_pool_shared,omitempty"`
 
 	// idletimer
 	// Maximum: 65535
 	// Minimum: 0
+	// +kubebuilder:validation:Maximum=65535
+	// +kubebuilder:validation:Minimum=0
 	Idletimer *int64 `json:"idletimer,omitempty"`
 
 	// listener default shards
 	// Enum: [by-process by-thread by-group]
+	// +kubebuilder:validation:Enum=by-process;by-thread;by-group;
 	ListenerDefaultShards string `json:"listener_default_shards,omitempty"`
 
 	// listener multi queue
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	ListenerMultiQueue string `json:"listener_multi_queue,omitempty"`
 
 	// lua burst timeout
@@ -3102,6 +3129,16 @@ type GlobalTuneOptions struct {
 
 	// lua forced yield
 	LuaForcedYield int64 `json:"lua_forced_yield,omitempty"`
+
+	// lua log loggers
+	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	LuaLogLoggers string `json:"lua_log_loggers,omitempty"`
+
+	// lua log stderr
+	// Enum: [auto enabled disabled]
+	// +kubebuilder:validation:Enum=auto;enabled;disabled;
+	LuaLogStderr string `json:"lua_log_stderr,omitempty"`
 
 	// lua maxmem
 	LuaMaxmem bool `json:"lua_maxmem,omitempty"`
@@ -3114,6 +3151,9 @@ type GlobalTuneOptions struct {
 
 	// lua task timeout
 	LuaTaskTimeout *int64 `json:"lua_task_timeout,omitempty"`
+
+	// max checks per thread
+	MaxChecksPerThread *int64 `json:"max_checks_per_thread,omitempty"`
 
 	// maxaccept
 	Maxaccept int64 `json:"maxaccept,omitempty"`
@@ -3142,6 +3182,11 @@ type GlobalTuneOptions struct {
 	// pool low fd ratio
 	PoolLowFdRatio int64 `json:"pool_low_fd_ratio,omitempty"`
 
+	// pt zero copy forwarding
+	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	PtZeroCopyForwarding string `json:"pt_zero_copy_forwarding,omitempty"`
+
 	// quic frontend conn tx buffers limit
 	QuicFrontendConnTxBuffersLimit *int64 `json:"quic_frontend_conn_tx_buffers_limit,omitempty"`
 
@@ -3159,10 +3204,17 @@ type GlobalTuneOptions struct {
 
 	// quic socket owner
 	// Enum: [listener connection]
+	// +kubebuilder:validation:Enum=listener;connection;
 	QuicSocketOwner string `json:"quic_socket_owner,omitempty"`
+
+	// rcvbuf backend
+	RcvbufBackend *int64 `json:"rcvbuf_backend,omitempty"`
 
 	// rcvbuf client
 	RcvbufClient *int64 `json:"rcvbuf_client,omitempty"`
+
+	// rcvbuf frontend
+	RcvbufFrontend *int64 `json:"rcvbuf_frontend,omitempty"`
 
 	// rcvbuf server
 	RcvbufServer *int64 `json:"rcvbuf_server,omitempty"`
@@ -3175,10 +3227,17 @@ type GlobalTuneOptions struct {
 
 	// sched low latency
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SchedLowLatency string `json:"sched_low_latency,omitempty"`
+
+	// sndbuf backend
+	SndbufBackend *int64 `json:"sndbuf_backend,omitempty"`
 
 	// sndbuf client
 	SndbufClient *int64 `json:"sndbuf_client,omitempty"`
+
+	// sndbuf frontend
+	SndbufFrontend *int64 `json:"sndbuf_frontend,omitempty"`
 
 	// sndbuf server
 	SndbufServer *int64 `json:"sndbuf_server,omitempty"`
@@ -3200,6 +3259,7 @@ type GlobalTuneOptions struct {
 
 	// ssl keylog
 	// Enum: [enabled disabled]
+	// +kubebuilder:validation:Enum=enabled;disabled;
 	SslKeylog string `json:"ssl_keylog,omitempty"`
 
 	// ssl lifetime
@@ -3235,11 +3295,15 @@ type GlobalTuneOptions struct {
 	// zlib memlevel
 	// Maximum: 9
 	// Minimum: 1
+	// +kubebuilder:validation:Maximum=9
+	// +kubebuilder:validation:Minimum=1
 	ZlibMemlevel int64 `json:"zlib_memlevel,omitempty"`
 
 	// zlib windowsize
 	// Maximum: 15
 	// Minimum: 8
+	// +kubebuilder:validation:Maximum=15
+	// +kubebuilder:validation:Minimum=8
 	ZlibWindowsize int64 `json:"zlib_windowsize,omitempty"`
 }
 
@@ -3251,11 +3315,27 @@ func (m *GlobalTuneOptions) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateEventsMaxEventsAtOnce(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateFdEdgeTriggered(formats); err != nil {
 		res = append(res, err)
 	}
 
+	if err := m.validateH1ZeroCopyFwdRecv(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateH1ZeroCopyFwdSend(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateH2HeaderTableSize(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateH2ZeroCopyFwdSend(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -3276,6 +3356,18 @@ func (m *GlobalTuneOptions) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateListenerMultiQueue(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateLuaLogLoggers(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateLuaLogStderr(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validatePtZeroCopyForwarding(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -3311,6 +3403,22 @@ func (m *GlobalTuneOptions) validateBuffersReserve(formats strfmt.Registry) erro
 	}
 
 	if err := validate.MinimumInt("tune_options"+"."+"buffers_reserve", "body", m.BuffersReserve, 2, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *GlobalTuneOptions) validateEventsMaxEventsAtOnce(formats strfmt.Registry) error {
+	if swag.IsZero(m.EventsMaxEventsAtOnce) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("tune_options"+"."+"events_max_events_at_once", "body", m.EventsMaxEventsAtOnce, 1, false); err != nil {
+		return err
+	}
+
+	if err := validate.MaximumInt("tune_options"+"."+"events_max_events_at_once", "body", m.EventsMaxEventsAtOnce, 10000, false); err != nil {
 		return err
 	}
 
@@ -3359,12 +3467,138 @@ func (m *GlobalTuneOptions) validateFdEdgeTriggered(formats strfmt.Registry) err
 	return nil
 }
 
+var globalTuneOptionsTypeH1ZeroCopyFwdRecvPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		globalTuneOptionsTypeH1ZeroCopyFwdRecvPropEnum = append(globalTuneOptionsTypeH1ZeroCopyFwdRecvPropEnum, v)
+	}
+}
+
+const (
+
+	// GlobalTuneOptionsH1ZeroCopyFwdRecvEnabled captures enum value "enabled"
+	GlobalTuneOptionsH1ZeroCopyFwdRecvEnabled string = "enabled"
+
+	// GlobalTuneOptionsH1ZeroCopyFwdRecvDisabled captures enum value "disabled"
+	GlobalTuneOptionsH1ZeroCopyFwdRecvDisabled string = "disabled"
+)
+
+// prop value enum
+func (m *GlobalTuneOptions) validateH1ZeroCopyFwdRecvEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, globalTuneOptionsTypeH1ZeroCopyFwdRecvPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *GlobalTuneOptions) validateH1ZeroCopyFwdRecv(formats strfmt.Registry) error {
+	if swag.IsZero(m.H1ZeroCopyFwdRecv) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateH1ZeroCopyFwdRecvEnum("tune_options"+"."+"h1_zero_copy_fwd_recv", "body", m.H1ZeroCopyFwdRecv); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var globalTuneOptionsTypeH1ZeroCopyFwdSendPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		globalTuneOptionsTypeH1ZeroCopyFwdSendPropEnum = append(globalTuneOptionsTypeH1ZeroCopyFwdSendPropEnum, v)
+	}
+}
+
+const (
+
+	// GlobalTuneOptionsH1ZeroCopyFwdSendEnabled captures enum value "enabled"
+	GlobalTuneOptionsH1ZeroCopyFwdSendEnabled string = "enabled"
+
+	// GlobalTuneOptionsH1ZeroCopyFwdSendDisabled captures enum value "disabled"
+	GlobalTuneOptionsH1ZeroCopyFwdSendDisabled string = "disabled"
+)
+
+// prop value enum
+func (m *GlobalTuneOptions) validateH1ZeroCopyFwdSendEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, globalTuneOptionsTypeH1ZeroCopyFwdSendPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *GlobalTuneOptions) validateH1ZeroCopyFwdSend(formats strfmt.Registry) error {
+	if swag.IsZero(m.H1ZeroCopyFwdSend) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateH1ZeroCopyFwdSendEnum("tune_options"+"."+"h1_zero_copy_fwd_send", "body", m.H1ZeroCopyFwdSend); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *GlobalTuneOptions) validateH2HeaderTableSize(formats strfmt.Registry) error {
 	if swag.IsZero(m.H2HeaderTableSize) { // not required
 		return nil
 	}
 
 	if err := validate.MaximumInt("tune_options"+"."+"h2_header_table_size", "body", m.H2HeaderTableSize, 65535, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var globalTuneOptionsTypeH2ZeroCopyFwdSendPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		globalTuneOptionsTypeH2ZeroCopyFwdSendPropEnum = append(globalTuneOptionsTypeH2ZeroCopyFwdSendPropEnum, v)
+	}
+}
+
+const (
+
+	// GlobalTuneOptionsH2ZeroCopyFwdSendEnabled captures enum value "enabled"
+	GlobalTuneOptionsH2ZeroCopyFwdSendEnabled string = "enabled"
+
+	// GlobalTuneOptionsH2ZeroCopyFwdSendDisabled captures enum value "disabled"
+	GlobalTuneOptionsH2ZeroCopyFwdSendDisabled string = "disabled"
+)
+
+// prop value enum
+func (m *GlobalTuneOptions) validateH2ZeroCopyFwdSendEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, globalTuneOptionsTypeH2ZeroCopyFwdSendPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *GlobalTuneOptions) validateH2ZeroCopyFwdSend(formats strfmt.Registry) error {
+	if swag.IsZero(m.H2ZeroCopyFwdSend) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateH2ZeroCopyFwdSendEnum("tune_options"+"."+"h2_zero_copy_fwd_send", "body", m.H2ZeroCopyFwdSend); err != nil {
 		return err
 	}
 
@@ -3526,6 +3760,135 @@ func (m *GlobalTuneOptions) validateListenerMultiQueue(formats strfmt.Registry) 
 
 	// value enum
 	if err := m.validateListenerMultiQueueEnum("tune_options"+"."+"listener_multi_queue", "body", m.ListenerMultiQueue); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var globalTuneOptionsTypeLuaLogLoggersPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		globalTuneOptionsTypeLuaLogLoggersPropEnum = append(globalTuneOptionsTypeLuaLogLoggersPropEnum, v)
+	}
+}
+
+const (
+
+	// GlobalTuneOptionsLuaLogLoggersEnabled captures enum value "enabled"
+	GlobalTuneOptionsLuaLogLoggersEnabled string = "enabled"
+
+	// GlobalTuneOptionsLuaLogLoggersDisabled captures enum value "disabled"
+	GlobalTuneOptionsLuaLogLoggersDisabled string = "disabled"
+)
+
+// prop value enum
+func (m *GlobalTuneOptions) validateLuaLogLoggersEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, globalTuneOptionsTypeLuaLogLoggersPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *GlobalTuneOptions) validateLuaLogLoggers(formats strfmt.Registry) error {
+	if swag.IsZero(m.LuaLogLoggers) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateLuaLogLoggersEnum("tune_options"+"."+"lua_log_loggers", "body", m.LuaLogLoggers); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var globalTuneOptionsTypeLuaLogStderrPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["auto","enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		globalTuneOptionsTypeLuaLogStderrPropEnum = append(globalTuneOptionsTypeLuaLogStderrPropEnum, v)
+	}
+}
+
+const (
+
+	// GlobalTuneOptionsLuaLogStderrAuto captures enum value "auto"
+	GlobalTuneOptionsLuaLogStderrAuto string = "auto"
+
+	// GlobalTuneOptionsLuaLogStderrEnabled captures enum value "enabled"
+	GlobalTuneOptionsLuaLogStderrEnabled string = "enabled"
+
+	// GlobalTuneOptionsLuaLogStderrDisabled captures enum value "disabled"
+	GlobalTuneOptionsLuaLogStderrDisabled string = "disabled"
+)
+
+// prop value enum
+func (m *GlobalTuneOptions) validateLuaLogStderrEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, globalTuneOptionsTypeLuaLogStderrPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *GlobalTuneOptions) validateLuaLogStderr(formats strfmt.Registry) error {
+	if swag.IsZero(m.LuaLogStderr) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateLuaLogStderrEnum("tune_options"+"."+"lua_log_stderr", "body", m.LuaLogStderr); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var globalTuneOptionsTypePtZeroCopyForwardingPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		globalTuneOptionsTypePtZeroCopyForwardingPropEnum = append(globalTuneOptionsTypePtZeroCopyForwardingPropEnum, v)
+	}
+}
+
+const (
+
+	// GlobalTuneOptionsPtZeroCopyForwardingEnabled captures enum value "enabled"
+	GlobalTuneOptionsPtZeroCopyForwardingEnabled string = "enabled"
+
+	// GlobalTuneOptionsPtZeroCopyForwardingDisabled captures enum value "disabled"
+	GlobalTuneOptionsPtZeroCopyForwardingDisabled string = "disabled"
+)
+
+// prop value enum
+func (m *GlobalTuneOptions) validatePtZeroCopyForwardingEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, globalTuneOptionsTypePtZeroCopyForwardingPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *GlobalTuneOptions) validatePtZeroCopyForwarding(formats strfmt.Registry) error {
+	if swag.IsZero(m.PtZeroCopyForwarding) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validatePtZeroCopyForwardingEnum("tune_options"+"."+"pt_zero_copy_forwarding", "body", m.PtZeroCopyForwarding); err != nil {
 		return err
 	}
 

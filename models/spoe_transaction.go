@@ -43,10 +43,12 @@ type SpoeTransaction struct {
 
 	// id
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	ID string `json:"id,omitempty"`
 
 	// status
 	// Enum: [failed in_progress success]
+	// +kubebuilder:validation:Enum=failed;in_progress;success;
 	Status string `json:"status,omitempty"`
 }
 

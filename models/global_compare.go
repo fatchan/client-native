@@ -159,7 +159,25 @@ func (s Global) Equal(t Global, opts ...Options) bool {
 		return false
 	}
 
-	if !s.DefaultPath.Equal(*t.DefaultPath, opt) {
+	if s.DefaultPath == nil || t.DefaultPath == nil {
+		if s.DefaultPath != nil || t.DefaultPath != nil {
+			if opt.NilSameAsEmpty {
+				empty := &GlobalDefaultPath{}
+				if s.DefaultPath == nil {
+					if !(t.DefaultPath.Equal(*empty)) {
+						return false
+					}
+				}
+				if t.DefaultPath == nil {
+					if !(s.DefaultPath.Equal(*empty)) {
+						return false
+					}
+				}
+			} else {
+				return false
+			}
+		}
+	} else if !s.DefaultPath.Equal(*t.DefaultPath, opt) {
 		return false
 	}
 
@@ -167,7 +185,25 @@ func (s Global) Equal(t Global, opts ...Options) bool {
 		return false
 	}
 
-	if !s.DeviceAtlasOptions.Equal(*t.DeviceAtlasOptions, opt) {
+	if s.DeviceAtlasOptions == nil || t.DeviceAtlasOptions == nil {
+		if s.DeviceAtlasOptions != nil || t.DeviceAtlasOptions != nil {
+			if opt.NilSameAsEmpty {
+				empty := &GlobalDeviceAtlasOptions{}
+				if s.DeviceAtlasOptions == nil {
+					if !(t.DeviceAtlasOptions.Equal(*empty)) {
+						return false
+					}
+				}
+				if t.DeviceAtlasOptions == nil {
+					if !(s.DeviceAtlasOptions.Equal(*empty)) {
+						return false
+					}
+				}
+			} else {
+				return false
+			}
+		}
+	} else if !s.DeviceAtlasOptions.Equal(*t.DeviceAtlasOptions, opt) {
 		return false
 	}
 
@@ -179,7 +215,25 @@ func (s Global) Equal(t Global, opts ...Options) bool {
 		return false
 	}
 
-	if !s.FiftyOneDegreesOptions.Equal(*t.FiftyOneDegreesOptions, opt) {
+	if s.FiftyOneDegreesOptions == nil || t.FiftyOneDegreesOptions == nil {
+		if s.FiftyOneDegreesOptions != nil || t.FiftyOneDegreesOptions != nil {
+			if opt.NilSameAsEmpty {
+				empty := &GlobalFiftyOneDegreesOptions{}
+				if s.FiftyOneDegreesOptions == nil {
+					if !(t.FiftyOneDegreesOptions.Equal(*empty)) {
+						return false
+					}
+				}
+				if t.FiftyOneDegreesOptions == nil {
+					if !(s.FiftyOneDegreesOptions.Equal(*empty)) {
+						return false
+					}
+				}
+			} else {
+				return false
+			}
+		}
+	} else if !s.FiftyOneDegreesOptions.Equal(*t.FiftyOneDegreesOptions, opt) {
 		return false
 	}
 
@@ -247,7 +301,7 @@ func (s Global) Equal(t Global, opts ...Options) bool {
 		return false
 	}
 
-	if s.LoadServerStateFromFile != t.LoadServerStateFromFile {
+	if s.LimitedQuic != t.LimitedQuic {
 		return false
 	}
 
@@ -255,7 +309,25 @@ func (s Global) Equal(t Global, opts ...Options) bool {
 		return false
 	}
 
-	if !s.LogSendHostname.Equal(*t.LogSendHostname, opt) {
+	if s.LogSendHostname == nil || t.LogSendHostname == nil {
+		if s.LogSendHostname != nil || t.LogSendHostname != nil {
+			if opt.NilSameAsEmpty {
+				empty := &GlobalLogSendHostname{}
+				if s.LogSendHostname == nil {
+					if !(t.LogSendHostname.Equal(*empty)) {
+						return false
+					}
+				}
+				if t.LogSendHostname == nil {
+					if !(s.LogSendHostname.Equal(*empty)) {
+						return false
+					}
+				}
+			} else {
+				return false
+			}
+		}
+	} else if !s.LogSendHostname.Equal(*t.LogSendHostname, opt) {
 		return false
 	}
 
@@ -415,6 +487,10 @@ func (s Global) Equal(t Global, opts ...Options) bool {
 		return false
 	}
 
+	if s.Setcap != t.Setcap {
+		return false
+	}
+
 	if s.SpreadChecks != t.SpreadChecks {
 		return false
 	}
@@ -515,7 +591,25 @@ func (s Global) Equal(t Global, opts ...Options) bool {
 		return false
 	}
 
-	if !s.TuneOptions.Equal(*t.TuneOptions, opt) {
+	if s.TuneOptions == nil || t.TuneOptions == nil {
+		if s.TuneOptions != nil || t.TuneOptions != nil {
+			if opt.NilSameAsEmpty {
+				empty := &GlobalTuneOptions{}
+				if s.TuneOptions == nil {
+					if !(t.TuneOptions.Equal(*empty)) {
+						return false
+					}
+				}
+				if t.TuneOptions == nil {
+					if !(s.TuneOptions.Equal(*empty)) {
+						return false
+					}
+				}
+			} else {
+				return false
+			}
+		}
+	} else if !s.TuneOptions.Equal(*t.TuneOptions, opt) {
 		return false
 	}
 
@@ -539,7 +633,25 @@ func (s Global) Equal(t Global, opts ...Options) bool {
 		return false
 	}
 
-	if !s.WurflOptions.Equal(*t.WurflOptions, opt) {
+	if s.WurflOptions == nil || t.WurflOptions == nil {
+		if s.WurflOptions != nil || t.WurflOptions != nil {
+			if opt.NilSameAsEmpty {
+				empty := &GlobalWurflOptions{}
+				if s.WurflOptions == nil {
+					if !(t.WurflOptions.Equal(*empty)) {
+						return false
+					}
+				}
+				if t.WurflOptions == nil {
+					if !(s.WurflOptions.Equal(*empty)) {
+						return false
+					}
+				}
+			} else {
+				return false
+			}
+		}
+	} else if !s.WurflOptions.Equal(*t.WurflOptions, opt) {
 		return false
 	}
 
@@ -752,7 +864,25 @@ func (s Global) Diff(t Global, opts ...Options) map[string][]interface{} {
 		diff["Daemon"] = []interface{}{s.Daemon, t.Daemon}
 	}
 
-	if !s.DefaultPath.Equal(*t.DefaultPath, opt) {
+	if s.DefaultPath == nil || t.DefaultPath == nil {
+		if s.DefaultPath != nil || t.DefaultPath != nil {
+			if opt.NilSameAsEmpty {
+				empty := &GlobalDefaultPath{}
+				if s.DefaultPath == nil {
+					if !(t.DefaultPath.Equal(*empty)) {
+						diff["DefaultPath"] = []interface{}{ValueOrNil(s.DefaultPath), ValueOrNil(t.DefaultPath)}
+					}
+				}
+				if t.DefaultPath == nil {
+					if !(s.DefaultPath.Equal(*empty)) {
+						diff["DefaultPath"] = []interface{}{ValueOrNil(s.DefaultPath), ValueOrNil(t.DefaultPath)}
+					}
+				}
+			} else {
+				diff["DefaultPath"] = []interface{}{ValueOrNil(s.DefaultPath), ValueOrNil(t.DefaultPath)}
+			}
+		}
+	} else if !s.DefaultPath.Equal(*t.DefaultPath, opt) {
 		diff["DefaultPath"] = []interface{}{ValueOrNil(s.DefaultPath), ValueOrNil(t.DefaultPath)}
 	}
 
@@ -760,7 +890,25 @@ func (s Global) Diff(t Global, opts ...Options) map[string][]interface{} {
 		diff["Description"] = []interface{}{s.Description, t.Description}
 	}
 
-	if !s.DeviceAtlasOptions.Equal(*t.DeviceAtlasOptions, opt) {
+	if s.DeviceAtlasOptions == nil || t.DeviceAtlasOptions == nil {
+		if s.DeviceAtlasOptions != nil || t.DeviceAtlasOptions != nil {
+			if opt.NilSameAsEmpty {
+				empty := &GlobalDeviceAtlasOptions{}
+				if s.DeviceAtlasOptions == nil {
+					if !(t.DeviceAtlasOptions.Equal(*empty)) {
+						diff["DeviceAtlasOptions"] = []interface{}{ValueOrNil(s.DeviceAtlasOptions), ValueOrNil(t.DeviceAtlasOptions)}
+					}
+				}
+				if t.DeviceAtlasOptions == nil {
+					if !(s.DeviceAtlasOptions.Equal(*empty)) {
+						diff["DeviceAtlasOptions"] = []interface{}{ValueOrNil(s.DeviceAtlasOptions), ValueOrNil(t.DeviceAtlasOptions)}
+					}
+				}
+			} else {
+				diff["DeviceAtlasOptions"] = []interface{}{ValueOrNil(s.DeviceAtlasOptions), ValueOrNil(t.DeviceAtlasOptions)}
+			}
+		}
+	} else if !s.DeviceAtlasOptions.Equal(*t.DeviceAtlasOptions, opt) {
 		diff["DeviceAtlasOptions"] = []interface{}{ValueOrNil(s.DeviceAtlasOptions), ValueOrNil(t.DeviceAtlasOptions)}
 	}
 
@@ -772,7 +920,25 @@ func (s Global) Diff(t Global, opts ...Options) map[string][]interface{} {
 		diff["ExternalCheck"] = []interface{}{s.ExternalCheck, t.ExternalCheck}
 	}
 
-	if !s.FiftyOneDegreesOptions.Equal(*t.FiftyOneDegreesOptions, opt) {
+	if s.FiftyOneDegreesOptions == nil || t.FiftyOneDegreesOptions == nil {
+		if s.FiftyOneDegreesOptions != nil || t.FiftyOneDegreesOptions != nil {
+			if opt.NilSameAsEmpty {
+				empty := &GlobalFiftyOneDegreesOptions{}
+				if s.FiftyOneDegreesOptions == nil {
+					if !(t.FiftyOneDegreesOptions.Equal(*empty)) {
+						diff["FiftyOneDegreesOptions"] = []interface{}{ValueOrNil(s.FiftyOneDegreesOptions), ValueOrNil(t.FiftyOneDegreesOptions)}
+					}
+				}
+				if t.FiftyOneDegreesOptions == nil {
+					if !(s.FiftyOneDegreesOptions.Equal(*empty)) {
+						diff["FiftyOneDegreesOptions"] = []interface{}{ValueOrNil(s.FiftyOneDegreesOptions), ValueOrNil(t.FiftyOneDegreesOptions)}
+					}
+				}
+			} else {
+				diff["FiftyOneDegreesOptions"] = []interface{}{ValueOrNil(s.FiftyOneDegreesOptions), ValueOrNil(t.FiftyOneDegreesOptions)}
+			}
+		}
+	} else if !s.FiftyOneDegreesOptions.Equal(*t.FiftyOneDegreesOptions, opt) {
 		diff["FiftyOneDegreesOptions"] = []interface{}{ValueOrNil(s.FiftyOneDegreesOptions), ValueOrNil(t.FiftyOneDegreesOptions)}
 	}
 
@@ -840,15 +1006,33 @@ func (s Global) Diff(t Global, opts ...Options) map[string][]interface{} {
 		diff["IssuersChainPath"] = []interface{}{s.IssuersChainPath, t.IssuersChainPath}
 	}
 
-	if s.LoadServerStateFromFile != t.LoadServerStateFromFile {
-		diff["LoadServerStateFromFile"] = []interface{}{s.LoadServerStateFromFile, t.LoadServerStateFromFile}
+	if s.LimitedQuic != t.LimitedQuic {
+		diff["LimitedQuic"] = []interface{}{s.LimitedQuic, t.LimitedQuic}
 	}
 
 	if s.Localpeer != t.Localpeer {
 		diff["Localpeer"] = []interface{}{s.Localpeer, t.Localpeer}
 	}
 
-	if !s.LogSendHostname.Equal(*t.LogSendHostname, opt) {
+	if s.LogSendHostname == nil || t.LogSendHostname == nil {
+		if s.LogSendHostname != nil || t.LogSendHostname != nil {
+			if opt.NilSameAsEmpty {
+				empty := &GlobalLogSendHostname{}
+				if s.LogSendHostname == nil {
+					if !(t.LogSendHostname.Equal(*empty)) {
+						diff["LogSendHostname"] = []interface{}{ValueOrNil(s.LogSendHostname), ValueOrNil(t.LogSendHostname)}
+					}
+				}
+				if t.LogSendHostname == nil {
+					if !(s.LogSendHostname.Equal(*empty)) {
+						diff["LogSendHostname"] = []interface{}{ValueOrNil(s.LogSendHostname), ValueOrNil(t.LogSendHostname)}
+					}
+				}
+			} else {
+				diff["LogSendHostname"] = []interface{}{ValueOrNil(s.LogSendHostname), ValueOrNil(t.LogSendHostname)}
+			}
+		}
+	} else if !s.LogSendHostname.Equal(*t.LogSendHostname, opt) {
 		diff["LogSendHostname"] = []interface{}{ValueOrNil(s.LogSendHostname), ValueOrNil(t.LogSendHostname)}
 	}
 
@@ -1022,6 +1206,10 @@ func (s Global) Diff(t Global, opts ...Options) map[string][]interface{} {
 		diff["SetDumpable"] = []interface{}{s.SetDumpable, t.SetDumpable}
 	}
 
+	if s.Setcap != t.Setcap {
+		diff["Setcap"] = []interface{}{s.Setcap, t.Setcap}
+	}
+
 	if s.SpreadChecks != t.SpreadChecks {
 		diff["SpreadChecks"] = []interface{}{s.SpreadChecks, t.SpreadChecks}
 	}
@@ -1122,7 +1310,25 @@ func (s Global) Diff(t Global, opts ...Options) map[string][]interface{} {
 		diff["ThreadGroups"] = []interface{}{s.ThreadGroups, t.ThreadGroups}
 	}
 
-	if !s.TuneOptions.Equal(*t.TuneOptions, opt) {
+	if s.TuneOptions == nil || t.TuneOptions == nil {
+		if s.TuneOptions != nil || t.TuneOptions != nil {
+			if opt.NilSameAsEmpty {
+				empty := &GlobalTuneOptions{}
+				if s.TuneOptions == nil {
+					if !(t.TuneOptions.Equal(*empty)) {
+						diff["TuneOptions"] = []interface{}{ValueOrNil(s.TuneOptions), ValueOrNil(t.TuneOptions)}
+					}
+				}
+				if t.TuneOptions == nil {
+					if !(s.TuneOptions.Equal(*empty)) {
+						diff["TuneOptions"] = []interface{}{ValueOrNil(s.TuneOptions), ValueOrNil(t.TuneOptions)}
+					}
+				}
+			} else {
+				diff["TuneOptions"] = []interface{}{ValueOrNil(s.TuneOptions), ValueOrNil(t.TuneOptions)}
+			}
+		}
+	} else if !s.TuneOptions.Equal(*t.TuneOptions, opt) {
 		diff["TuneOptions"] = []interface{}{ValueOrNil(s.TuneOptions), ValueOrNil(t.TuneOptions)}
 	}
 
@@ -1146,7 +1352,25 @@ func (s Global) Diff(t Global, opts ...Options) map[string][]interface{} {
 		diff["User"] = []interface{}{s.User, t.User}
 	}
 
-	if !s.WurflOptions.Equal(*t.WurflOptions, opt) {
+	if s.WurflOptions == nil || t.WurflOptions == nil {
+		if s.WurflOptions != nil || t.WurflOptions != nil {
+			if opt.NilSameAsEmpty {
+				empty := &GlobalWurflOptions{}
+				if s.WurflOptions == nil {
+					if !(t.WurflOptions.Equal(*empty)) {
+						diff["WurflOptions"] = []interface{}{ValueOrNil(s.WurflOptions), ValueOrNil(t.WurflOptions)}
+					}
+				}
+				if t.WurflOptions == nil {
+					if !(s.WurflOptions.Equal(*empty)) {
+						diff["WurflOptions"] = []interface{}{ValueOrNil(s.WurflOptions), ValueOrNil(t.WurflOptions)}
+					}
+				}
+			} else {
+				diff["WurflOptions"] = []interface{}{ValueOrNil(s.WurflOptions), ValueOrNil(t.WurflOptions)}
+			}
+		}
+	} else if !s.WurflOptions.Equal(*t.WurflOptions, opt) {
 		diff["WurflOptions"] = []interface{}{ValueOrNil(s.WurflOptions), ValueOrNil(t.WurflOptions)}
 	}
 
@@ -1558,6 +1782,7 @@ func (s RuntimeAPI) Diff(t RuntimeAPI, opts ...Options) map[string][]interface{}
 	opt := getOptions(opts...)
 
 	diff := make(map[string][]interface{})
+
 	if !s.BindParams.Equal(t.BindParams, opt) {
 		diff["BindParams"] = []interface{}{s.BindParams, t.BindParams}
 	}
@@ -1777,11 +2002,27 @@ func (s GlobalTuneOptions) Equal(t GlobalTuneOptions, opts ...Options) bool {
 		return false
 	}
 
+	if s.DisableZeroCopyForwarding != t.DisableZeroCopyForwarding {
+		return false
+	}
+
+	if s.EventsMaxEventsAtOnce != t.EventsMaxEventsAtOnce {
+		return false
+	}
+
 	if s.FailAlloc != t.FailAlloc {
 		return false
 	}
 
 	if s.FdEdgeTriggered != t.FdEdgeTriggered {
+		return false
+	}
+
+	if s.H1ZeroCopyFwdRecv != t.H1ZeroCopyFwdRecv {
+		return false
+	}
+
+	if s.H1ZeroCopyFwdSend != t.H1ZeroCopyFwdSend {
 		return false
 	}
 
@@ -1814,6 +2055,10 @@ func (s GlobalTuneOptions) Equal(t GlobalTuneOptions, opts ...Options) bool {
 	}
 
 	if s.H2MaxFrameSize != t.H2MaxFrameSize {
+		return false
+	}
+
+	if s.H2ZeroCopyFwdSend != t.H2ZeroCopyFwdSend {
 		return false
 	}
 
@@ -1853,6 +2098,14 @@ func (s GlobalTuneOptions) Equal(t GlobalTuneOptions, opts ...Options) bool {
 		return false
 	}
 
+	if s.LuaLogLoggers != t.LuaLogLoggers {
+		return false
+	}
+
+	if s.LuaLogStderr != t.LuaLogStderr {
+		return false
+	}
+
 	if s.LuaMaxmem != t.LuaMaxmem {
 		return false
 	}
@@ -1866,6 +2119,10 @@ func (s GlobalTuneOptions) Equal(t GlobalTuneOptions, opts ...Options) bool {
 	}
 
 	if !equalPointers(s.LuaTaskTimeout, t.LuaTaskTimeout) {
+		return false
+	}
+
+	if !equalPointers(s.MaxChecksPerThread, t.MaxChecksPerThread) {
 		return false
 	}
 
@@ -1905,6 +2162,10 @@ func (s GlobalTuneOptions) Equal(t GlobalTuneOptions, opts ...Options) bool {
 		return false
 	}
 
+	if s.PtZeroCopyForwarding != t.PtZeroCopyForwarding {
+		return false
+	}
+
 	if !equalPointers(s.QuicFrontendConnTxBuffersLimit, t.QuicFrontendConnTxBuffersLimit) {
 		return false
 	}
@@ -1929,7 +2190,15 @@ func (s GlobalTuneOptions) Equal(t GlobalTuneOptions, opts ...Options) bool {
 		return false
 	}
 
+	if !equalPointers(s.RcvbufBackend, t.RcvbufBackend) {
+		return false
+	}
+
 	if !equalPointers(s.RcvbufClient, t.RcvbufClient) {
+		return false
+	}
+
+	if !equalPointers(s.RcvbufFrontend, t.RcvbufFrontend) {
 		return false
 	}
 
@@ -1949,7 +2218,15 @@ func (s GlobalTuneOptions) Equal(t GlobalTuneOptions, opts ...Options) bool {
 		return false
 	}
 
+	if !equalPointers(s.SndbufBackend, t.SndbufBackend) {
+		return false
+	}
+
 	if !equalPointers(s.SndbufClient, t.SndbufClient) {
+		return false
+	}
+
+	if !equalPointers(s.SndbufFrontend, t.SndbufFrontend) {
 		return false
 	}
 
@@ -2056,12 +2333,28 @@ func (s GlobalTuneOptions) Diff(t GlobalTuneOptions, opts ...Options) map[string
 		diff["CompMaxlevel"] = []interface{}{s.CompMaxlevel, t.CompMaxlevel}
 	}
 
+	if s.DisableZeroCopyForwarding != t.DisableZeroCopyForwarding {
+		diff["DisableZeroCopyForwarding"] = []interface{}{s.DisableZeroCopyForwarding, t.DisableZeroCopyForwarding}
+	}
+
+	if s.EventsMaxEventsAtOnce != t.EventsMaxEventsAtOnce {
+		diff["EventsMaxEventsAtOnce"] = []interface{}{s.EventsMaxEventsAtOnce, t.EventsMaxEventsAtOnce}
+	}
+
 	if s.FailAlloc != t.FailAlloc {
 		diff["FailAlloc"] = []interface{}{s.FailAlloc, t.FailAlloc}
 	}
 
 	if s.FdEdgeTriggered != t.FdEdgeTriggered {
 		diff["FdEdgeTriggered"] = []interface{}{s.FdEdgeTriggered, t.FdEdgeTriggered}
+	}
+
+	if s.H1ZeroCopyFwdRecv != t.H1ZeroCopyFwdRecv {
+		diff["H1ZeroCopyFwdRecv"] = []interface{}{s.H1ZeroCopyFwdRecv, t.H1ZeroCopyFwdRecv}
+	}
+
+	if s.H1ZeroCopyFwdSend != t.H1ZeroCopyFwdSend {
+		diff["H1ZeroCopyFwdSend"] = []interface{}{s.H1ZeroCopyFwdSend, t.H1ZeroCopyFwdSend}
 	}
 
 	if s.H2BeInitialWindowSize != t.H2BeInitialWindowSize {
@@ -2094,6 +2387,10 @@ func (s GlobalTuneOptions) Diff(t GlobalTuneOptions, opts ...Options) map[string
 
 	if s.H2MaxFrameSize != t.H2MaxFrameSize {
 		diff["H2MaxFrameSize"] = []interface{}{s.H2MaxFrameSize, t.H2MaxFrameSize}
+	}
+
+	if s.H2ZeroCopyFwdSend != t.H2ZeroCopyFwdSend {
+		diff["H2ZeroCopyFwdSend"] = []interface{}{s.H2ZeroCopyFwdSend, t.H2ZeroCopyFwdSend}
 	}
 
 	if s.HTTPCookielen != t.HTTPCookielen {
@@ -2132,6 +2429,14 @@ func (s GlobalTuneOptions) Diff(t GlobalTuneOptions, opts ...Options) map[string
 		diff["LuaForcedYield"] = []interface{}{s.LuaForcedYield, t.LuaForcedYield}
 	}
 
+	if s.LuaLogLoggers != t.LuaLogLoggers {
+		diff["LuaLogLoggers"] = []interface{}{s.LuaLogLoggers, t.LuaLogLoggers}
+	}
+
+	if s.LuaLogStderr != t.LuaLogStderr {
+		diff["LuaLogStderr"] = []interface{}{s.LuaLogStderr, t.LuaLogStderr}
+	}
+
 	if s.LuaMaxmem != t.LuaMaxmem {
 		diff["LuaMaxmem"] = []interface{}{s.LuaMaxmem, t.LuaMaxmem}
 	}
@@ -2146,6 +2451,10 @@ func (s GlobalTuneOptions) Diff(t GlobalTuneOptions, opts ...Options) map[string
 
 	if !equalPointers(s.LuaTaskTimeout, t.LuaTaskTimeout) {
 		diff["LuaTaskTimeout"] = []interface{}{ValueOrNil(s.LuaTaskTimeout), ValueOrNil(t.LuaTaskTimeout)}
+	}
+
+	if !equalPointers(s.MaxChecksPerThread, t.MaxChecksPerThread) {
+		diff["MaxChecksPerThread"] = []interface{}{ValueOrNil(s.MaxChecksPerThread), ValueOrNil(t.MaxChecksPerThread)}
 	}
 
 	if s.Maxaccept != t.Maxaccept {
@@ -2184,6 +2493,10 @@ func (s GlobalTuneOptions) Diff(t GlobalTuneOptions, opts ...Options) map[string
 		diff["PoolLowFdRatio"] = []interface{}{s.PoolLowFdRatio, t.PoolLowFdRatio}
 	}
 
+	if s.PtZeroCopyForwarding != t.PtZeroCopyForwarding {
+		diff["PtZeroCopyForwarding"] = []interface{}{s.PtZeroCopyForwarding, t.PtZeroCopyForwarding}
+	}
+
 	if !equalPointers(s.QuicFrontendConnTxBuffersLimit, t.QuicFrontendConnTxBuffersLimit) {
 		diff["QuicFrontendConnTxBuffersLimit"] = []interface{}{ValueOrNil(s.QuicFrontendConnTxBuffersLimit), ValueOrNil(t.QuicFrontendConnTxBuffersLimit)}
 	}
@@ -2208,8 +2521,16 @@ func (s GlobalTuneOptions) Diff(t GlobalTuneOptions, opts ...Options) map[string
 		diff["QuicSocketOwner"] = []interface{}{s.QuicSocketOwner, t.QuicSocketOwner}
 	}
 
+	if !equalPointers(s.RcvbufBackend, t.RcvbufBackend) {
+		diff["RcvbufBackend"] = []interface{}{ValueOrNil(s.RcvbufBackend), ValueOrNil(t.RcvbufBackend)}
+	}
+
 	if !equalPointers(s.RcvbufClient, t.RcvbufClient) {
 		diff["RcvbufClient"] = []interface{}{ValueOrNil(s.RcvbufClient), ValueOrNil(t.RcvbufClient)}
+	}
+
+	if !equalPointers(s.RcvbufFrontend, t.RcvbufFrontend) {
+		diff["RcvbufFrontend"] = []interface{}{ValueOrNil(s.RcvbufFrontend), ValueOrNil(t.RcvbufFrontend)}
 	}
 
 	if !equalPointers(s.RcvbufServer, t.RcvbufServer) {
@@ -2228,8 +2549,16 @@ func (s GlobalTuneOptions) Diff(t GlobalTuneOptions, opts ...Options) map[string
 		diff["SchedLowLatency"] = []interface{}{s.SchedLowLatency, t.SchedLowLatency}
 	}
 
+	if !equalPointers(s.SndbufBackend, t.SndbufBackend) {
+		diff["SndbufBackend"] = []interface{}{ValueOrNil(s.SndbufBackend), ValueOrNil(t.SndbufBackend)}
+	}
+
 	if !equalPointers(s.SndbufClient, t.SndbufClient) {
 		diff["SndbufClient"] = []interface{}{ValueOrNil(s.SndbufClient), ValueOrNil(t.SndbufClient)}
+	}
+
+	if !equalPointers(s.SndbufFrontend, t.SndbufFrontend) {
+		diff["SndbufFrontend"] = []interface{}{ValueOrNil(s.SndbufFrontend), ValueOrNil(t.SndbufFrontend)}
 	}
 
 	if !equalPointers(s.SndbufServer, t.SndbufServer) {

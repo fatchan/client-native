@@ -58,11 +58,13 @@ type AwsRegion struct {
 	// Auto generated ID.
 	// Read Only: true
 	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	ID *string `json:"id,omitempty"`
 
 	// Select which IPv4 address the Service Discovery has to use for the backend server entry
 	// Required: true
 	// Enum: [private public]
+	// +kubebuilder:validation:Enum=private;public;
 	IPV4Address *string `json:"ipv4_address"`
 
 	// name
@@ -76,6 +78,7 @@ type AwsRegion struct {
 	// Duration in seconds in-between data pulling requests to the AWS region
 	// Required: true
 	// Minimum: 1
+	// +kubebuilder:validation:Minimum=1
 	RetryTimeout *int64 `json:"retry_timeout"`
 
 	// AWS Secret Access Key.
@@ -89,6 +92,7 @@ type AwsRegion struct {
 
 	// server slots growth type
 	// Enum: [linear exponential]
+	// +kubebuilder:validation:Enum=linear;exponential;
 	ServerSlotsGrowthType *string `json:"server_slots_growth_type,omitempty"`
 }
 

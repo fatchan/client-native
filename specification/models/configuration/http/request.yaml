@@ -42,8 +42,12 @@ http_request_rule:
         - sc-inc-gpc1
         - sc-set-gpt0
         - send-spoe-group
+        - set-bc-mark
+        - set-bc-tos
         - set-dst
         - set-dst-port
+        - set-fc-mark
+        - set-fc-tos
         - set-header
         - set-log-level
         - set-map
@@ -205,7 +209,6 @@ http_request_rule:
       x-dependency:
         type:
           value: redirect
-          required: true
     deny_status:
       type: integer
       minimum: 200
@@ -237,7 +240,7 @@ http_request_rule:
           value: path-strip-dotdot
     timeout_type:
       type: string
-      enum: [server, tunnel]
+      enum: [server, tunnel, client]
       x-dependency:
         type:
           value: set-timeout
@@ -453,7 +456,7 @@ http_request_rule:
       x-display-name: Standard HAProxy expression
       x-dependency:
         type:
-          value: [do-resolve, set-dst, set-dst-port, set-priority-class, set-priority-offset, set-src, set-src-port]
+          value: [do-resolve, set-bc-mark, set-bc-tos, set-dst, set-dst-port, set-fc-mark, set-fc-tos, set-priority-class, set-priority-offset, set-src, set-src-port]
           required: true
     sc_expr:
       type: string
@@ -560,7 +563,7 @@ http_request_rule:
       x-nullable: true
     return_content_format:
       type: string
-      enum: [default-errorfile, errorfile, errorfiles, file, lf-file, string, lf-string]
+      enum: [default-errorfiles, errorfile, errorfiles, file, lf-file, string, lf-string]
       x-dependency:
         type:
           value: [deny, tarpit, return]
