@@ -40,6 +40,7 @@ http_request_rule:
         - sc-inc-gpc
         - sc-inc-gpc0
         - sc-inc-gpc1
+        - sc-set-gpt
         - sc-set-gpt0
         - send-spoe-group
         - set-bc-mark
@@ -99,57 +100,6 @@ http_request_rule:
       x-dependency:
         type:
           value: capture
-    track-sc0-key:
-      x-deprecated: true
-      type: string
-      pattern: '^[^\s]+$'
-      x-display-name: track-sc0 Key
-      x-dependency:
-        type:
-          value: track-sc0
-          required: true
-    track-sc0-table:
-      x-deprecated: true
-      type: string
-      pattern: '^[^\s]+$'
-      x-display-name: track-sc0 Table
-      x-dependency:
-        type:
-          value: track-sc0
-    track-sc1-key:
-      x-deprecated: true
-      type: string
-      pattern: '^[^\s]+$'
-      x-display-name: track-sc1 Key
-      x-dependency:
-        type:
-          value: track-sc1
-          required: true
-    track-sc1-table:
-      x-deprecated: true
-      type: string
-      pattern: '^[^\s]+$'
-      x-display-name: track-sc1 Table
-      x-dependency:
-        type:
-          value: track-sc1
-    track-sc2-key:
-      x-deprecated: true
-      type: string
-      pattern: '^[^\s]+$'
-      x-display-name: track-sc2 Key
-      x-dependency:
-        type:
-          value: track-sc2
-          required: true
-    track-sc2-table:
-      x-deprecated: true
-      type: string
-      pattern: '^[^\s]+$'
-      x-display-name: track-sc2 Table
-      x-dependency:
-        type:
-          value: track-sc2
     track_sc_key:
       type: string
       pattern: '^[^\s]+$'
@@ -219,7 +169,15 @@ http_request_rule:
           value: [deny, tarpit]
     normalizer:
       type: string
-      enum: [fragment-encode, fragment-strip, path-merge-slashes, path-strip-dot, path-strip-dotdot, percent-decode-unreserved, percent-to-upercase, query-sort-by-name]
+      enum:
+        - fragment-encode
+        - fragment-strip
+        - path-merge-slashes
+        - path-strip-dot
+        - path-strip-dotdot
+        - percent-decode-unreserved
+        - percent-to-uppercase
+        - query-sort-by-name
       x-dependency:
         type:
           value: normalize-uri
@@ -230,7 +188,7 @@ http_request_rule:
         type:
           value: normalize-uri
         normalizer:
-          value: [percent-decode-unreserved, percent-to-upercase]
+          value: [percent-decode-unreserved, percent-to-uppercase]
     normalizer_full:
       type: boolean
       x-dependency:
@@ -428,13 +386,13 @@ http_request_rule:
       type: integer
       x-dependency:
         type:
-          value: [sc-add-gpc, sc-inc-gpc, sc-inc-gpc0, sc-inc-gpc1, sc-set-gpt0]
+          value: [sc-add-gpc, sc-inc-gpc, sc-inc-gpc0, sc-inc-gpc1, sc-set-gpt, sc-set-gpt0]
           required: true
     sc_idx:
       type: integer
       x-dependency:
         type:
-          value: [sc-add-gpc, sc-inc-gpc]
+          value: [sc-add-gpc, sc-inc-gpc, sc-set-gpt]
           required: true
     resolvers:
       type: string
@@ -456,7 +414,18 @@ http_request_rule:
       x-display-name: Standard HAProxy expression
       x-dependency:
         type:
-          value: [do-resolve, set-bc-mark, set-bc-tos, set-dst, set-dst-port, set-fc-mark, set-fc-tos, set-priority-class, set-priority-offset, set-src, set-src-port]
+          value:
+            - do-resolve
+            - set-bc-mark
+            - set-bc-tos
+            - set-dst
+            - set-dst-port
+            - set-fc-mark
+            - set-fc-tos
+            - set-priority-class
+            - set-priority-offset
+            - set-src
+            - set-src-port
           required: true
     sc_expr:
       type: string

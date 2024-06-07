@@ -384,6 +384,23 @@ func ParseHTTPResponseRule(f types.Action) *models.HTTPResponseRule { //nolint:m
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
 		}
+	case *actions.ScSetGpt:
+		if (v.Int == nil && len(v.Expr.Expr) == 0) || (v.Int != nil && len(v.Expr.Expr) > 0) {
+			return nil
+		}
+		scID, err := strconv.ParseInt(v.ScID, 10, 64)
+		if err != nil {
+			return nil
+		}
+		return &models.HTTPResponseRule{
+			Type:     "sc-set-gpt",
+			ScID:     scID,
+			ScIdx:    v.Idx,
+			ScExpr:   strings.Join(v.Expr.Expr, " "),
+			ScInt:    v.Int,
+			Cond:     v.Cond,
+			CondTest: v.CondTest,
+		}
 	case *actions.ScSetGpt0:
 		if (v.Int == nil && len(v.Expr.Expr) == 0) || (v.Int != nil && len(v.Expr.Expr) > 0) {
 			return nil
@@ -552,7 +569,7 @@ func ParseHTTPResponseRule(f types.Action) *models.HTTPResponseRule { //nolint:m
 	return nil
 }
 
-func SerializeHTTPResponseRule(f models.HTTPResponseRule) (rule types.Action, err error) { //nolint:gocyclo,ireturn,cyclop,maintidx
+func SerializeHTTPResponseRule(f models.HTTPResponseRule) (rule types.Action, err error) { //nolint:gocyclo,ireturn,cyclop,maintidx,gocognit
 	switch f.Type {
 	case "add-acl":
 		rule = &http_actions.AddACL{
@@ -707,6 +724,21 @@ func SerializeHTTPResponseRule(f models.HTTPResponseRule) (rule types.Action, er
 			Cond:     f.Cond,
 			CondTest: f.CondTest,
 		}
+	case "sc-set-gpt":
+		if len(f.ScExpr) > 0 && f.ScInt != nil {
+			return nil, NewConfError(ErrValidationError, "sc-set-gpt: int and expr are exclusive")
+		}
+		if len(f.ScExpr) == 0 && f.ScInt == nil {
+			return nil, NewConfError(ErrValidationError, "sc-set-gpt: int or expr has to be set")
+		}
+		rule = &actions.ScSetGpt{
+			ScID:     strconv.FormatInt(f.ScID, 10),
+			Idx:      f.ScIdx,
+			Int:      f.ScInt,
+			Expr:     common.Expression{Expr: strings.Split(f.ScExpr, " ")},
+			Cond:     f.Cond,
+			CondTest: f.CondTest,
+		}
 	case "sc-set-gpt0":
 		if len(f.ScExpr) > 0 && f.ScInt != nil {
 			return nil, NewConfError(ErrValidationError, "sc-set-gpt0 int and expr are exclusive")
@@ -807,33 +839,6 @@ func SerializeHTTPResponseRule(f models.HTTPResponseRule) (rule types.Action, er
 			Mode:     f.StrictMode,
 			Cond:     f.Cond,
 			CondTest: f.CondTest,
-		}
-	case "track-sc0":
-		rule = &actions.TrackSc{
-			Type:         actions.TrackScType,
-			StickCounter: 0,
-			Key:          f.TrackSc0Key,
-			Table:        f.TrackSc0Table,
-			Cond:         f.Cond,
-			CondTest:     f.CondTest,
-		}
-	case "track-sc1":
-		rule = &actions.TrackSc{
-			Type:         actions.TrackScType,
-			StickCounter: 1,
-			Key:          f.TrackSc1Key,
-			Table:        f.TrackSc1Table,
-			Cond:         f.Cond,
-			CondTest:     f.CondTest,
-		}
-	case "track-sc2":
-		rule = &actions.TrackSc{
-			Type:         actions.TrackScType,
-			StickCounter: 2,
-			Key:          f.TrackSc2Key,
-			Table:        f.TrackSc2Table,
-			Cond:         f.Cond,
-			CondTest:     f.CondTest,
 		}
 	case "track-sc":
 		if f.TrackScStickCounter == nil {

@@ -57,6 +57,26 @@ func (s Backend) Equal(t Backend, opts ...Options) bool {
 		}
 	}
 
+	if !CheckSameNilAndLen(s.ForcePersistList, t.ForcePersistList, opt) {
+		return false
+	} else {
+		for i := range s.ForcePersistList {
+			if !s.ForcePersistList[i].Equal(*t.ForcePersistList[i], opt) {
+				return false
+			}
+		}
+	}
+
+	if !CheckSameNilAndLen(s.IgnorePersistList, t.IgnorePersistList, opt) {
+		return false
+	} else {
+		for i := range s.IgnorePersistList {
+			if !s.IgnorePersistList[i].Equal(*t.IgnorePersistList[i], opt) {
+				return false
+			}
+		}
+	}
+
 	if s.Abortonclose != t.Abortonclose {
 		return false
 	}
@@ -327,6 +347,10 @@ func (s Backend) Equal(t Backend, opts ...Options) bool {
 		return false
 	}
 
+	if !equalPointers(s.HashBalanceFactor, t.HashBalanceFactor) {
+		return false
+	}
+
 	if s.HashType == nil || t.HashType == nil {
 		if s.HashType != nil || t.HashType != nil {
 			if opt.NilSameAsEmpty {
@@ -353,37 +377,7 @@ func (s Backend) Equal(t Backend, opts ...Options) bool {
 		return false
 	}
 
-	if s.HTTPCheck == nil || t.HTTPCheck == nil {
-		if s.HTTPCheck != nil || t.HTTPCheck != nil {
-			if opt.NilSameAsEmpty {
-				empty := &HTTPCheck{}
-				if s.HTTPCheck == nil {
-					if !(t.HTTPCheck.Equal(*empty)) {
-						return false
-					}
-				}
-				if t.HTTPCheck == nil {
-					if !(s.HTTPCheck.Equal(*empty)) {
-						return false
-					}
-				}
-			} else {
-				return false
-			}
-		}
-	} else if !s.HTTPCheck.Equal(*t.HTTPCheck, opt) {
-		return false
-	}
-
-	if s.HTTPKeepAlive != t.HTTPKeepAlive {
-		return false
-	}
-
 	if s.HTTPNoDelay != t.HTTPNoDelay {
-		return false
-	}
-
-	if s.HTTPServerClose != t.HTTPServerClose {
 		return false
 	}
 
@@ -442,10 +436,6 @@ func (s Backend) Equal(t Backend, opts ...Options) bool {
 			}
 		}
 	} else if !s.HttpchkParams.Equal(*t.HttpchkParams, opt) {
-		return false
-	}
-
-	if s.Httpclose != t.Httpclose {
 		return false
 	}
 
@@ -847,6 +837,40 @@ func (s Backend) Diff(t Backend, opts ...Options) map[string][]interface{} {
 		}
 	}
 
+	if !CheckSameNilAndLen(s.ForcePersistList, t.ForcePersistList, opt) {
+		diff["ForcePersistList"] = []interface{}{s.ForcePersistList, t.ForcePersistList}
+	} else {
+		diff2 := make(map[string][]interface{})
+		for i := range s.ForcePersistList {
+			if !s.ForcePersistList[i].Equal(*t.ForcePersistList[i], opt) {
+				diffSub := s.ForcePersistList[i].Diff(*t.ForcePersistList[i], opt)
+				if len(diffSub) > 0 {
+					diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+				}
+			}
+		}
+		if len(diff2) > 0 {
+			diff["ForcePersistList"] = []interface{}{diff2}
+		}
+	}
+
+	if !CheckSameNilAndLen(s.IgnorePersistList, t.IgnorePersistList, opt) {
+		diff["IgnorePersistList"] = []interface{}{s.IgnorePersistList, t.IgnorePersistList}
+	} else {
+		diff2 := make(map[string][]interface{})
+		for i := range s.IgnorePersistList {
+			if !s.IgnorePersistList[i].Equal(*t.IgnorePersistList[i], opt) {
+				diffSub := s.IgnorePersistList[i].Diff(*t.IgnorePersistList[i], opt)
+				if len(diffSub) > 0 {
+					diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+				}
+			}
+		}
+		if len(diff2) > 0 {
+			diff["IgnorePersistList"] = []interface{}{diff2}
+		}
+	}
+
 	if s.Abortonclose != t.Abortonclose {
 		diff["Abortonclose"] = []interface{}{s.Abortonclose, t.Abortonclose}
 	}
@@ -1117,6 +1141,10 @@ func (s Backend) Diff(t Backend, opts ...Options) map[string][]interface{} {
 		diff["H1CaseAdjustBogusServer"] = []interface{}{s.H1CaseAdjustBogusServer, t.H1CaseAdjustBogusServer}
 	}
 
+	if !equalPointers(s.HashBalanceFactor, t.HashBalanceFactor) {
+		diff["HashBalanceFactor"] = []interface{}{ValueOrNil(s.HashBalanceFactor), ValueOrNil(t.HashBalanceFactor)}
+	}
+
 	if s.HashType == nil || t.HashType == nil {
 		if s.HashType != nil || t.HashType != nil {
 			if opt.NilSameAsEmpty {
@@ -1143,38 +1171,8 @@ func (s Backend) Diff(t Backend, opts ...Options) map[string][]interface{} {
 		diff["HTTPBufferRequest"] = []interface{}{s.HTTPBufferRequest, t.HTTPBufferRequest}
 	}
 
-	if s.HTTPCheck == nil || t.HTTPCheck == nil {
-		if s.HTTPCheck != nil || t.HTTPCheck != nil {
-			if opt.NilSameAsEmpty {
-				empty := &HTTPCheck{}
-				if s.HTTPCheck == nil {
-					if !(t.HTTPCheck.Equal(*empty)) {
-						diff["HTTPCheck"] = []interface{}{ValueOrNil(s.HTTPCheck), ValueOrNil(t.HTTPCheck)}
-					}
-				}
-				if t.HTTPCheck == nil {
-					if !(s.HTTPCheck.Equal(*empty)) {
-						diff["HTTPCheck"] = []interface{}{ValueOrNil(s.HTTPCheck), ValueOrNil(t.HTTPCheck)}
-					}
-				}
-			} else {
-				diff["HTTPCheck"] = []interface{}{ValueOrNil(s.HTTPCheck), ValueOrNil(t.HTTPCheck)}
-			}
-		}
-	} else if !s.HTTPCheck.Equal(*t.HTTPCheck, opt) {
-		diff["HTTPCheck"] = []interface{}{ValueOrNil(s.HTTPCheck), ValueOrNil(t.HTTPCheck)}
-	}
-
-	if s.HTTPKeepAlive != t.HTTPKeepAlive {
-		diff["HTTPKeepAlive"] = []interface{}{s.HTTPKeepAlive, t.HTTPKeepAlive}
-	}
-
 	if s.HTTPNoDelay != t.HTTPNoDelay {
 		diff["HTTPNoDelay"] = []interface{}{s.HTTPNoDelay, t.HTTPNoDelay}
-	}
-
-	if s.HTTPServerClose != t.HTTPServerClose {
-		diff["HTTPServerClose"] = []interface{}{s.HTTPServerClose, t.HTTPServerClose}
 	}
 
 	if s.HTTPUseHtx != t.HTTPUseHtx {
@@ -1233,10 +1231,6 @@ func (s Backend) Diff(t Backend, opts ...Options) map[string][]interface{} {
 		}
 	} else if !s.HttpchkParams.Equal(*t.HttpchkParams, opt) {
 		diff["HttpchkParams"] = []interface{}{ValueOrNil(s.HttpchkParams), ValueOrNil(t.HttpchkParams)}
-	}
-
-	if s.Httpclose != t.Httpclose {
-		diff["Httpclose"] = []interface{}{s.Httpclose, t.Httpclose}
 	}
 
 	if !equalPointers(s.ID, t.ID) {
@@ -1623,6 +1617,43 @@ func (s BackendForcePersist) Diff(t BackendForcePersist, opts ...Options) map[st
 	return diff
 }
 
+// Equal checks if two structs of type ForcePersist are equal
+//
+//	var a, b ForcePersist
+//	equal := a.Equal(b)
+//
+// opts ...Options are ignored in this method
+func (s ForcePersist) Equal(t ForcePersist, opts ...Options) bool {
+	if !equalPointers(s.Cond, t.Cond) {
+		return false
+	}
+
+	if !equalPointers(s.CondTest, t.CondTest) {
+		return false
+	}
+
+	return true
+}
+
+// Diff checks if two structs of type ForcePersist are equal
+//
+//	var a, b ForcePersist
+//	diff := a.Diff(b)
+//
+// opts ...Options are ignored in this method
+func (s ForcePersist) Diff(t ForcePersist, opts ...Options) map[string][]interface{} {
+	diff := make(map[string][]interface{})
+	if !equalPointers(s.Cond, t.Cond) {
+		diff["Cond"] = []interface{}{ValueOrNil(s.Cond), ValueOrNil(t.Cond)}
+	}
+
+	if !equalPointers(s.CondTest, t.CondTest) {
+		diff["CondTest"] = []interface{}{ValueOrNil(s.CondTest), ValueOrNil(t.CondTest)}
+	}
+
+	return diff
+}
+
 // Equal checks if two structs of type BackendIgnorePersist are equal
 //
 //	var a, b BackendIgnorePersist
@@ -1648,6 +1679,43 @@ func (s BackendIgnorePersist) Equal(t BackendIgnorePersist, opts ...Options) boo
 //
 // opts ...Options are ignored in this method
 func (s BackendIgnorePersist) Diff(t BackendIgnorePersist, opts ...Options) map[string][]interface{} {
+	diff := make(map[string][]interface{})
+	if !equalPointers(s.Cond, t.Cond) {
+		diff["Cond"] = []interface{}{ValueOrNil(s.Cond), ValueOrNil(t.Cond)}
+	}
+
+	if !equalPointers(s.CondTest, t.CondTest) {
+		diff["CondTest"] = []interface{}{ValueOrNil(s.CondTest), ValueOrNil(t.CondTest)}
+	}
+
+	return diff
+}
+
+// Equal checks if two structs of type IgnorePersist are equal
+//
+//	var a, b IgnorePersist
+//	equal := a.Equal(b)
+//
+// opts ...Options are ignored in this method
+func (s IgnorePersist) Equal(t IgnorePersist, opts ...Options) bool {
+	if !equalPointers(s.Cond, t.Cond) {
+		return false
+	}
+
+	if !equalPointers(s.CondTest, t.CondTest) {
+		return false
+	}
+
+	return true
+}
+
+// Diff checks if two structs of type IgnorePersist are equal
+//
+//	var a, b IgnorePersist
+//	diff := a.Diff(b)
+//
+// opts ...Options are ignored in this method
+func (s IgnorePersist) Diff(t IgnorePersist, opts ...Options) map[string][]interface{} {
 	diff := make(map[string][]interface{})
 	if !equalPointers(s.Cond, t.Cond) {
 		diff["Cond"] = []interface{}{ValueOrNil(s.Cond), ValueOrNil(t.Cond)}

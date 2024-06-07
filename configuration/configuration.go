@@ -50,9 +50,15 @@ const (
 
 // ClientParams is just a placeholder for all client options
 type ClientParams struct {
-	ConfigurationFile         string
-	Haproxy                   string
-	TransactionDir            string
+	ConfigurationFile string
+	Haproxy           string
+	TransactionDir    string
+
+	// ValidateCmd allows specifying a custom script to validate the transaction file.
+	// The injected environment variable DATAPLANEAPI_TRANSACTION_FILE must be used to get the location of the file.
+	ValidateCmd               string
+	ValidateConfigFilesBefore []string
+	ValidateConfigFilesAfter  []string
 	BackupsNumber             int
 	UseValidation             bool
 	PersistentTransactions    bool
@@ -60,12 +66,6 @@ type ClientParams struct {
 	MasterWorker              bool
 	SkipFailedTransactions    bool
 	UseMd5Hash                bool
-
-	// ValidateCmd allows specifying a custom script to validate the transaction file.
-	// The injected environment variable DATAPLANEAPI_TRANSACTION_FILE must be used to get the location of the file.
-	ValidateCmd               string
-	ValidateConfigFilesBefore []string
-	ValidateConfigFilesAfter  []string
 }
 
 // Client configuration client
@@ -75,10 +75,10 @@ type ClientParams struct {
 // transaction files on StartTransaction, and deletes on CommitTransaction. We save
 // data to file on every change for persistence.
 type client struct {
-	Transaction
+	parser   parser.Parser
 	parsers  map[string]parser.Parser
 	services map[string]*Service
-	parser   parser.Parser
+	Transaction
 	clientMu sync.Mutex
 }
 
@@ -164,7 +164,9 @@ func (c *client) DeleteParser(transactionID string) error {
 	if !ok {
 		return NewConfError(ErrTransactionDoesNotExist, transactionID)
 	}
+	c.clientMu.Lock()
 	delete(c.parsers, transactionID)
+	c.clientMu.Unlock()
 	return nil
 }
 
@@ -252,9 +254,9 @@ func NewParseSection(section parser.Section, pName string, p parser.Parser) *Sec
 // SectionParser is used set fields of a section based on the provided parser
 type SectionParser struct {
 	Object  interface{}
+	Parser  parser.Parser
 	Section parser.Section
 	Name    string
-	Parser  parser.Parser
 }
 
 // Parse parses the sections fields and sets their values with the data from the parser
@@ -392,10 +394,10 @@ func (s *SectionParser) checkSpecialFields(fieldName string) (match bool, data i
 		return true, s.defaultBind()
 	case "HTTPSendNameHeader":
 		return true, s.httpSendNameHeader()
-	case "ForcePersist":
-		return true, s.forcePersist()
-	case "IgnorePersist":
-		return true, s.ignorePersist()
+	case "ForcePersistList":
+		return true, s.forcePersistList()
+	case "IgnorePersistList":
+		return true, s.ignorePersistList()
 	case "Source":
 		return true, s.source()
 	case "Originalto":
@@ -961,6 +963,7 @@ func (s *SectionParser) balance() interface{} {
 		b.URIDepth = prm.Depth
 		b.URILen = prm.Len
 		b.URIWhole = prm.Whole
+		b.URIPathOnly = prm.PathOnly
 	case *params.BalanceURLParam:
 		b.URLParam = prm.Param
 		b.URLParamCheckPost = prm.CheckPost
@@ -1374,34 +1377,50 @@ func (s *SectionParser) httpSendNameHeader() interface{} {
 	return nil
 }
 
-func (s *SectionParser) forcePersist() interface{} {
-	if s.Section == parser.Backends {
-		data, err := s.get("force-persist", false)
-		if err != nil {
-			return nil
-		}
-		d := data.(*types.ForcePersist)
-		return &models.BackendForcePersist{
-			Cond:     &d.Cond,
-			CondTest: &d.CondTest,
+func (s *SectionParser) forcePersistList() interface{} {
+	if s.Section != parser.Backends {
+		return nil
+	}
+	data, err := s.get("force-persist", false)
+	if err != nil {
+		return nil
+	}
+	d := data.([]types.ForcePersist)
+	if len(d) == 0 {
+		return nil
+	}
+
+	items := make([]*models.ForcePersist, len(d))
+	for i := range d {
+		items[i] = &models.ForcePersist{
+			Cond:     &d[i].Cond,
+			CondTest: &d[i].CondTest,
 		}
 	}
-	return nil
+	return items
 }
 
-func (s *SectionParser) ignorePersist() interface{} {
-	if s.Section == parser.Backends {
-		data, err := s.get("ignore-persist", false)
-		if err != nil {
-			return nil
-		}
-		d := data.(*types.IgnorePersist)
-		return &models.BackendIgnorePersist{
-			Cond:     &d.Cond,
-			CondTest: &d.CondTest,
+func (s *SectionParser) ignorePersistList() interface{} {
+	if s.Section != parser.Backends {
+		return nil
+	}
+	data, err := s.get("ignore-persist", false)
+	if err != nil {
+		return nil
+	}
+	d := data.([]types.IgnorePersist)
+	if len(d) == 0 {
+		return nil
+	}
+
+	items := make([]*models.IgnorePersist, len(d))
+	for i := range d {
+		items[i] = &models.IgnorePersist{
+			Cond:     &d[i].Cond,
+			CondTest: &d[i].CondTest,
 		}
 	}
-	return nil
+	return items
 }
 
 func (s *SectionParser) source() interface{} {
@@ -1472,14 +1491,9 @@ func (s *SectionParser) originalto() interface{} {
 // SectionObject represents a configuration section
 type SectionObject struct {
 	Object  interface{}
+	Parser  parser.Parser
 	Section parser.Section
 	Name    string
-	Parser  parser.Parser
-	// In the context of the deprecation of the fields:
-	//	 HTTPKeepAlive, HTTPServerClose and Httpclose.
-	// This flag is used to set a priority on HTTPConnectionMode field over
-	// the deprecated ones.
-	httpConnectionModeFlag bool
 }
 
 // CreateEditSection creates or updates a section in the parser based on the provided object
@@ -1490,7 +1504,6 @@ func CreateEditSection(object interface{}, section parser.Section, pName string,
 		Name:    pName,
 		Parser:  p,
 	}
-	so.setHTTPConnectionModeFlag()
 	return so.CreateEditSection()
 }
 
@@ -1593,11 +1606,6 @@ func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value
 	case "DefaultBackend":
 		return true, s.defaultBackend(field)
 	case "HTTPConnectionMode":
-		// if HTTPConnectionMode is not set, skip HTTPConnectionMode
-		// Write only options (Httpclose, HTTPKeepAlive, HTTPServerClose)
-		if !s.httpConnectionModeFlag {
-			return true, nil
-		}
 		return true, s.httpConnectionMode(field)
 	case "HTTPReuse":
 		return true, s.httpReuse(field)
@@ -1635,10 +1643,24 @@ func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value
 		return true, s.defaultBind(field)
 	case "HTTPSendNameHeader":
 		return true, s.httpSendNameHeader(field)
+	case "ForcePersistList":
+		return true, s.forcePersistList(field)
 	case "ForcePersist":
-		return true, s.forcePersist(field)
+		// "ForcePersist" field (force_persist) is deprecated in favour of "ForcePersistList" (force_persist_list).
+		// Backward compatibility during the sunset period is handled by callers of this library that perform payload
+		// transformation as necessary and remove the deprecated field.
+		// "ForcePersist" is explicitly caught and ignored here as a safeguard against a runtime panic that can occur
+		// if callers behave unexpectedly. It should be removed at the end of the sunset period along with the field.
+		return true, nil
+	case "IgnorePersistList":
+		return true, s.ignorePersistList(field)
 	case "IgnorePersist":
-		return true, s.ignorePersist(field)
+		// "IgnorePersist" field (ignore_persist) is deprecated in favour of "IgnorePersistList" (ignore_persist_list).
+		// Backward compatibility during the sunset period is handled by callers of this library that perform payload
+		// transformation as necessary and remove the deprecated field.
+		// "IgnorePersist" is explicitly caught and ignored here as a safeguard against a runtime panic that can occur
+		// if callers behave unexpectedly. It should be removed at the end of the sunset period along with the field.
+		return true, nil
 	case "Source":
 		return true, s.source(field)
 	case "Originalto":
@@ -1668,70 +1690,8 @@ func (s *SectionObject) checkTimeouts(fieldName string, field reflect.Value) (ma
 	return false, nil
 }
 
-// setHTTPConnectionModeFlag set the httpConnectionModeFlag flag if:
-//
-//	HTTPConnectionMode is present, false otherwise.
-//
-// This check is needed due to the deprecation of deprecated options:
-//
-//	HTTPKeepAlive, HTTPServerClose and Httpclose.
-func (s *SectionObject) setHTTPConnectionModeFlag() {
-	objValue := reflect.ValueOf(s.Object)
-	if objValue.Kind() == reflect.Ptr {
-		objValue = reflect.ValueOf(s.Object).Elem()
-	}
-
-	deprecatedFieldPresent := false
-	atLeastOneDeprecatedFieldNotEmpty := false
-	httpConnectionModePresentSet := false
-	for i := 0; i < objValue.NumField(); i++ {
-		typeField := objValue.Type().Field(i)
-		field := objValue.FieldByName(typeField.Name)
-		if typeField.Name == "HTTPConnectionMode" && !valueIsNil(field) {
-			httpConnectionModePresentSet = true
-		}
-		if typeField.Name == "HTTPKeepAlive" || typeField.Name == "HTTPServerClose" || typeField.Name == "Httpclose" {
-			deprecatedFieldPresent = true
-			if !valueIsNil(field) {
-				atLeastOneDeprecatedFieldNotEmpty = true
-			}
-		}
-	}
-	// Backend
-	if deprecatedFieldPresent {
-		// if HTTPConnectionMode is present is not empty => has priority
-		if httpConnectionModePresentSet {
-			s.httpConnectionModeFlag = true
-			return
-		}
-
-		s.httpConnectionModeFlag = !atLeastOneDeprecatedFieldNotEmpty
-		return
-	}
-	// For Default and Frontend,
-	//	HTTPKeepAlive, HTTPServerClose and Httpclose do not exist in the Object
-	// We are always using HTTPConnectionMode
-	s.httpConnectionModeFlag = true
-}
-
-// isHTTPConnectionModeDeprecatedField returns, in regards to the deprecation of HTTPConectionMode option fields:
-//
-//	HTTPKeepAlive, HTTPServerClose and Httpclose.
-//
-// - true if it's a deprecated field, false otherwise
-func isHTTPConnectionModeDeprecatedField(fieldName string) bool {
-	if fieldName == "HTTPKeepAlive" || fieldName == "HTTPServerClose" || fieldName == "Httpclose" {
-		return true
-	}
-	return false
-}
-
 func (s *SectionObject) checkOptions(fieldName string, field reflect.Value) (match bool, err error) {
 	if pName := fmt.Sprintf("option %s", misc.DashCase(fieldName)); s.Parser.HasParser(s.Section, pName) {
-		// Skip this field if it's a deprecated one and HTTPConnectionMode is present
-		if isHTTPConnectionModeDeprecatedField(fieldName) && s.httpConnectionModeFlag {
-			return true, nil
-		}
 		if valueIsNil(field) {
 			if err := s.set(pName, nil); err != nil {
 				return true, err
@@ -2889,32 +2849,42 @@ func (s *SectionObject) httpSendNameHeader(field reflect.Value) error {
 	return s.set("http-send-name-header", types.HTTPSendNameHeader{Name: v})
 }
 
-func (s *SectionObject) forcePersist(field reflect.Value) error {
+func (s *SectionObject) forcePersistList(field reflect.Value) error {
 	if valueIsNil(field) {
 		return s.set("force-persist", nil)
 	}
-	opt, ok := field.Elem().Interface().(models.BackendForcePersist)
+	data, ok := field.Interface().([]*models.ForcePersist)
 	if !ok {
 		return misc.CreateTypeAssertError("force-persist")
 	}
-	return s.set("force-persist", types.ForcePersist{
-		Cond:     *opt.Cond,
-		CondTest: *opt.CondTest,
-	})
+
+	items := make([]types.ForcePersist, len(data))
+	for i := range data {
+		items[i] = types.ForcePersist{
+			Cond:     *data[i].Cond,
+			CondTest: *data[i].CondTest,
+		}
+	}
+	return s.set("force-persist", items)
 }
 
-func (s *SectionObject) ignorePersist(field reflect.Value) error {
+func (s *SectionObject) ignorePersistList(field reflect.Value) error {
 	if valueIsNil(field) {
 		return s.set("ignore-persist", nil)
 	}
-	opt, ok := field.Elem().Interface().(models.BackendIgnorePersist)
+	data, ok := field.Interface().([]*models.IgnorePersist)
 	if !ok {
 		return misc.CreateTypeAssertError("ignore-persist")
 	}
-	return s.set("ignore-persist", types.IgnorePersist{
-		Cond:     *opt.Cond,
-		CondTest: *opt.CondTest,
-	})
+
+	items := make([]types.IgnorePersist, len(data))
+	for i := range data {
+		items[i] = types.IgnorePersist{
+			Cond:     *data[i].Cond,
+			CondTest: *data[i].CondTest,
+		}
+	}
+	return s.set("ignore-persist", items)
 }
 
 func (s *SectionObject) source(field reflect.Value) error {

@@ -442,10 +442,16 @@
             },
             "external_check": "enabled",
             "external_check_command": "/bin/false",
-            "force_persist": {
-                "cond": "unless",
-                "cond_test": "acl-name-2"
-            },
+            "force_persist_list": [
+                {
+                    "cond": "unless",
+                    "cond_test": "acl-name-2"
+                },
+                {
+                    "cond": "if",
+                    "cond_test": "acl-name-3"
+                }
+            ],
             "forwardfor": {
                 "enabled": "enabled",
                 "header": "X-Forwarded-For"
@@ -457,6 +463,7 @@
                 "method": "consistent",
                 "modifier": "avalanche"
             },
+           "hash_balance_factor": 150,
             "http-check": {
                 "index": 0,
                 "type": "connect"
@@ -470,10 +477,16 @@
                 "uri": "/"
             },
             "id": 456,
-            "ignore_persist": {
-                "cond": "if",
-                "cond_test": "acl-name"
-            },
+            "ignore_persist_list": [
+                {
+                    "cond": "if",
+                    "cond_test": "acl-name"
+                },
+                {
+                    "cond": "unless",
+                    "cond_test": "local_dst"
+                }
+            ],
             "independent_streams": "enabled",
             "load_server_state_from_file": "local",
             "log_tag": "bla",
@@ -861,6 +874,14 @@
                     "index": 19,
                     "type": "content",
                     "expr": "0xab"
+                },
+                {
+                    "index": 20,
+                    "type": "content",
+                    "action": "sc-set-gpt",
+                    "sc_id": 1,
+                    "sc_idx": 2,
+                    "sc_int": 1234
                 }
             ],
             "waf_body_rule_list": [
@@ -1638,6 +1659,15 @@
                     "type": "unset-var",
                     "var_name": "last_redir",
                     "var_scope": "sess"
+                },
+                {
+                    "index": 16,
+                    "type": "sc-set-gpt",
+                    "sc_id": 1,
+                    "sc_idx": 2,
+                    "sc_expr": "hdr(port)",
+                    "cond": "if",
+                    "cond_test": "FALSE"
                 }
             ],
             "http_error_rule_list": [
@@ -2022,6 +2052,15 @@
                     "expr": "255",
                     "cond": "if",
                     "cond_test": "FALSE"
+                },
+                {
+                    "index": 51,
+                    "type": "sc-set-gpt",
+                    "sc_id": 1,
+                    "sc_idx": 2,
+                    "sc_expr": "hdr(Host),lower",
+                    "cond": "if",
+                    "cond_test": "FALSE"
                 }
             ],
             "http_response_rule_list": [
@@ -2283,6 +2322,15 @@
                     "timeout": "20",
                     "timeout_type": "client",
                     "type": "set-timeout"
+                },
+                {
+                    "index": 35,
+                    "type": "sc-set-gpt",
+                    "sc_id": 1,
+                    "sc_idx": 2,
+                    "sc_int": 1234,
+                    "cond": "if",
+                    "cond_test": "FALSE"
                 }
             ],
             "log_target_list": [
@@ -2640,6 +2688,34 @@
                     "var_format": "%%[dst]:%%[dst_port]",
                     "var_scope": "txn",
                     "var_name": "ip_port"
+                },
+                {
+                    "index": 42,
+                    "type": "connection",
+                    "action": "sc-set-gpt",
+                    "sc_inc_id": "1",
+                    "sc_idx": "2",
+                    "sc_int": 1234,
+                    "cond": "if",
+                    "cond_test": "FALSE"
+                },
+                {
+                    "index": 43,
+                    "type": "content",
+                    "action": "sc-set-gpt",
+                    "sc_inc_id": "1",
+                    "sc_idx": "2",
+                    "expr": "hdr(port)",
+                    "cond": "if",
+                    "cond_test": "FALSE"
+                },
+                {
+                    "index": 44,
+                    "type": "session",
+                    "action": "sc-set-gpt",
+                    "sc_inc_id": "1",
+                    "sc_idx": "2",
+                    "sc_int": 1234
                 }
             ],
             "binds": {
@@ -2900,6 +2976,7 @@
                 "algorithm": "roundrobin"
             },
             "bind_process": "1-4",
+            "hash_balance_factor": 150,
             "maxconn": 2000,
             "mode": "http",
             "name": "test_defaults"

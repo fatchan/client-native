@@ -106,6 +106,7 @@ type HTTPResponseRule struct {
 
 	// index
 	// Required: true
+	// +kubebuilder:validation:Optional
 	Index *int64 `json:"index"`
 
 	// log level
@@ -234,36 +235,6 @@ type HTTPResponseRule struct {
 	// +kubebuilder:validation:Pattern=`^(0x[0-9A-Fa-f]+|[0-9]+)$`
 	TosValue string `json:"tos_value,omitempty"`
 
-	// track sc0 key
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	TrackSc0Key string `json:"track-sc0-key,omitempty"`
-
-	// track sc0 table
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	TrackSc0Table string `json:"track-sc0-table,omitempty"`
-
-	// track sc1 key
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	TrackSc1Key string `json:"track-sc1-key,omitempty"`
-
-	// track sc1 table
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	TrackSc1Table string `json:"track-sc1-table,omitempty"`
-
-	// track sc2 key
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	TrackSc2Key string `json:"track-sc2-key,omitempty"`
-
-	// track sc2 table
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	TrackSc2Table string `json:"track-sc2-table,omitempty"`
-
 	// track sc key
 	// Pattern: ^[^\s]+$
 	// +kubebuilder:validation:Pattern=`^[^\s]+$`
@@ -279,8 +250,8 @@ type HTTPResponseRule struct {
 
 	// type
 	// Required: true
-	// Enum: [add-acl add-header allow cache-store capture del-acl del-header del-map deny lua redirect replace-header replace-value return sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt0 send-spoe-group set-fc-mark set-fc-tos set-header set-log-level set-map set-mark set-nice set-status set-timeout set-tos set-var set-var-fmt silent-drop strict-mode track-sc0 track-sc1 track-sc2 track-sc unset-var wait-for-body set-bandwidth-limit]
-	// +kubebuilder:validation:Enum=add-acl;add-header;allow;cache-store;capture;del-acl;del-header;del-map;deny;lua;redirect;replace-header;replace-value;return;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt0;send-spoe-group;set-fc-mark;set-fc-tos;set-header;set-log-level;set-map;set-mark;set-nice;set-status;set-timeout;set-tos;set-var;set-var-fmt;silent-drop;strict-mode;track-sc0;track-sc1;track-sc2;track-sc;unset-var;wait-for-body;set-bandwidth-limit;
+	// Enum: [add-acl add-header allow cache-store capture del-acl del-header del-map deny lua redirect replace-header replace-value return sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt sc-set-gpt0 send-spoe-group set-fc-mark set-fc-tos set-header set-log-level set-map set-mark set-nice set-status set-timeout set-tos set-var set-var-fmt silent-drop strict-mode track-sc0 track-sc1 track-sc2 track-sc unset-var wait-for-body set-bandwidth-limit]
+	// +kubebuilder:validation:Enum=add-acl;add-header;allow;cache-store;capture;del-acl;del-header;del-map;deny;lua;redirect;replace-header;replace-value;return;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt;sc-set-gpt0;send-spoe-group;set-fc-mark;set-fc-tos;set-header;set-log-level;set-map;set-mark;set-nice;set-status;set-timeout;set-tos;set-var;set-var-fmt;silent-drop;strict-mode;track-sc0;track-sc1;track-sc2;track-sc;unset-var;wait-for-body;set-bandwidth-limit;
 	Type string `json:"type"`
 
 	// var expr
@@ -411,30 +382,6 @@ func (m *HTTPResponseRule) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateTosValue(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTrackSc0Key(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTrackSc0Table(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTrackSc1Key(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTrackSc1Table(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTrackSc2Key(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTrackSc2Table(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -1046,78 +993,6 @@ func (m *HTTPResponseRule) validateTosValue(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *HTTPResponseRule) validateTrackSc0Key(formats strfmt.Registry) error {
-	if swag.IsZero(m.TrackSc0Key) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("track-sc0-key", "body", m.TrackSc0Key, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPResponseRule) validateTrackSc0Table(formats strfmt.Registry) error {
-	if swag.IsZero(m.TrackSc0Table) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("track-sc0-table", "body", m.TrackSc0Table, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPResponseRule) validateTrackSc1Key(formats strfmt.Registry) error {
-	if swag.IsZero(m.TrackSc1Key) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("track-sc1-key", "body", m.TrackSc1Key, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPResponseRule) validateTrackSc1Table(formats strfmt.Registry) error {
-	if swag.IsZero(m.TrackSc1Table) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("track-sc1-table", "body", m.TrackSc1Table, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPResponseRule) validateTrackSc2Key(formats strfmt.Registry) error {
-	if swag.IsZero(m.TrackSc2Key) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("track-sc2-key", "body", m.TrackSc2Key, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPResponseRule) validateTrackSc2Table(formats strfmt.Registry) error {
-	if swag.IsZero(m.TrackSc2Table) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("track-sc2-table", "body", m.TrackSc2Table, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (m *HTTPResponseRule) validateTrackScKey(formats strfmt.Registry) error {
 	if swag.IsZero(m.TrackScKey) { // not required
 		return nil
@@ -1146,7 +1021,7 @@ var httpResponseRuleTypeTypePropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["add-acl","add-header","allow","cache-store","capture","del-acl","del-header","del-map","deny","lua","redirect","replace-header","replace-value","return","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt0","send-spoe-group","set-fc-mark","set-fc-tos","set-header","set-log-level","set-map","set-mark","set-nice","set-status","set-timeout","set-tos","set-var","set-var-fmt","silent-drop","strict-mode","track-sc0","track-sc1","track-sc2","track-sc","unset-var","wait-for-body","set-bandwidth-limit"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["add-acl","add-header","allow","cache-store","capture","del-acl","del-header","del-map","deny","lua","redirect","replace-header","replace-value","return","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","send-spoe-group","set-fc-mark","set-fc-tos","set-header","set-log-level","set-map","set-mark","set-nice","set-status","set-timeout","set-tos","set-var","set-var-fmt","silent-drop","strict-mode","track-sc0","track-sc1","track-sc2","track-sc","unset-var","wait-for-body","set-bandwidth-limit"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -1209,6 +1084,9 @@ const (
 
 	// HTTPResponseRuleTypeScDashIncDashGpc1 captures enum value "sc-inc-gpc1"
 	HTTPResponseRuleTypeScDashIncDashGpc1 string = "sc-inc-gpc1"
+
+	// HTTPResponseRuleTypeScDashSetDashGpt captures enum value "sc-set-gpt"
+	HTTPResponseRuleTypeScDashSetDashGpt string = "sc-set-gpt"
 
 	// HTTPResponseRuleTypeScDashSetDashGpt0 captures enum value "sc-set-gpt0"
 	HTTPResponseRuleTypeScDashSetDashGpt0 string = "sc-set-gpt0"

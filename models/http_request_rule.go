@@ -124,6 +124,7 @@ type HTTPRequestRule struct {
 
 	// index
 	// Required: true
+	// +kubebuilder:validation:Optional
 	Index *int64 `json:"index"`
 
 	// log level
@@ -172,8 +173,8 @@ type HTTPRequestRule struct {
 	NiceValue int64 `json:"nice_value,omitempty"`
 
 	// normalizer
-	// Enum: [fragment-encode fragment-strip path-merge-slashes path-strip-dot path-strip-dotdot percent-decode-unreserved percent-to-upercase query-sort-by-name]
-	// +kubebuilder:validation:Enum=fragment-encode;fragment-strip;path-merge-slashes;path-strip-dot;path-strip-dotdot;percent-decode-unreserved;percent-to-upercase;query-sort-by-name;
+	// Enum: [fragment-encode fragment-strip path-merge-slashes path-strip-dot path-strip-dotdot percent-decode-unreserved percent-to-uppercase query-sort-by-name]
+	// +kubebuilder:validation:Enum=fragment-encode;fragment-strip;path-merge-slashes;path-strip-dot;path-strip-dotdot;percent-decode-unreserved;percent-to-uppercase;query-sort-by-name;
 	Normalizer string `json:"normalizer,omitempty"`
 
 	// normalizer full
@@ -282,36 +283,6 @@ type HTTPRequestRule struct {
 	// +kubebuilder:validation:Pattern=`^(0x[0-9A-Fa-f]+|[0-9]+)$`
 	TosValue string `json:"tos_value,omitempty"`
 
-	// track sc0 key
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	TrackSc0Key string `json:"track-sc0-key,omitempty"`
-
-	// track sc0 table
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	TrackSc0Table string `json:"track-sc0-table,omitempty"`
-
-	// track sc1 key
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	TrackSc1Key string `json:"track-sc1-key,omitempty"`
-
-	// track sc1 table
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	TrackSc1Table string `json:"track-sc1-table,omitempty"`
-
-	// track sc2 key
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	TrackSc2Key string `json:"track-sc2-key,omitempty"`
-
-	// track sc2 table
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	TrackSc2Table string `json:"track-sc2-table,omitempty"`
-
 	// track sc key
 	// Pattern: ^[^\s]+$
 	// +kubebuilder:validation:Pattern=`^[^\s]+$`
@@ -327,8 +298,8 @@ type HTTPRequestRule struct {
 
 	// type
 	// Required: true
-	// Enum: [add-acl add-header allow auth cache-use capture del-acl del-header del-map deny disable-l7-retry do-resolve early-hint lua normalize-uri redirect reject replace-header replace-path replace-pathq replace-uri replace-value return sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt0 send-spoe-group set-bc-mark set-bc-tos set-dst set-dst-port set-fc-mark set-fc-tos set-header set-log-level set-map set-mark set-method set-nice set-path set-pathq set-priority-class set-priority-offset set-query set-src set-src-port set-timeout set-tos set-uri set-var silent-drop strict-mode tarpit track-sc0 track-sc1 track-sc2 track-sc unset-var use-service wait-for-body wait-for-handshake set-bandwidth-limit]
-	// +kubebuilder:validation:Enum=add-acl;add-header;allow;auth;cache-use;capture;del-acl;del-header;del-map;deny;disable-l7-retry;do-resolve;early-hint;lua;normalize-uri;redirect;reject;replace-header;replace-path;replace-pathq;replace-uri;replace-value;return;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt0;send-spoe-group;set-bc-mark;set-bc-tos;set-dst;set-dst-port;set-fc-mark;set-fc-tos;set-header;set-log-level;set-map;set-mark;set-method;set-nice;set-path;set-pathq;set-priority-class;set-priority-offset;set-query;set-src;set-src-port;set-timeout;set-tos;set-uri;set-var;silent-drop;strict-mode;tarpit;track-sc0;track-sc1;track-sc2;track-sc;unset-var;use-service;wait-for-body;wait-for-handshake;set-bandwidth-limit;
+	// Enum: [add-acl add-header allow auth cache-use capture del-acl del-header del-map deny disable-l7-retry do-resolve early-hint lua normalize-uri redirect reject replace-header replace-path replace-pathq replace-uri replace-value return sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt sc-set-gpt0 send-spoe-group set-bc-mark set-bc-tos set-dst set-dst-port set-fc-mark set-fc-tos set-header set-log-level set-map set-mark set-method set-nice set-path set-pathq set-priority-class set-priority-offset set-query set-src set-src-port set-timeout set-tos set-uri set-var silent-drop strict-mode tarpit track-sc0 track-sc1 track-sc2 track-sc unset-var use-service wait-for-body wait-for-handshake set-bandwidth-limit]
+	// +kubebuilder:validation:Enum=add-acl;add-header;allow;auth;cache-use;capture;del-acl;del-header;del-map;deny;disable-l7-retry;do-resolve;early-hint;lua;normalize-uri;redirect;reject;replace-header;replace-path;replace-pathq;replace-uri;replace-value;return;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt;sc-set-gpt0;send-spoe-group;set-bc-mark;set-bc-tos;set-dst;set-dst-port;set-fc-mark;set-fc-tos;set-header;set-log-level;set-map;set-mark;set-method;set-nice;set-path;set-pathq;set-priority-class;set-priority-offset;set-query;set-src;set-src-port;set-timeout;set-tos;set-uri;set-var;silent-drop;strict-mode;tarpit;track-sc0;track-sc1;track-sc2;track-sc;unset-var;use-service;wait-for-body;wait-for-handshake;set-bandwidth-limit;
 	Type string `json:"type"`
 
 	// uri fmt
@@ -493,30 +464,6 @@ func (m *HTTPRequestRule) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateTosValue(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTrackSc0Key(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTrackSc0Table(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTrackSc1Key(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTrackSc1Table(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTrackSc2Key(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateTrackSc2Table(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -878,7 +825,7 @@ var httpRequestRuleTypeNormalizerPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["fragment-encode","fragment-strip","path-merge-slashes","path-strip-dot","path-strip-dotdot","percent-decode-unreserved","percent-to-upercase","query-sort-by-name"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["fragment-encode","fragment-strip","path-merge-slashes","path-strip-dot","path-strip-dotdot","percent-decode-unreserved","percent-to-uppercase","query-sort-by-name"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -906,8 +853,8 @@ const (
 	// HTTPRequestRuleNormalizerPercentDashDecodeDashUnreserved captures enum value "percent-decode-unreserved"
 	HTTPRequestRuleNormalizerPercentDashDecodeDashUnreserved string = "percent-decode-unreserved"
 
-	// HTTPRequestRuleNormalizerPercentDashToDashUpercase captures enum value "percent-to-upercase"
-	HTTPRequestRuleNormalizerPercentDashToDashUpercase string = "percent-to-upercase"
+	// HTTPRequestRuleNormalizerPercentDashToDashUppercase captures enum value "percent-to-uppercase"
+	HTTPRequestRuleNormalizerPercentDashToDashUppercase string = "percent-to-uppercase"
 
 	// HTTPRequestRuleNormalizerQueryDashSortDashByDashName captures enum value "query-sort-by-name"
 	HTTPRequestRuleNormalizerQueryDashSortDashByDashName string = "query-sort-by-name"
@@ -1286,78 +1233,6 @@ func (m *HTTPRequestRule) validateTosValue(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *HTTPRequestRule) validateTrackSc0Key(formats strfmt.Registry) error {
-	if swag.IsZero(m.TrackSc0Key) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("track-sc0-key", "body", m.TrackSc0Key, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPRequestRule) validateTrackSc0Table(formats strfmt.Registry) error {
-	if swag.IsZero(m.TrackSc0Table) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("track-sc0-table", "body", m.TrackSc0Table, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPRequestRule) validateTrackSc1Key(formats strfmt.Registry) error {
-	if swag.IsZero(m.TrackSc1Key) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("track-sc1-key", "body", m.TrackSc1Key, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPRequestRule) validateTrackSc1Table(formats strfmt.Registry) error {
-	if swag.IsZero(m.TrackSc1Table) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("track-sc1-table", "body", m.TrackSc1Table, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPRequestRule) validateTrackSc2Key(formats strfmt.Registry) error {
-	if swag.IsZero(m.TrackSc2Key) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("track-sc2-key", "body", m.TrackSc2Key, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPRequestRule) validateTrackSc2Table(formats strfmt.Registry) error {
-	if swag.IsZero(m.TrackSc2Table) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("track-sc2-table", "body", m.TrackSc2Table, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (m *HTTPRequestRule) validateTrackScKey(formats strfmt.Registry) error {
 	if swag.IsZero(m.TrackScKey) { // not required
 		return nil
@@ -1386,7 +1261,7 @@ var httpRequestRuleTypeTypePropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["add-acl","add-header","allow","auth","cache-use","capture","del-acl","del-header","del-map","deny","disable-l7-retry","do-resolve","early-hint","lua","normalize-uri","redirect","reject","replace-header","replace-path","replace-pathq","replace-uri","replace-value","return","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt0","send-spoe-group","set-bc-mark","set-bc-tos","set-dst","set-dst-port","set-fc-mark","set-fc-tos","set-header","set-log-level","set-map","set-mark","set-method","set-nice","set-path","set-pathq","set-priority-class","set-priority-offset","set-query","set-src","set-src-port","set-timeout","set-tos","set-uri","set-var","silent-drop","strict-mode","tarpit","track-sc0","track-sc1","track-sc2","track-sc","unset-var","use-service","wait-for-body","wait-for-handshake","set-bandwidth-limit"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["add-acl","add-header","allow","auth","cache-use","capture","del-acl","del-header","del-map","deny","disable-l7-retry","do-resolve","early-hint","lua","normalize-uri","redirect","reject","replace-header","replace-path","replace-pathq","replace-uri","replace-value","return","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","send-spoe-group","set-bc-mark","set-bc-tos","set-dst","set-dst-port","set-fc-mark","set-fc-tos","set-header","set-log-level","set-map","set-mark","set-method","set-nice","set-path","set-pathq","set-priority-class","set-priority-offset","set-query","set-src","set-src-port","set-timeout","set-tos","set-uri","set-var","silent-drop","strict-mode","tarpit","track-sc0","track-sc1","track-sc2","track-sc","unset-var","use-service","wait-for-body","wait-for-handshake","set-bandwidth-limit"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -1476,6 +1351,9 @@ const (
 
 	// HTTPRequestRuleTypeScDashIncDashGpc1 captures enum value "sc-inc-gpc1"
 	HTTPRequestRuleTypeScDashIncDashGpc1 string = "sc-inc-gpc1"
+
+	// HTTPRequestRuleTypeScDashSetDashGpt captures enum value "sc-set-gpt"
+	HTTPRequestRuleTypeScDashSetDashGpt string = "sc-set-gpt"
 
 	// HTTPRequestRuleTypeScDashSetDashGpt0 captures enum value "sc-set-gpt0"
 	HTTPRequestRuleTypeScDashSetDashGpt0 string = "sc-set-gpt0"

@@ -732,13 +732,13 @@ definitions:
           proxy-v2-options:
               items:
                   enum:
-                      - ssl
-                      - cert-cn
-                      - ssl-cipher
-                      - cert-sig
-                      - cert-key
                       - authority
+                      - cert-cn
+                      - cert-key
+                      - cert-sig
                       - crc32c
+                      - ssl
+                      - ssl-cipher
                       - unique-id
                   type: string
               type: array
@@ -1905,10 +1905,6 @@ definitions:
                       type: integer
                       x-display-name: Zlib Window Size
               type: object
-          tune_ssl_default_dh_param:
-              type: integer
-              x-deprecated: true
-              x-display-name: SSL Default DH Parameter Size
           uid:
               type: integer
               x-display-name: UID
@@ -1966,14 +1962,14 @@ definitions:
               x-display-name: Accept Invalid HTTP Response
           adv_check:
               enum:
-                  - ssl-hello-chk
-                  - smtpchk
+                  - httpchk
                   - ldap-check
                   - mysql-check
                   - pgsql-check
-                  - tcp-check
                   - redis-check
-                  - httpchk
+                  - smtpchk
+                  - ssl-hello-chk
+                  - tcp-check
               type: string
               x-display-name: Advanced Check
           allbackups:
@@ -2126,6 +2122,9 @@ definitions:
                   - disabled
               type: string
               x-display-name: H1 Adjust Bogus Server
+          hash_balance_factor:
+              type: integer
+              x-nullable: true
           hash_type:
               $ref: '#/definitions/hash_type'
           http-buffer-request:
@@ -2409,9 +2408,6 @@ definitions:
               x-display-name: Unique ID format
           unique_id_header:
               type: string
-              x-dependency:
-                  unique_id_format:
-                      required: true
               x-display-name: Unique ID header
       title: Defaults
       type: object
@@ -2737,9 +2733,6 @@ definitions:
               x-display-name: Unique ID format
           unique_id_header:
               type: string
-              x-dependency:
-                  unique_id_format:
-                      required: true
               x-display-name: Unique ID header
       required:
           - name
@@ -2780,14 +2773,14 @@ definitions:
               x-display-name: Accept Invalid HTTP Response
           adv_check:
               enum:
-                  - ssl-hello-chk
-                  - smtpchk
+                  - httpchk
                   - ldap-check
                   - mysql-check
                   - pgsql-check
-                  - tcp-check
                   - redis-check
-                  - httpchk
+                  - smtpchk
+                  - ssl-hello-chk
+                  - tcp-check
               type: string
               x-display-name: Advanced Check
           allbackups:
@@ -2869,6 +2862,7 @@ definitions:
               type: string
               x-display-name: External Check Path
           force_persist:
+              description: This field is deprecated in favor of force_persist_list, and will be removed in a future release
               properties:
                   cond:
                       enum:
@@ -2886,6 +2880,30 @@ definitions:
                   - cond
                   - cond_test
               type: object
+              x-deprecated: true
+          force_persist_list:
+              items:
+                  properties:
+                      cond:
+                          enum:
+                              - if
+                              - unless
+                          type: string
+                          x-display-name: Condition
+                      cond_test:
+                          type: string
+                          x-dependency:
+                              cond:
+                                  required: true
+                          x-display-name: Condition Test
+                  required:
+                      - cond
+                      - cond_test
+                  type: object
+                  x-go-name: ForcePersist
+              type: array
+              x-go-name: ForcePersistList
+              x-omitempty: true
           forwardfor:
               $ref: '#/definitions/forwardfor'
               x-dependency:
@@ -2906,6 +2924,9 @@ definitions:
                   mode:
                       value: http
               x-display-name: H1 Adjust Bogus Server
+          hash_balance_factor:
+              type: integer
+              x-nullable: true
           hash_type:
               $ref: '#/definitions/hash_type'
           http-buffer-request:
@@ -2917,18 +2938,6 @@ definitions:
                   mode:
                       value: http
               x-display-name: HTTP bufferrequest
-          http-check:
-              $ref: '#/definitions/http_check'
-          http-keep-alive:
-              enum:
-                  - enabled
-                  - disabled
-              type: string
-              x-dependency:
-                  mode:
-                      value: http
-              x-deprecated: true
-              x-display-name: HTTP keep-alive
           http-no-delay:
               enum:
                   - enabled
@@ -2938,16 +2947,6 @@ definitions:
                   mode:
                       value: http
               x-display-name: HTTP low interactive delays
-          http-server-close:
-              enum:
-                  - enabled
-                  - disabled
-              type: string
-              x-dependency:
-                  mode:
-                      value: http
-              x-deprecated: true
-              x-display-name: HTTP server close
           http-use-htx:
               enum:
                   - enabled
@@ -3023,20 +3022,11 @@ definitions:
                       value: httpchk
                   mode:
                       value: http
-          httpclose:
-              enum:
-                  - enabled
-                  - disabled
-              type: string
-              x-dependency:
-                  mode:
-                      value: http
-              x-deprecated: true
-              x-display-name: HTTP connection closing
           id:
               type: integer
               x-nullable: true
           ignore_persist:
+              description: This field is deprecated in favor of ignore_persist_list, and will be removed in a future release
               properties:
                   cond:
                       enum:
@@ -3054,6 +3044,30 @@ definitions:
                   - cond
                   - cond_test
               type: object
+              x-deprecated: true
+          ignore_persist_list:
+              items:
+                  properties:
+                      cond:
+                          enum:
+                              - if
+                              - unless
+                          type: string
+                          x-display-name: Condition
+                      cond_test:
+                          type: string
+                          x-dependency:
+                              cond:
+                                  required: true
+                          x-display-name: Condition Test
+                  required:
+                      - cond
+                      - cond_test
+                  type: object
+                  x-go-name: IgnorePersist
+              type: array
+              x-go-name: IgnorePersistList
+              x-omitempty: true
           independent_streams:
               enum:
                   - enabled
@@ -3975,7 +3989,7 @@ definitions:
                   - path-strip-dot
                   - path-strip-dotdot
                   - percent-decode-unreserved
-                  - percent-to-upercase
+                  - percent-to-uppercase
                   - query-sort-by-name
               type: string
               x-dependency:
@@ -3995,7 +4009,7 @@ definitions:
                   normalizer:
                       value:
                           - percent-decode-unreserved
-                          - percent-to-upercase
+                          - percent-to-uppercase
                   type:
                       value: normalize-uri
           path_fmt:
@@ -4160,6 +4174,7 @@ definitions:
                           - sc-inc-gpc
                           - sc-inc-gpc0
                           - sc-inc-gpc1
+                          - sc-set-gpt
                           - sc-set-gpt0
           sc_idx:
               type: integer
@@ -4169,6 +4184,7 @@ definitions:
                       value:
                           - sc-add-gpc
                           - sc-inc-gpc
+                          - sc-set-gpt
           sc_int:
               type: integer
               x-dependency:
@@ -4234,57 +4250,6 @@ definitions:
                       required: true
                       value: set-tos
               x-display-name: Tos Value
-          track-sc0-key:
-              pattern: ^[^\s]+$
-              type: string
-              x-dependency:
-                  type:
-                      required: true
-                      value: track-sc0
-              x-deprecated: true
-              x-display-name: track-sc0 Key
-          track-sc0-table:
-              pattern: ^[^\s]+$
-              type: string
-              x-dependency:
-                  type:
-                      value: track-sc0
-              x-deprecated: true
-              x-display-name: track-sc0 Table
-          track-sc1-key:
-              pattern: ^[^\s]+$
-              type: string
-              x-dependency:
-                  type:
-                      required: true
-                      value: track-sc1
-              x-deprecated: true
-              x-display-name: track-sc1 Key
-          track-sc1-table:
-              pattern: ^[^\s]+$
-              type: string
-              x-dependency:
-                  type:
-                      value: track-sc1
-              x-deprecated: true
-              x-display-name: track-sc1 Table
-          track-sc2-key:
-              pattern: ^[^\s]+$
-              type: string
-              x-dependency:
-                  type:
-                      required: true
-                      value: track-sc2
-              x-deprecated: true
-              x-display-name: track-sc2 Key
-          track-sc2-table:
-              pattern: ^[^\s]+$
-              type: string
-              x-dependency:
-                  type:
-                      value: track-sc2
-              x-deprecated: true
-              x-display-name: track-sc2 Table
           track_sc_key:
               pattern: ^[^\s]+$
               type: string
@@ -4336,6 +4301,7 @@ definitions:
                   - sc-inc-gpc
                   - sc-inc-gpc0
                   - sc-inc-gpc1
+                  - sc-set-gpt
                   - sc-set-gpt0
                   - send-spoe-group
                   - set-bc-mark
@@ -4784,6 +4750,7 @@ definitions:
                           - sc-inc-gpc
                           - sc-inc-gpc0
                           - sc-inc-gpc1
+                          - sc-set-gpt
                           - sc-set-gpt0
           sc_idx:
               type: integer
@@ -4793,6 +4760,7 @@ definitions:
                       value:
                           - sc-add-gpc
                           - sc-inc-gpc
+                          - sc-set-gpt
           sc_int:
               type: integer
               x-dependency:
@@ -4864,57 +4832,6 @@ definitions:
                       required: true
                       value: set-tos
               x-display-name: Tos Value
-          track-sc0-key:
-              pattern: ^[^\s]+$
-              type: string
-              x-dependency:
-                  type:
-                      required: true
-                      value: track-sc0
-              x-deprecated: true
-              x-display-name: track-sc0 Key
-          track-sc0-table:
-              pattern: ^[^\s]+$
-              type: string
-              x-dependency:
-                  type:
-                      value: track-sc0
-              x-deprecated: true
-              x-display-name: track-sc0 Table
-          track-sc1-key:
-              pattern: ^[^\s]+$
-              type: string
-              x-dependency:
-                  type:
-                      required: true
-                      value: track-sc1
-              x-deprecated: true
-              x-display-name: track-sc1 Key
-          track-sc1-table:
-              pattern: ^[^\s]+$
-              type: string
-              x-dependency:
-                  type:
-                      value: track-sc1
-              x-deprecated: true
-              x-display-name: track-sc1 Table
-          track-sc2-key:
-              pattern: ^[^\s]+$
-              type: string
-              x-dependency:
-                  type:
-                      required: true
-                      value: track-sc2
-              x-deprecated: true
-              x-display-name: track-sc2 Key
-          track-sc2-table:
-              pattern: ^[^\s]+$
-              type: string
-              x-dependency:
-                  type:
-                      value: track-sc2
-              x-deprecated: true
-              x-display-name: track-sc2 Table
           track_sc_key:
               pattern: ^[^\s]+$
               type: string
@@ -4957,6 +4874,7 @@ definitions:
                   - sc-inc-gpc
                   - sc-inc-gpc0
                   - sc-inc-gpc1
+                  - sc-set-gpt
                   - sc-set-gpt0
                   - send-spoe-group
                   - set-fc-mark
@@ -5188,6 +5106,7 @@ definitions:
                           - sc-inc-gpc
                           - sc-inc-gpc0
                           - sc-inc-gpc1
+                          - sc-set-gpt
                           - sc-set-gpt0
           sc_idx:
               type: integer
@@ -5197,6 +5116,7 @@ definitions:
                       value:
                           - sc-add-gpc
                           - sc-inc-gpc
+                          - sc-set-gpt
           sc_int:
               type: integer
               x-dependency:
@@ -5243,6 +5163,7 @@ definitions:
                   - sc-inc-gpc
                   - sc-inc-gpc0
                   - sc-inc-gpc1
+                  - sc-set-gpt
                   - sc-set-gpt0
                   - set-header
                   - set-log-level
@@ -5668,38 +5589,40 @@ definitions:
                   - do-resolve
                   - expect-netscaler-cip
                   - expect-proxy
+                  - lua
                   - reject
                   - sc-add-gpc
                   - sc-inc-gpc
                   - sc-inc-gpc0
                   - sc-inc-gpc1
+                  - sc-set-gpt
                   - sc-set-gpt0
                   - send-spoe-group
+                  - set-bandwidth-limit
+                  - set-bc-mark
+                  - set-bc-tos
                   - set-dst-port
                   - set-dst
-                  - set-priority
+                  - set-fc-mark
+                  - set-fc-tos
+                  - set-log-level
+                  - set-mark
+                  - set-nice
+                  - set-priority-class
+                  - set-priority-offset
                   - set-src
+                  - set-src-port
+                  - set-tos
                   - set-var
+                  - set-var-fmt
                   - silent-drop
+                  - switch-mode
                   - track-sc0
                   - track-sc1
                   - track-sc2
                   - track-sc
                   - unset-var
                   - use-service
-                  - lua
-                  - set-bandwidth-limit
-                  - set-src-port
-                  - set-mark
-                  - set-tos
-                  - set-var-fmt
-                  - set-log-level
-                  - set-nice
-                  - switch-mode
-                  - set-bc-mark
-                  - set-bc-tos
-                  - set-fc-mark
-                  - set-fc-tos
               type: string
               x-dependency:
                   type:
@@ -5793,16 +5716,17 @@ definitions:
                       required: true
                       value:
                           - do-resolve
-                          - set-var
-                          - set-src
-                          - set-priority
-                          - set-dst
-                          - set-dst-port
-                          - set-src-port
                           - set-bc-mark
                           - set-bc-tos
+                          - set-dst
+                          - set-dst-port
                           - set-fc-mark
                           - set-fc-tos
+                          - set-priority-class
+                          - set-priority-offset
+                          - set-src
+                          - set-src-port
+                          - set-var
                   type:
                       value:
                           - session
@@ -5889,18 +5813,6 @@ definitions:
                       value: content
               x-display-name: Nice Value
               x-nullable: false
-          priority_type:
-              enum:
-                  - class
-                  - offset
-              type: string
-              x-dependency:
-                  action:
-                      required: true
-                      value: set-priority
-                  type:
-                      value:
-                          - content
           resolve_protocol:
               enum:
                   - ipv4
@@ -5942,7 +5854,8 @@ definitions:
               x-dependency:
                   action:
                       required: true
-                      value: []
+                      value:
+                          - sc-set-gpt
                   type:
                       required: true
                       value:
@@ -5960,6 +5873,7 @@ definitions:
                           - sc-inc-gpc
                           - sc-inc-gpc0
                           - sc-inc-gpc1
+                          - sc-set-gpt
                           - sc-set-gpt0
                   type:
                       required: true
@@ -6169,22 +6083,25 @@ definitions:
           action:
               enum:
                   - accept
-                  - reject
-                  - lua
-                  - set-bandwidth-limit
                   - close
+                  - lua
+                  - reject
                   - sc-add-gpc
                   - sc-inc-gpc
                   - sc-inc-gpc0
                   - sc-inc-gpc1
+                  - sc-set-gpt
                   - sc-set-gpt0
                   - send-spoe-group
+                  - set-bandwidth-limit
+                  - set-fc-mark
+                  - set-fc-tos
                   - set-log-level
                   - set-mark
                   - set-nice
                   - set-tos
-                  - set-fc-mark
-                  - set-fc-tos
+                  - set-var
+                  - set-var-fmt
                   - silent-drop
                   - unset-var
               type: string
@@ -6333,6 +6250,7 @@ definitions:
                           - sc-inc-gpc
                           - sc-inc-gpc0
                           - sc-inc-gpc1
+                          - sc-set-gpt
                           - sc-set-gpt0
                   type:
                       value: content
@@ -6343,6 +6261,7 @@ definitions:
                       required: true
                       value:
                           - sc-add-gpc
+                          - sc-set-gpt
                           - sc-inc-gpc
                   type:
                       value: content
@@ -6401,6 +6320,15 @@ definitions:
                   - inspect-delay
               type: string
               x-nullable: false
+          var_format:
+              type: string
+              x-dependency:
+                  action:
+                      required: true
+                      value: set-var-fmt
+                  type:
+                      value: content
+              x-display-name: Var Format
           var_name:
               pattern: ^[^\s]+$
               type: string
@@ -6924,13 +6852,13 @@ definitions:
               x-display-name: Trace Random Parsing
           type:
               enum:
-                  - trace
-                  - compression
-                  - spoe
-                  - cache
-                  - fcgi-app
                   - bwlim-in
                   - bwlim-out
+                  - cache
+                  - compression
+                  - fcgi-app
+                  - spoe
+                  - trace
               type: string
               x-nullable: false
       required:
@@ -8425,13 +8353,13 @@ definitions:
           proxy-v2-options:
               items:
                   enum:
-                      - ssl
-                      - cert-cn
-                      - ssl-cipher
-                      - cert-sig
-                      - cert-key
                       - authority
+                      - cert-cn
+                      - cert-key
+                      - cert-sig
                       - crc32c
+                      - ssl
+                      - ssl-cipher
                       - unique-id
                   type: string
               type: array
@@ -8603,25 +8531,25 @@ definitions:
                   properties:
                       field:
                           enum:
-                              - server_id
+                              - bytes_in_cnt
+                              - bytes_in_rate
+                              - bytes_out_cnt
+                              - bytes_out_rate
+                              - conn_cnt
+                              - conn_cur
+                              - conn_rate
                               - gpc0
                               - gpc0_rate
                               - gpc1
                               - gpc1_rate
                               - gpt0
-                              - conn_cnt
-                              - conn_cur
-                              - conn_rate
-                              - sess_cnt
-                              - sess_rate
                               - http_req_cnt
                               - http_req_rate
                               - http_err_cnt
                               - http_err_rate
-                              - bytes_in_cnt
-                              - bytes_in_rate
-                              - bytes_out_cnt
-                              - bytes_out_rate
+                              - server_id
+                              - sess_cnt
+                              - sess_rate
                           type: string
                       period:
                           type: integer
@@ -9008,17 +8936,17 @@ definitions:
       properties:
           algorithm:
               enum:
-                  - roundrobin
-                  - static-rr
-                  - leastconn
                   - first
-                  - source
-                  - uri
-                  - url_param
+                  - hash
                   - hdr
+                  - leastconn
                   - random
                   - rdp-cookie
-                  - hash
+                  - roundrobin
+                  - source
+                  - static-rr
+                  - uri
+                  - url_param
               type: string
           hash_expression:
               type: string
@@ -9605,20 +9533,6 @@ definitions:
                   - linear
                   - exponential
               type: string
-          service-blacklist:
-              description: deprecated, use service_denylist
-              items:
-                  pattern: ^[^\s]+$
-                  type: string
-              type: array
-              x-omitempty: true
-          service-whitelist:
-              description: deprecated, use service_allowlist
-              items:
-                  pattern: ^[^\s]+$
-                  type: string
-              type: array
-              x-omitempty: true
           service_allowlist:
               items:
                   pattern: ^[^\s]+$
@@ -9829,14 +9743,14 @@ definitions:
                       x-display-name: Condition Test
                   name:
                       enum:
-                          - on-client-session
-                          - on-server-session
-                          - on-frontend-tcp-request
-                          - on-backend-tcp-request
-                          - on-tcp-response
-                          - on-frontend-http-request
                           - on-backend-http-request
+                          - on-backend-tcp-request
+                          - on-client-session
+                          - on-frontend-http-request
+                          - on-frontend-tcp-request
                           - on-http-response
+                          - on-server-session
+                          - on-tcp-response
                       type: string
               required:
                   - name

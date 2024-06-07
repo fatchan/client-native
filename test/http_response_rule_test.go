@@ -171,7 +171,12 @@ func TestCreateEditDeleteHTTPResponseRule(t *testing.T) {
 	}
 
 	// TestDeleteHTTPResponse
-	err = clientTest.DeleteHTTPResponseRule(35, configuration.FrontendParentName, "test", "", version)
+	_, rules, err := clientTest.GetHTTPResponseRules(configuration.FrontendParentName, "test", "")
+	if err != nil {
+		t.Error(err.Error())
+	}
+	N := int64(len(rules)) - 1
+	err = clientTest.DeleteHTTPResponseRule(N, configuration.FrontendParentName, "test", "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
@@ -182,9 +187,9 @@ func TestCreateEditDeleteHTTPResponseRule(t *testing.T) {
 		t.Error("Version not incremented")
 	}
 
-	_, _, err = clientTest.GetHTTPResponseRule(35, configuration.FrontendParentName, "test", "")
+	_, _, err = clientTest.GetHTTPResponseRule(N, configuration.FrontendParentName, "test", "")
 	if err == nil {
-		t.Error("DeleteHTTPResponseRule failed, HTTPResponse Rule 35 still exists")
+		t.Errorf("DeleteHTTPResponseRule failed, HTTPResponse Rule %d still exists", N)
 	}
 
 	err = clientTest.DeleteHTTPResponseRule(2, configuration.BackendParentName, "test_2", "", version)
@@ -209,36 +214,6 @@ func TestSerializeHTTPResponseRule(t *testing.T) {
 				TrackScStickCounter: misc.Int64P(3),
 			},
 			expectedResult: "track-sc3 src table tr0 if TRUE",
-		},
-		{
-			input: models.HTTPResponseRule{
-				Type:          models.HTTPResponseRuleTypeTrackDashSc0,
-				Cond:          "if",
-				CondTest:      "TRUE",
-				TrackSc0Key:   "src",
-				TrackSc0Table: "tr0",
-			},
-			expectedResult: "track-sc0 src table tr0 if TRUE",
-		},
-		{
-			input: models.HTTPResponseRule{
-				Type:          models.HTTPResponseRuleTypeTrackDashSc1,
-				Cond:          "if",
-				CondTest:      "TRUE",
-				TrackSc1Key:   "src",
-				TrackSc1Table: "tr1",
-			},
-			expectedResult: "track-sc1 src table tr1 if TRUE",
-		},
-		{
-			input: models.HTTPResponseRule{
-				Type:          models.HTTPResponseRuleTypeTrackDashSc2,
-				Cond:          "if",
-				CondTest:      "TRUE",
-				TrackSc2Key:   "src",
-				TrackSc2Table: "tr2",
-			},
-			expectedResult: "track-sc2 src table tr2 if TRUE",
 		},
 	}
 

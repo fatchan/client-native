@@ -189,7 +189,11 @@ func TestCreateEditDeleteHTTPRequestRule(t *testing.T) {
 	}
 
 	// TestDeleteHTTPRequest
-	N := int64(51) // number of http-request rules on frontend "test"
+	_, rules, err := clientTest.GetHTTPRequestRules(configuration.FrontendParentName, "test", "")
+	if err != nil {
+		t.Error(err.Error())
+	}
+	N := int64(len(rules)) - 1
 	err = clientTest.DeleteHTTPRequestRule(N, configuration.FrontendParentName, "test", "", version)
 	if err != nil {
 		t.Error(err.Error())
@@ -228,36 +232,6 @@ func TestSerializeHTTPRequestRule(t *testing.T) {
 				TrackScStickCounter: misc.Int64P(3),
 			},
 			expectedResult: "track-sc3 src table tr0 if TRUE",
-		},
-		{
-			input: models.HTTPRequestRule{
-				Type:          models.HTTPRequestRuleTypeTrackDashSc0,
-				Cond:          "if",
-				CondTest:      "TRUE",
-				TrackSc0Key:   "src",
-				TrackSc0Table: "tr0",
-			},
-			expectedResult: "track-sc0 src table tr0 if TRUE",
-		},
-		{
-			input: models.HTTPRequestRule{
-				Type:          models.HTTPRequestRuleTypeTrackDashSc1,
-				Cond:          "if",
-				CondTest:      "TRUE",
-				TrackSc1Key:   "src",
-				TrackSc1Table: "tr1",
-			},
-			expectedResult: "track-sc1 src table tr1 if TRUE",
-		},
-		{
-			input: models.HTTPRequestRule{
-				Type:          models.HTTPRequestRuleTypeTrackDashSc2,
-				Cond:          "if",
-				CondTest:      "TRUE",
-				TrackSc2Key:   "src",
-				TrackSc2Table: "tr2",
-			},
-			expectedResult: "track-sc2 src table tr2 if TRUE",
 		},
 	}
 

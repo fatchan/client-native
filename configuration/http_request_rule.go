@@ -223,7 +223,7 @@ func ParseHTTPRequestRules(t, pName string, p parser.Parser) (models.HTTPRequest
 	return httpReqRules, nil
 }
 
-func ParseHTTPRequestRule(f types.Action) (rule *models.HTTPRequestRule, err error) { //nolint:gocyclo,cyclop,maintidx
+func ParseHTTPRequestRule(f types.Action) (rule *models.HTTPRequestRule, err error) { //nolint:gocyclo,cyclop,maintidx,gocognit
 	switch v := f.(type) {
 	case *http_actions.AddACL:
 		rule = &models.HTTPRequestRule{
@@ -470,6 +470,26 @@ func ParseHTTPRequestRule(f types.Action) (rule *models.HTTPRequestRule, err err
 		rule = &models.HTTPRequestRule{
 			Type:     "sc-inc-gpc1",
 			ScID:     ID,
+			Cond:     v.Cond,
+			CondTest: v.CondTest,
+		}
+	case *actions.ScSetGpt:
+		if v.Int == nil && len(v.Expr.Expr) == 0 {
+			return nil, NewConfError(ErrValidationError, "sc-set-gpt: int or expr has to be set")
+		}
+		if v.Int != nil && len(v.Expr.Expr) > 0 {
+			return nil, NewConfError(ErrValidationError, "sc-set-gpt: int and expr are exclusive")
+		}
+		scID, errp := strconv.ParseInt(v.ScID, 10, 64)
+		if errp != nil {
+			return nil, NewConfError(ErrValidationError, "sc-set-gpt: failed to parse sc-id an an int")
+		}
+		rule = &models.HTTPRequestRule{
+			Type:     "sc-set-gpt",
+			ScID:     scID,
+			ScIdx:    v.Idx,
+			ScExpr:   strings.Join(v.Expr.Expr, " "),
+			ScInt:    v.Int,
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
 		}
@@ -981,6 +1001,21 @@ func SerializeHTTPRequestRule(f models.HTTPRequestRule) (rule types.Action, err 
 			Cond:     f.Cond,
 			CondTest: f.CondTest,
 		}
+	case "sc-set-gpt":
+		if len(f.ScExpr) > 0 && f.ScInt != nil {
+			return nil, NewConfError(ErrValidationError, "sc-set-gpt: int and expr are exclusive")
+		}
+		if len(f.ScExpr) == 0 && f.ScInt == nil {
+			return nil, NewConfError(ErrValidationError, "sc-set-gpt: int or expr has to be set")
+		}
+		rule = &actions.ScSetGpt{
+			ScID:     strconv.FormatInt(f.ScID, 10),
+			Idx:      f.ScIdx,
+			Int:      f.ScInt,
+			Expr:     common.Expression{Expr: strings.Split(f.ScExpr, " ")},
+			Cond:     f.Cond,
+			CondTest: f.CondTest,
+		}
 	case "sc-set-gpt0":
 		if len(f.ScExpr) > 0 && f.ScInt != nil {
 			return nil, NewConfError(ErrValidationError, "sc-set-gpt0 int and expr are exclusive")
@@ -1146,33 +1181,6 @@ func SerializeHTTPRequestRule(f models.HTTPRequestRule) (rule types.Action, err 
 			Status:   f.DenyStatus,
 			Cond:     f.Cond,
 			CondTest: f.CondTest,
-		}
-	case "track-sc0":
-		rule = &actions.TrackSc{
-			Type:         actions.TrackScType,
-			StickCounter: 0,
-			Key:          f.TrackSc0Key,
-			Table:        f.TrackSc0Table,
-			Cond:         f.Cond,
-			CondTest:     f.CondTest,
-		}
-	case "track-sc1":
-		rule = &actions.TrackSc{
-			Type:         actions.TrackScType,
-			StickCounter: 1,
-			Key:          f.TrackSc1Key,
-			Table:        f.TrackSc1Table,
-			Cond:         f.Cond,
-			CondTest:     f.CondTest,
-		}
-	case "track-sc2":
-		rule = &actions.TrackSc{
-			Type:         actions.TrackScType,
-			StickCounter: 2,
-			Key:          f.TrackSc2Key,
-			Table:        f.TrackSc2Table,
-			Cond:         f.Cond,
-			CondTest:     f.CondTest,
 		}
 	case "track-sc":
 		if f.TrackScStickCounter == nil {
