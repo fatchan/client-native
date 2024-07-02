@@ -906,6 +906,47 @@ func (c *client) AddMapPayloadVersioned(name string, entries models.MapEntries) 
 	return nil
 }
 
+func (c *client) OverwriteMapPayloadVersioned(name string, entries models.MapEntries) error {
+	if len(c.runtimes) == 0 {
+		return fmt.Errorf("no valid runtimes found")
+	}
+	name, err := c.GetMapsPath(name)
+	if err != nil {
+		return err
+	}
+	_, payload := parseMapPayload(entries, maxBufSize)
+	var lastErr error
+	for _, runtime := range c.runtimes {
+		var version string
+		version, err = runtime.PrepareMap(name)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		err = runtime.ClearMapVersioned(name, version)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		for i := 0; i < len(payload); i++ {
+			err = runtime.AddMapPayloadVersioned(version, name, payload[i])
+			if err != nil {
+				lastErr = err
+				continue
+			}
+		}
+		err = runtime.CommitMap(version, name)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+	}
+	if lastErr != nil {
+		return lastErr
+	}
+	return nil
+}
+
 // AddMapEntry adds an entry into the map file
 func (c *client) AddMapEntry(name, key, value string) error {
 	if len(c.runtimes) == 0 {
