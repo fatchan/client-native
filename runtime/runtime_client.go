@@ -915,20 +915,24 @@ func (c *client) OverwriteMapPayloadVersioned(name string, entries models.MapEnt
 		return err
 	}
 	_, payload := parseMapPayload(entries, maxBufSize)
+	// fmt.Printf("client-native:OverwriteMapPayloadVersioned payload: %v", payload);
 	var lastErr error
 	for _, runtime := range c.runtimes {
+		// fmt.Println("client-native:OverwriteMapPayloadVersioned runtime loop");
 		var version string
 		version, err = runtime.PrepareMap(name)
 		if err != nil {
 			lastErr = err
 			continue
 		}
+		// fmt.Printf("client-native:OverwriteMapPayloadVersioned AddMapPayloadVersioned: %v %v %v", version, name, payload[i]);
 		err = runtime.ClearMapVersioned(name, version)
 		if err != nil {
 			lastErr = err
 			continue
 		}
 		for i := 0; i < len(payload); i++ {
+			// fmt.Printf("client-native:OverwriteMapPayloadVersioned AddMapPayloadVersioned: %v %v %v", version, name, payload[i]);
 			err = runtime.AddMapPayloadVersioned(version, name, payload[i])
 			if err != nil {
 				lastErr = err
@@ -941,6 +945,7 @@ func (c *client) OverwriteMapPayloadVersioned(name string, entries models.MapEnt
 			continue
 		}
 	}
+	fmt.Printf("client-native:OverwriteMapPayloadVersioned lastErr: %v", lastErr);
 	if lastErr != nil {
 		return lastErr
 	}
