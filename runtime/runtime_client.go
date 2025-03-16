@@ -161,7 +161,6 @@ func (c *client) DelSSLCert(filename string) error {
 	return nil
 }
 
-
 var versionSync sync.Once //nolint:gochecknoglobals
 
 // GetVersion returns info from the socket
@@ -284,6 +283,7 @@ func (c *client) AddServer(backend, name, attributes string) error {
 	if len(c.runtimes) == 0 {
 		return fmt.Errorf("no valid runtimes found")
 	}
+	// fmt.Printf("client-native AddServer attributes: \"%s\"\n", attributes)
 	for _, runtime := range c.runtimes {
 		err := runtime.AddServer(backend, name, attributes)
 		if err != nil {
@@ -945,7 +945,7 @@ func (c *client) OverwriteMapPayloadVersioned(name string, entries models.MapEnt
 			continue
 		}
 	}
-	fmt.Printf("client-native:OverwriteMapPayloadVersioned lastErr: %v", lastErr);
+	fmt.Printf("client-native:OverwriteMapPayloadVersioned lastErr: %v", lastErr)
 	if lastErr != nil {
 		return lastErr
 	}
