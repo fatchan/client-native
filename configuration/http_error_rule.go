@@ -21,10 +21,10 @@ import (
 	"strconv"
 
 	strfmt "github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	http_actions "github.com/haproxytech/config-parser/v5/parsers/http/actions"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	http_actions "github.com/haproxytech/client-native/v6/config-parser/parsers/http/actions"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
@@ -34,8 +34,9 @@ type HTTPErrorRule interface {
 	GetHTTPErrorRules(parentType, parentName string, transactionID string) (int64, models.HTTPErrorRules, error)
 	GetHTTPErrorRule(id int64, parentType, parentName string, transactionID string) (int64, *models.HTTPErrorRule, error)
 	DeleteHTTPErrorRule(id int64, parentType string, parentName string, transactionID string, version int64) error
-	CreateHTTPErrorRule(parentType string, parentName string, data *models.HTTPErrorRule, transactionID string, version int64) error
+	CreateHTTPErrorRule(id int64, parentType string, parentName string, data *models.HTTPErrorRule, transactionID string, version int64) error
 	EditHTTPErrorRule(id int64, parentType string, parentName string, data *models.HTTPErrorRule, transactionID string, version int64) error
+	ReplaceHTTPErrorRules(parentType string, parentName string, data models.HTTPErrorRules, transactionID string, version int64) error
 }
 
 // GetHTTPErrorRules returns configuration version and an array of
@@ -91,7 +92,6 @@ func (c *client) GetHTTPErrorRule(id int64, parentType, parentName string, trans
 	}
 
 	httpRule := ParseHTTPErrorRule(data.(types.Action))
-	httpRule.Index = &id
 
 	return v, httpRule, nil
 }
@@ -126,7 +126,7 @@ func (c *client) DeleteHTTPErrorRule(id int64, parentType string, parentName str
 
 // CreateHTTPErrorRule creates a http error rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) CreateHTTPErrorRule(parentType string, parentName string, data *models.HTTPErrorRule, transactionID string, version int64) error {
+func (c *client) CreateHTTPErrorRule(id int64, parentType string, parentName string, data *models.HTTPErrorRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -155,8 +155,8 @@ func (c *client) CreateHTTPErrorRule(parentType string, parentName string, data 
 	if err != nil {
 		return err
 	}
-	if err := p.Insert(section, parentName, "http-error", s, int(*data.Index)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
+	if err := p.Insert(section, parentName, "http-error", s, int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	return c.SaveData(p, t, transactionID == "")
@@ -205,6 +205,59 @@ func (c *client) EditHTTPErrorRule(id int64, parentType string, parentName strin
 	return c.SaveData(p, t, transactionID == "")
 }
 
+// ReplaceHTTPErrorRules replaces all HTTP Error Rule lines in configuration for a parentType/parentName.
+// One of version or transactionID is mandatory.
+// Returns error on fail, nil on success.
+func (c *client) ReplaceHTTPErrorRules(parentType string, parentName string, data models.HTTPErrorRules, transactionID string, version int64) error {
+	if c.UseModelsValidation {
+		validationErr := data.Validate(strfmt.Default)
+		if validationErr != nil {
+			return NewConfError(ErrValidationError, validationErr.Error())
+		}
+	}
+	p, t, err := c.loadDataForChange(transactionID, version)
+	if err != nil {
+		return err
+	}
+
+	httpErrorRules, err := ParseHTTPErrorRules(parentType, parentName, p)
+	if err != nil {
+		return c.HandleError("", parentType, parentName, "", false, err)
+	}
+
+	var section parser.Section
+	switch parentType {
+	case DefaultsParentName:
+		section = parser.Defaults
+		if parentName == "" {
+			parentName = parser.DefaultSectionName
+		}
+	case FrontendParentName:
+		section = parser.Frontends
+	case BackendParentName:
+		section = parser.Backends
+	}
+
+	for i := range httpErrorRules {
+		// Always delete index 0
+		if err := p.Delete(section, parentName, "http-error", 0); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	for i, newHTTPErrorRule := range data {
+		s, err := SerializeHTTPErrorRule(*newHTTPErrorRule)
+		if err != nil {
+			return err
+		}
+		if err := p.Insert(section, parentName, "http-error", s, i); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	return c.SaveData(p, t, transactionID == "")
+}
+
 func ParseHTTPErrorRules(t, pName string, p parser.Parser) (models.HTTPErrorRules, error) {
 	var section parser.Section
 	switch t {
@@ -218,10 +271,10 @@ func ParseHTTPErrorRules(t, pName string, p parser.Parser) (models.HTTPErrorRule
 	case BackendParentName:
 		section = parser.Backends
 	default:
-		return nil, NewConfError(ErrValidationError, fmt.Sprintf("unsupported section in http_error: %s", t))
+		return nil, NewConfError(ErrValidationError, "unsupported section in http_error: "+t)
 	}
 
-	httpErrRules := models.HTTPErrorRules{}
+	var httpErrRules models.HTTPErrorRules
 	data, err := p.Get(section, pName, "http-error", false)
 	if err != nil {
 		if goerrors.Is(err, parser_errors.ErrFetch) {
@@ -234,11 +287,9 @@ func ParseHTTPErrorRules(t, pName string, p parser.Parser) (models.HTTPErrorRule
 	if !ok {
 		return nil, misc.CreateTypeAssertError("http-error")
 	}
-	for i, r := range rules {
-		id := int64(i)
+	for _, r := range rules {
 		httpResRule := ParseHTTPErrorRule(r)
 		if httpResRule != nil {
-			httpResRule.Index = &id
 			httpErrRules = append(httpErrRules, httpResRule)
 		}
 	}
@@ -261,7 +312,7 @@ func ParseHTTPErrorRule(f types.Action) *models.HTTPErrorRule {
 	}
 }
 
-func SerializeHTTPErrorRule(f models.HTTPErrorRule) (rule types.Action, err error) { //nolint:ireturn
+func SerializeHTTPErrorRule(f models.HTTPErrorRule) (types.Action, error) { //nolint:ireturn
 	if f.Type != "status" {
 		return nil, NewConfError(ErrValidationError, fmt.Sprintf("unsupported action %s in http_error", f.Type))
 	}
@@ -270,7 +321,7 @@ func SerializeHTTPErrorRule(f models.HTTPErrorRule) (rule types.Action, err erro
 	if f.ReturnContentType != nil {
 		contentType = *f.ReturnContentType
 	}
-	rule = &http_actions.Status{
+	rule := &http_actions.Status{
 		Status:        &f.Status,
 		ContentType:   contentType,
 		ContentFormat: f.ReturnContentFormat,

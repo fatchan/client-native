@@ -38,8 +38,8 @@ import (
 // swagger:model tcp_response_rule
 type TCPResponseRule struct {
 	// action
-	// Enum: [accept close lua reject sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt sc-set-gpt0 send-spoe-group set-bandwidth-limit set-fc-mark set-fc-tos set-log-level set-mark set-nice set-tos set-var set-var-fmt silent-drop unset-var]
-	// +kubebuilder:validation:Enum=accept;close;lua;reject;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt;sc-set-gpt0;send-spoe-group;set-bandwidth-limit;set-fc-mark;set-fc-tos;set-log-level;set-mark;set-nice;set-tos;set-var;set-var-fmt;silent-drop;unset-var;
+	// Enum: ["accept","close","lua","reject","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","send-spoe-group","set-bandwidth-limit","set-fc-mark","set-fc-tos","set-log-level","set-mark","set-nice","set-tos","set-var","set-var-fmt","silent-drop","unset-var","do-log"]
+	// +kubebuilder:validation:Enum=accept;close;lua;reject;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt;sc-set-gpt0;send-spoe-group;set-bandwidth-limit;set-fc-mark;set-fc-tos;set-log-level;set-mark;set-nice;set-tos;set-var;set-var-fmt;silent-drop;unset-var;do-log;
 	Action string `json:"action,omitempty"`
 
 	// bandwidth limit limit
@@ -52,7 +52,7 @@ type TCPResponseRule struct {
 	BandwidthLimitPeriod string `json:"bandwidth_limit_period,omitempty"`
 
 	// cond
-	// Enum: [if unless]
+	// Enum: ["if","unless"]
 	// +kubebuilder:validation:Enum=if;unless;
 	Cond string `json:"cond,omitempty"`
 
@@ -62,13 +62,8 @@ type TCPResponseRule struct {
 	// expr
 	Expr string `json:"expr,omitempty"`
 
-	// index
-	// Required: true
-	// +kubebuilder:validation:Optional
-	Index *int64 `json:"index"`
-
 	// log level
-	// Enum: [emerg alert crit err warning notice info debug silent]
+	// Enum: ["emerg","alert","crit","err","warning","notice","info","debug","silent"]
 	// +kubebuilder:validation:Enum=emerg;alert;crit;err;warning;notice;info;debug;silent;
 	LogLevel string `json:"log_level,omitempty"`
 
@@ -91,6 +86,9 @@ type TCPResponseRule struct {
 	// +kubebuilder:validation:Maximum=1024
 	// +kubebuilder:validation:Minimum=-1024
 	NiceValue int64 `json:"nice_value,omitempty"`
+
+	// rst ttl
+	RstTTL int64 `json:"rst_ttl,omitempty"`
 
 	// sc expr
 	ScExpr string `json:"sc_expr,omitempty"`
@@ -124,7 +122,7 @@ type TCPResponseRule struct {
 
 	// type
 	// Required: true
-	// Enum: [content inspect-delay]
+	// Enum: ["content","inspect-delay"]
 	// +kubebuilder:validation:Enum=content;inspect-delay;
 	Type string `json:"type"`
 
@@ -151,10 +149,6 @@ func (m *TCPResponseRule) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateCond(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateIndex(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -208,7 +202,7 @@ var tcpResponseRuleTypeActionPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["accept","close","lua","reject","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","send-spoe-group","set-bandwidth-limit","set-fc-mark","set-fc-tos","set-log-level","set-mark","set-nice","set-tos","set-var","set-var-fmt","silent-drop","unset-var"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["accept","close","lua","reject","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","send-spoe-group","set-bandwidth-limit","set-fc-mark","set-fc-tos","set-log-level","set-mark","set-nice","set-tos","set-var","set-var-fmt","silent-drop","unset-var","do-log"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -283,6 +277,9 @@ const (
 
 	// TCPResponseRuleActionUnsetDashVar captures enum value "unset-var"
 	TCPResponseRuleActionUnsetDashVar string = "unset-var"
+
+	// TCPResponseRuleActionDoDashLog captures enum value "do-log"
+	TCPResponseRuleActionDoDashLog string = "do-log"
 )
 
 // prop value enum
@@ -342,15 +339,6 @@ func (m *TCPResponseRule) validateCond(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateCondEnum("cond", "body", m.Cond); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *TCPResponseRule) validateIndex(formats strfmt.Registry) error {
-
-	if err := validate.Required("index", "body", m.Index); err != nil {
 		return err
 	}
 

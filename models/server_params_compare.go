@@ -153,6 +153,14 @@ func (s ServerParams) Equal(t ServerParams, opts ...Options) bool {
 		return false
 	}
 
+	if s.GUID != t.GUID {
+		return false
+	}
+
+	if s.HashKey != t.HashKey {
+		return false
+	}
+
 	if s.HealthCheckAddress != t.HealthCheckAddress {
 		return false
 	}
@@ -162,6 +170,10 @@ func (s ServerParams) Equal(t ServerParams, opts ...Options) bool {
 	}
 
 	if !equalPointers(s.InitAddr, t.InitAddr) {
+		return false
+	}
+
+	if s.InitState != t.InitState {
 		return false
 	}
 
@@ -242,6 +254,10 @@ func (s ServerParams) Equal(t ServerParams, opts ...Options) bool {
 	}
 
 	if s.OnMarkedUp != t.OnMarkedUp {
+		return false
+	}
+
+	if s.PoolConnName != t.PoolConnName {
 		return false
 	}
 
@@ -375,6 +391,10 @@ func (s ServerParams) Equal(t ServerParams, opts ...Options) bool {
 		return false
 	}
 
+	if s.Sslv3 != t.Sslv3 {
+		return false
+	}
+
 	if s.Stick != t.Stick {
 		return false
 	}
@@ -388,6 +408,22 @@ func (s ServerParams) Equal(t ServerParams, opts ...Options) bool {
 	}
 
 	if s.TLSTickets != t.TLSTickets {
+		return false
+	}
+
+	if s.Tlsv10 != t.Tlsv10 {
+		return false
+	}
+
+	if s.Tlsv11 != t.Tlsv11 {
+		return false
+	}
+
+	if s.Tlsv12 != t.Tlsv12 {
+		return false
+	}
+
+	if s.Tlsv13 != t.Tlsv13 {
 		return false
 	}
 
@@ -551,6 +587,14 @@ func (s ServerParams) Diff(t ServerParams, opts ...Options) map[string][]interfa
 		diff["ForceTlsv13"] = []interface{}{s.ForceTlsv13, t.ForceTlsv13}
 	}
 
+	if s.GUID != t.GUID {
+		diff["GUID"] = []interface{}{s.GUID, t.GUID}
+	}
+
+	if s.HashKey != t.HashKey {
+		diff["HashKey"] = []interface{}{s.HashKey, t.HashKey}
+	}
+
 	if s.HealthCheckAddress != t.HealthCheckAddress {
 		diff["HealthCheckAddress"] = []interface{}{s.HealthCheckAddress, t.HealthCheckAddress}
 	}
@@ -561,6 +605,10 @@ func (s ServerParams) Diff(t ServerParams, opts ...Options) map[string][]interfa
 
 	if !equalPointers(s.InitAddr, t.InitAddr) {
 		diff["InitAddr"] = []interface{}{ValueOrNil(s.InitAddr), ValueOrNil(t.InitAddr)}
+	}
+
+	if s.InitState != t.InitState {
+		diff["InitState"] = []interface{}{s.InitState, t.InitState}
 	}
 
 	if !equalPointers(s.Inter, t.Inter) {
@@ -641,6 +689,10 @@ func (s ServerParams) Diff(t ServerParams, opts ...Options) map[string][]interfa
 
 	if s.OnMarkedUp != t.OnMarkedUp {
 		diff["OnMarkedUp"] = []interface{}{s.OnMarkedUp, t.OnMarkedUp}
+	}
+
+	if s.PoolConnName != t.PoolConnName {
+		diff["PoolConnName"] = []interface{}{s.PoolConnName, t.PoolConnName}
 	}
 
 	if !equalPointers(s.PoolLowConn, t.PoolLowConn) {
@@ -773,6 +825,10 @@ func (s ServerParams) Diff(t ServerParams, opts ...Options) map[string][]interfa
 		diff["SslReuse"] = []interface{}{s.SslReuse, t.SslReuse}
 	}
 
+	if s.Sslv3 != t.Sslv3 {
+		diff["Sslv3"] = []interface{}{s.Sslv3, t.Sslv3}
+	}
+
 	if s.Stick != t.Stick {
 		diff["Stick"] = []interface{}{s.Stick, t.Stick}
 	}
@@ -787,6 +843,22 @@ func (s ServerParams) Diff(t ServerParams, opts ...Options) map[string][]interfa
 
 	if s.TLSTickets != t.TLSTickets {
 		diff["TLSTickets"] = []interface{}{s.TLSTickets, t.TLSTickets}
+	}
+
+	if s.Tlsv10 != t.Tlsv10 {
+		diff["Tlsv10"] = []interface{}{s.Tlsv10, t.Tlsv10}
+	}
+
+	if s.Tlsv11 != t.Tlsv11 {
+		diff["Tlsv11"] = []interface{}{s.Tlsv11, t.Tlsv11}
+	}
+
+	if s.Tlsv12 != t.Tlsv12 {
+		diff["Tlsv12"] = []interface{}{s.Tlsv12, t.Tlsv12}
+	}
+
+	if s.Tlsv13 != t.Tlsv13 {
+		diff["Tlsv13"] = []interface{}{s.Tlsv13, t.Tlsv13}
 	}
 
 	if s.Track != t.Track {

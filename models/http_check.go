@@ -62,30 +62,25 @@ type HTTPCheck struct {
 	Default bool `json:"default,omitempty"`
 
 	// error status
-	// Enum: [L7OKC L7RSP L7STS L6RSP L4CON]
+	// Enum: ["L7OKC","L7RSP","L7STS","L6RSP","L4CON"]
 	// +kubebuilder:validation:Enum=L7OKC;L7RSP;L7STS;L6RSP;L4CON;
 	ErrorStatus string `json:"error_status,omitempty"`
 
 	// exclamation mark
 	ExclamationMark bool `json:"exclamation_mark,omitempty"`
 
-	// index
-	// Required: true
-	// +kubebuilder:validation:Optional
-	Index *int64 `json:"index"`
-
 	// linger
 	Linger bool `json:"linger,omitempty"`
 
 	// match
 	// Pattern: ^[^\s]+$
-	// Enum: [status rstatus hdr fhdr string rstring]
+	// Enum: ["status","rstatus","hdr","fhdr","string","rstring"]
 	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	// +kubebuilder:validation:Enum=status;rstatus;hdr;fhdr;string;rstring;
 	Match string `json:"match,omitempty"`
 
 	// method
-	// Enum: [HEAD PUT POST GET TRACE PATCH DELETE CONNECT OPTIONS]
+	// Enum: ["HEAD","PUT","POST","GET","TRACE","PATCH","DELETE","CONNECT","OPTIONS"]
 	// +kubebuilder:validation:Enum=HEAD;PUT;POST;GET;TRACE;PATCH;DELETE;CONNECT;OPTIONS;
 	Method string `json:"method,omitempty"`
 
@@ -93,7 +88,7 @@ type HTTPCheck struct {
 	MinRecv *int64 `json:"min_recv,omitempty"`
 
 	// ok status
-	// Enum: [L7OK L7OKC L6OK L4OK]
+	// Enum: ["L7OK","L7OKC","L6OK","L4OK"]
 	// +kubebuilder:validation:Enum=L7OK;L7OKC;L6OK;L4OK;
 	OkStatus string `json:"ok_status,omitempty"`
 
@@ -132,13 +127,13 @@ type HTTPCheck struct {
 	StatusCode string `json:"status-code,omitempty"`
 
 	// tout status
-	// Enum: [L7TOUT L6TOUT L4TOUT]
+	// Enum: ["L7TOUT","L6TOUT","L4TOUT"]
 	// +kubebuilder:validation:Enum=L7TOUT;L6TOUT;L4TOUT;
 	ToutStatus string `json:"tout_status,omitempty"`
 
 	// type
 	// Required: true
-	// Enum: [comment connect disable-on-404 expect send send-state set-var set-var-fmt unset-var]
+	// Enum: ["comment","connect","disable-on-404","expect","send","send-state","set-var","set-var-fmt","unset-var"]
 	// +kubebuilder:validation:Enum=comment;connect;disable-on-404;expect;send;send-state;set-var;set-var-fmt;unset-var;
 	Type string `json:"type"`
 
@@ -188,10 +183,6 @@ func (m *HTTPCheck) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateErrorStatus(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateIndex(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -328,15 +319,6 @@ func (m *HTTPCheck) validateErrorStatus(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateErrorStatusEnum("error_status", "body", m.ErrorStatus); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPCheck) validateIndex(formats strfmt.Registry) error {
-
-	if err := validate.Required("index", "body", m.Index); err != nil {
 		return err
 	}
 
@@ -680,6 +662,11 @@ func (m *HTTPCheck) contextValidateCheckHeaders(ctx context.Context, formats str
 	for i := 0; i < len(m.CheckHeaders); i++ {
 
 		if m.CheckHeaders[i] != nil {
+
+			if swag.IsZero(m.CheckHeaders[i]) { // not required
+				return nil
+			}
+
 			if err := m.CheckHeaders[i].ContextValidate(ctx, formats); err != nil {
 				if ve, ok := err.(*errors.Validation); ok {
 					return ve.ValidateName("headers" + "." + strconv.Itoa(i))

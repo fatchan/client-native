@@ -1,8 +1,8 @@
 ---
 variables:
   DOCKER_HOST: tcp://docker:2375
-  GO_VERSION: "1.22"
-  DOCKER_VERSION: "24.0.6"
+  GO_VERSION: "1.24"
+  DOCKER_VERSION: "26.0"
 stages:
   - check-commit
   - generate
@@ -19,7 +19,7 @@ build-specification:
   tags:
     - go
   script:
-    - go run specification/build/build.go -file specification/haproxy-spec.yaml > specification/build/haproxy_spec_to_compare.yaml
+    - go run cmd/specification/*.go -file specification/haproxy-spec.yaml > specification/build/haproxy_spec_to_compare.yaml
     - diff -u specification/build/haproxy_spec_to_compare.yaml specification/build/haproxy_spec.yaml
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
@@ -148,6 +148,20 @@ test:
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
     - if: $CI_PIPELINE_SOURCE == 'push'
+
+test-equal:
+  stage: test
+  needs: ["build"]
+  image:
+    name: $CI_REGISTRY_GO/golang:$GO_VERSION
+    entrypoint: [""]
+  tags:
+    - go
+  script:
+    - gotest -v -t equal
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'push'
 .e2e:
   stage: e2e
   needs: ["build"]
@@ -170,34 +184,18 @@ test:
     - docker image tag $CI_REGISTRY_GO/haproxy-alpine:$HAPROXY_VERSION haproxytech/haproxy-alpine:$HAPROXY_VERSION
   script:
     - DOCKER_HAPROXY_VERSION=$HAPROXY_VERSION make e2e-docker
-HAProxy-2.1:
-  extends: .e2e
-  variables:
-    HAPROXY_VERSION: "2.1"
 HAProxy-2.2:
   extends: .e2e
   variables:
     HAPROXY_VERSION: "2.2"
-HAProxy-2.3:
-  extends: .e2e
-  variables:
-    HAPROXY_VERSION: "2.3"
 HAProxy-2.4:
   extends: .e2e
   variables:
     HAPROXY_VERSION: "2.4"
-HAProxy-2.5:
-  extends: .e2e
-  variables:
-    HAPROXY_VERSION: "2.5"
 HAProxy-2.6:
   extends: .e2e
   variables:
     HAPROXY_VERSION: "2.6"
-HAProxy-2.7:
-  extends: .e2e
-  variables:
-    HAPROXY_VERSION: "2.7"
 HAProxy-2.8:
   extends: .e2e
   variables:
@@ -206,3 +204,11 @@ HAProxy-2.9:
   extends: .e2e
   variables:
     HAPROXY_VERSION: "2.9"
+HAProxy-3.0:
+  extends: .e2e
+  variables:
+    HAPROXY_VERSION: "3.0"
+HAProxy-3.1:
+  extends: .e2e
+  variables:
+    HAPROXY_VERSION: "3.1"

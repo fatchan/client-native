@@ -109,82 +109,32 @@ func SnakeCase(fieldName string) string {
 }
 
 // DashCase turns camel case to snake case string
-func DashCase(fieldName string) string {
-	fieldName = strings.Trim(fieldName, " ")
-	n := ""
-	for i, v := range fieldName {
-		// treat acronyms as words, eg for JSONData -> JSON is a whole word
-		nextCaseIsChanged := false
-		if i+1 < len(fieldName) {
-			next := fieldName[i+1]
-			if (v >= 'A' && v <= 'Z' && next >= 'a' && next <= 'z') || (v >= 'a' && v <= 'z' && next >= 'A' && next <= 'Z') {
-				nextCaseIsChanged = true
+func DashCase(input string) string {
+	var result strings.Builder
+	n := len(input)
+	// Grow to worst case where a dash is inserted every character.
+	result.Grow(n * 2)
+
+	for i, r := range input {
+		// if r is capital ..
+		if r >= 'A' && r <= 'Z' {
+			// add a dash  before if :
+			// 1. we're not on the first or last character.
+			// 2. the previous character is not capital.
+			// 3. the next character is not capital.
+			// To understand the rules take "JSONData" -> "json-data" as an example
+			if i > 0 && !(input[i-1] >= 'A' && input[i-1] <= 'Z' && (i+1 == n || i+1 < n && input[i+1] >= 'A' && input[i+1] <= 'Z')) {
+				result.WriteByte('-')
 			}
-		}
-
-		switch {
-		case i > 0 && n[len(n)-1] != '-' && nextCaseIsChanged:
-			// add underscore if next letter case type is changed
-			if v >= 'A' && v <= 'Z' {
-				n += "-" + string(v)
-			} else if v >= 'a' && v <= 'z' {
-				n += string(v) + "-"
-			}
-		case v == ' ':
-			// replace spaces with underscores
-			n += "-"
-		default:
-			n += string(v)
+			// Lower the case of the character
+			result.WriteByte(byte(r + ('a' - 'A')))
+		} else {
+			// If lowercase just write it
+			result.WriteRune(r)
 		}
 	}
-	n = strings.ToLower(n)
-	// special case
-	n = strings.ReplaceAll(n, "httpuri", "http-uri")
-	return n
-}
 
-// ParseTimeout returns the number of milliseconds in a timeout string.
-func ParseTimeout(tOut string) *int64 {
-	return parseTimeout(tOut, 1)
-}
-
-func ParseTimeoutDefaultSeconds(tOut string) *int64 {
-	return parseTimeout(tOut, 1000)
-}
-
-func parseTimeout(tOut string, defaultMultiplier int64) *int64 {
-	var v int64
-	var err error
-	switch {
-	case strings.HasSuffix(tOut, "us"):
-		v, err = strconv.ParseInt(strings.TrimSuffix(tOut, "us"), 10, 64)
-		if v >= 1000 {
-			v /= 1000
-		} else if v > 0 {
-			v = 1
-		}
-	case strings.HasSuffix(tOut, "ms"):
-		v, err = strconv.ParseInt(strings.TrimSuffix(tOut, "ms"), 10, 64)
-	case strings.HasSuffix(tOut, "s"):
-		v, err = strconv.ParseInt(strings.TrimSuffix(tOut, "s"), 10, 64)
-		v *= 1000
-	case strings.HasSuffix(tOut, "m"):
-		v, err = strconv.ParseInt(strings.TrimSuffix(tOut, "m"), 10, 64)
-		v = v * 1000 * 60
-	case strings.HasSuffix(tOut, "h"):
-		v, err = strconv.ParseInt(strings.TrimSuffix(tOut, "h"), 10, 64)
-		v = v * 1000 * 60 * 60
-	case strings.HasSuffix(tOut, "d"):
-		v, err = strconv.ParseInt(strings.TrimSuffix(tOut, "d"), 10, 64)
-		v = v * 1000 * 60 * 60 * 24
-	default:
-		v, err = strconv.ParseInt(tOut, 10, 64)
-		v *= defaultMultiplier
-	}
-	if err != nil || v < 0 {
-		return nil
-	}
-	return &v
+	return strings.ReplaceAll(result.String(), "httpuri", "http-uri")
 }
 
 func ParseSize(size string) *int64 {
@@ -216,6 +166,31 @@ func ParseSize(size string) *int64 {
 		return nil
 	}
 	return &v
+}
+
+// Serialize a number of bytes as per "Size format" in HAProxy.
+func SerializeSize(n int64) string {
+	var str string
+
+	const (
+		g = 1073741824
+		m = 1048576
+		k = 1024
+	)
+
+	// Modulos and divisions are optimized by the compiler.
+	switch {
+	case n >= g && (n%g) == 0:
+		str = strconv.FormatInt(n/g, 10) + "g"
+	case n >= m && (n%m) == 0:
+		str = strconv.FormatInt(n/m, 10) + "m"
+	case n >= k && (n%k) == 0:
+		str = strconv.FormatInt(n/k, 10) + "k"
+	default:
+		str = strconv.FormatInt(n, 10)
+	}
+
+	return str
 }
 
 func StringP(s string) *string {
@@ -263,7 +238,7 @@ func SanitizeFilename(name string) string {
 		if name != "" {
 			return fmt.Sprintf("%s.%s", name, ext)
 		}
-		return fmt.Sprintf("_%s", ext)
+		return "_" + ext
 	}
 
 	return name

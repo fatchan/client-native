@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/haproxytech/client-native/v6/configuration"
+	"github.com/haproxytech/client-native/v6/configuration/options"
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
 	"github.com/stretchr/testify/require"
@@ -32,8 +33,8 @@ func tcpRequestRuleExpectation() map[string]models.TCPRequestRules {
 	res := StructuredToTCPRequestRuleMap()
 	// Add individual entries
 	for k, vs := range res {
-		for _, v := range vs {
-			key := fmt.Sprintf("%s/%d", k, *v.Index)
+		for i, v := range vs {
+			key := fmt.Sprintf("%s/%d", k, i)
 			res[key] = models.TCPRequestRules{v}
 		}
 	}
@@ -57,6 +58,12 @@ func TestGetTCPRequestRules(t *testing.T) { //nolint:gocognit,gocyclo
 		t.Error(err.Error())
 	}
 	mrules["backend/test_2"] = tRules
+
+	_, tRules, err = clientTest.GetTCPRequestRules(configuration.DefaultsParentName, "test_defaults", "")
+	if err != nil {
+		t.Error(err.Error())
+	}
+	mrules["defaults/test_defaults"] = tRules
 
 	checkTCPRequestRules(t, mrules)
 }
@@ -93,13 +100,10 @@ func checkTCPRequestRules(t *testing.T, got map[string]models.TCPRequestRules) {
 		want, ok := exp[k]
 		require.True(t, ok, "k=%s", k)
 		require.Equal(t, len(want), len(v), "k=%s", k)
-		for _, g := range v {
-			for _, w := range want {
-				if *g.Index == *w.Index {
-					require.True(t, g.Equal(*w), "k=%s - diff %v", k, cmp.Diff(*g, *w))
-					break
-				}
-			}
+		i := 0
+		for _, w := range want {
+			require.True(t, v[i].Equal(*w), "k=%s - diff %v", k, cmp.Diff(*v[i], *w))
+			i++
 		}
 	}
 }
@@ -109,12 +113,11 @@ func TestCreateEditDeleteTCPRequestRule(t *testing.T) {
 	tOut := int64(1000)
 	// TestCreateTCPRequestRule
 	r := &models.TCPRequestRule{
-		Index:   &id,
 		Type:    "inspect-delay",
 		Timeout: &tOut,
 	}
 
-	err := clientTest.CreateTCPRequestRule(configuration.FrontendParentName, "test", r, "", version)
+	err := clientTest.CreateTCPRequestRule(id, configuration.FrontendParentName, "test", r, "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
@@ -138,7 +141,6 @@ func TestCreateEditDeleteTCPRequestRule(t *testing.T) {
 
 	// TestEditTCPRequestRule
 	r = &models.TCPRequestRule{
-		Index:    &id,
 		Type:     "connection",
 		Action:   "accept",
 		Cond:     "if",
@@ -251,39 +253,6 @@ func TestSerializeTCPRequestRule(t *testing.T) {
 		},
 		{
 			input: models.TCPRequestRule{
-				Type:       models.TCPRequestRuleTypeConnection,
-				Action:     models.TCPRequestRuleActionTrackDashSc0,
-				Cond:       "if",
-				CondTest:   "TRUE",
-				TrackKey:   "src",
-				TrackTable: "tr0",
-			},
-			expectedResult: "connection track-sc0 src table tr0 if TRUE",
-		},
-		{
-			input: models.TCPRequestRule{
-				Type:       models.TCPRequestRuleTypeConnection,
-				Action:     models.TCPRequestRuleActionTrackDashSc1,
-				Cond:       "if",
-				CondTest:   "TRUE",
-				TrackKey:   "src",
-				TrackTable: "tr1",
-			},
-			expectedResult: "connection track-sc1 src table tr1 if TRUE",
-		},
-		{
-			input: models.TCPRequestRule{
-				Type:       models.TCPRequestRuleTypeConnection,
-				Action:     models.TCPRequestRuleActionTrackDashSc2,
-				Cond:       "if",
-				CondTest:   "TRUE",
-				TrackKey:   "src",
-				TrackTable: "tr2",
-			},
-			expectedResult: "connection track-sc2 src table tr2 if TRUE",
-		},
-		{
-			input: models.TCPRequestRule{
 				Type:              models.TCPRequestRuleTypeContent,
 				Action:            models.TCPRequestRuleActionTrackDashSc,
 				Cond:              "if",
@@ -296,39 +265,6 @@ func TestSerializeTCPRequestRule(t *testing.T) {
 		},
 		{
 			input: models.TCPRequestRule{
-				Type:       models.TCPRequestRuleTypeContent,
-				Action:     models.TCPRequestRuleActionTrackDashSc0,
-				Cond:       "if",
-				CondTest:   "TRUE",
-				TrackKey:   "src",
-				TrackTable: "tr0",
-			},
-			expectedResult: "content track-sc0 src table tr0 if TRUE",
-		},
-		{
-			input: models.TCPRequestRule{
-				Type:       models.TCPRequestRuleTypeContent,
-				Action:     models.TCPRequestRuleActionTrackDashSc1,
-				Cond:       "if",
-				CondTest:   "TRUE",
-				TrackKey:   "src",
-				TrackTable: "tr1",
-			},
-			expectedResult: "content track-sc1 src table tr1 if TRUE",
-		},
-		{
-			input: models.TCPRequestRule{
-				Type:       models.TCPRequestRuleTypeContent,
-				Action:     models.TCPRequestRuleActionTrackDashSc2,
-				Cond:       "if",
-				CondTest:   "TRUE",
-				TrackKey:   "src",
-				TrackTable: "tr2",
-			},
-			expectedResult: "content track-sc2 src table tr2 if TRUE",
-		},
-		{
-			input: models.TCPRequestRule{
 				Type:              models.TCPRequestRuleTypeSession,
 				Action:            models.TCPRequestRuleActionTrackDashSc,
 				Cond:              "if",
@@ -338,39 +274,6 @@ func TestSerializeTCPRequestRule(t *testing.T) {
 				TrackStickCounter: misc.Int64P(3),
 			},
 			expectedResult: "session track-sc3 src table tr0 if TRUE",
-		},
-		{
-			input: models.TCPRequestRule{
-				Type:       models.TCPRequestRuleTypeSession,
-				Action:     models.TCPRequestRuleActionTrackDashSc0,
-				Cond:       "if",
-				CondTest:   "TRUE",
-				TrackKey:   "src",
-				TrackTable: "tr0",
-			},
-			expectedResult: "session track-sc0 src table tr0 if TRUE",
-		},
-		{
-			input: models.TCPRequestRule{
-				Type:       models.TCPRequestRuleTypeSession,
-				Action:     models.TCPRequestRuleActionTrackDashSc1,
-				Cond:       "if",
-				CondTest:   "TRUE",
-				TrackKey:   "src",
-				TrackTable: "tr1",
-			},
-			expectedResult: "session track-sc1 src table tr1 if TRUE",
-		},
-		{
-			input: models.TCPRequestRule{
-				Type:       models.TCPRequestRuleTypeSession,
-				Action:     models.TCPRequestRuleActionTrackDashSc2,
-				Cond:       "if",
-				CondTest:   "TRUE",
-				TrackKey:   "src",
-				TrackTable: "tr2",
-			},
-			expectedResult: "session track-sc2 src table tr2 if TRUE",
 		},
 		{
 			input: models.TCPRequestRule{
@@ -421,7 +324,9 @@ func TestSerializeTCPRequestRule(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.expectedResult, func(t *testing.T) {
-			tcpType, err := configuration.SerializeTCPRequestRule(testCase.input)
+			opt := new(options.ConfigurationOptions)
+			opt.PreferredTimeSuffix = "d"
+			tcpType, err := configuration.SerializeTCPRequestRule(testCase.input, opt)
 			if err != nil {
 				t.Error(err.Error())
 			}

@@ -15,13 +15,14 @@
 package configuration
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
 	"github.com/go-openapi/strfmt"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 	"github.com/haproxytech/client-native/v6/models"
-	parser "github.com/haproxytech/config-parser/v5"
-	"github.com/haproxytech/config-parser/v5/types"
 )
 
 type HTTPErrorsSection interface {
@@ -159,7 +160,7 @@ func (c *client) EditHTTPErrorsSection(name string, data *models.HTTPErrorsSecti
 // SerializeProgramSection saves a single http-errors section's data in the configuration.
 func SerializeHTTPErrorsSection(p parser.Parser, data *models.HTTPErrorsSection) error {
 	if data == nil {
-		return fmt.Errorf("empty http-errors section")
+		return errors.New("empty http-errors section")
 	}
 
 	for _, ef := range data.ErrorFiles {

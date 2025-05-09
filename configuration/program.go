@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	parsererrors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parsererrors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
@@ -150,11 +150,11 @@ func (c *client) EditProgram(name string, data *models.Program, transactionID st
 
 func SerializeProgramSection(p parser.Parser, data *models.Program) error {
 	if data == nil {
-		return fmt.Errorf("empty program")
+		return errors.New("empty program")
 	}
 
 	if data.Command == nil {
-		return fmt.Errorf("command must be set")
+		return errors.New("command must be set")
 	}
 	if err := p.Set(parser.Program, data.Name, "command", types.Command{Args: *data.Command}); err != nil {
 		return err

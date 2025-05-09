@@ -16,22 +16,23 @@
 package configuration
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 
-	parser "github.com/haproxytech/config-parser/v5"
-	"github.com/haproxytech/config-parser/v5/common"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	parser_options "github.com/haproxytech/config-parser/v5/options"
-	"github.com/haproxytech/config-parser/v5/params"
-	"github.com/haproxytech/config-parser/v5/parsers"
-	stats "github.com/haproxytech/config-parser/v5/parsers/stats/settings"
-	"github.com/haproxytech/config-parser/v5/types"
-	"github.com/pkg/errors"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	"github.com/haproxytech/client-native/v6/config-parser/common"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	parser_options "github.com/haproxytech/client-native/v6/config-parser/options"
+	"github.com/haproxytech/client-native/v6/config-parser/params"
+	"github.com/haproxytech/client-native/v6/config-parser/parsers"
+	stats "github.com/haproxytech/client-native/v6/config-parser/parsers/stats/settings"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
+	"github.com/haproxytech/client-native/v6/configuration/options"
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
 )
@@ -46,6 +47,9 @@ const (
 	GlobalParentName     = "global"
 	FCGIAppParentName    = "fcgi-app"
 	ResolverParentName   = "resolvers"
+	CrtStoreParentName   = "crt-store"
+	TracesParentName     = "traces"
+	LogProfileParentName = "log-profile"
 )
 
 // ClientParams is just a placeholder for all client options
@@ -59,6 +63,7 @@ type ClientParams struct {
 	ValidateCmd               string
 	ValidateConfigFilesBefore []string
 	ValidateConfigFilesAfter  []string
+	PreferredTimeSuffix       string
 	BackupsNumber             int
 	UseValidation             bool
 	PersistentTransactions    bool
@@ -132,7 +137,7 @@ func (c *client) AddParser(transactionID string) error {
 		parserOptions = append(parserOptions, parser_options.NoNamedDefaultsFrom)
 	}
 
-	tFile := ""
+	var tFile string
 	var err error
 	if c.PersistentTransactions {
 		tFile, err = c.GetTransactionFile(transactionID)
@@ -145,7 +150,7 @@ func (c *client) AddParser(transactionID string) error {
 	parserOptions = append(parserOptions, parser_options.Path(tFile))
 	p, err := parser.New(parserOptions...)
 	if err != nil {
-		return NewConfError(ErrCannotReadConfFile, fmt.Sprintf("Cannot read %s", tFile))
+		return NewConfError(ErrCannotReadConfFile, "Cannot read "+tFile)
 	}
 	c.clientMu.Lock()
 	c.parsers[transactionID] = p
@@ -216,7 +221,7 @@ func (c *client) IncrementVersion() error {
 func (c *client) LoadData(filename string) error {
 	err := c.parser.LoadData(filename)
 	if err != nil {
-		return NewConfError(ErrCannotReadConfFile, fmt.Sprintf("cannot read %s", filename))
+		return NewConfError(ErrCannotReadConfFile, "cannot read "+filename)
 	}
 	return nil
 }
@@ -262,7 +267,7 @@ type SectionParser struct {
 // Parse parses the sections fields and sets their values with the data from the parser
 func (s *SectionParser) Parse() error {
 	objValue := reflect.ValueOf(s.Object).Elem()
-	for i := 0; i < objValue.NumField(); i++ {
+	for i := range objValue.NumField() {
 		typeField := objValue.Type().Field(i)
 		field := objValue.FieldByName(typeField.Name)
 		val := s.parseField(typeField.Name)
@@ -302,7 +307,7 @@ func (s *SectionParser) parseField(fieldName string) interface{} {
 	return nil
 }
 
-func (s *SectionParser) checkSpecialFields(fieldName string) (match bool, data interface{}) { //nolint:gocyclo,cyclop
+func (s *SectionParser) checkSpecialFields(fieldName string) (bool, interface{}) { //nolint:gocyclo,cyclop
 	switch fieldName {
 	case "Shards":
 		return true, s.shards()
@@ -314,8 +319,6 @@ func (s *SectionParser) checkSpecialFields(fieldName string) (match bool, data i
 		return true, s.monitorURI()
 	case "StatsOptions":
 		return true, s.statsOptions()
-	case "HTTPCheck":
-		return true, s.httpCheck()
 	case "Forwardfor":
 		return true, s.forwardfor()
 	case "Redispatch":
@@ -324,8 +327,6 @@ func (s *SectionParser) checkSpecialFields(fieldName string) (match bool, data i
 		return true, s.balance()
 	case "PersistRule":
 		return true, s.persistRule()
-	case "BindProcess":
-		return true, s.bindProcess()
 	case "Cookie":
 		return true, s.cookie()
 	case "HashType":
@@ -402,12 +403,14 @@ func (s *SectionParser) checkSpecialFields(fieldName string) (match bool, data i
 		return true, s.source()
 	case "Originalto":
 		return true, s.originalto()
+	case "LogSteps":
+		return true, s.logSteps()
 	default:
 		return false, nil
 	}
 }
 
-func (s *SectionParser) checkTimeouts(fieldName string) (match bool, data interface{}) {
+func (s *SectionParser) checkTimeouts(fieldName string) (bool, interface{}) {
 	if strings.HasSuffix(fieldName, "Timeout") {
 		if pName := translateTimeout(fieldName); s.Parser.HasParser(s.Section, pName) {
 			data, err := s.get(pName, false)
@@ -421,7 +424,7 @@ func (s *SectionParser) checkTimeouts(fieldName string) (match bool, data interf
 	return false, nil
 }
 
-func (s *SectionParser) checkSingleLine(fieldName string) (match bool, data interface{}) {
+func (s *SectionParser) checkSingleLine(fieldName string) (bool, interface{}) {
 	if pName := misc.DashCase(fieldName); s.Parser.HasParser(s.Section, pName) {
 		data, err := s.get(pName, false)
 		if err != nil {
@@ -432,8 +435,8 @@ func (s *SectionParser) checkSingleLine(fieldName string) (match bool, data inte
 	return false, nil
 }
 
-func (s *SectionParser) checkOptions(fieldName string) (match bool, data interface{}) {
-	if pName := fmt.Sprintf("option %s", misc.DashCase(fieldName)); s.Parser.HasParser(s.Section, pName) {
+func (s *SectionParser) checkOptions(fieldName string) (bool, interface{}) {
+	if pName := "option " + misc.DashCase(fieldName); s.Parser.HasParser(s.Section, pName) {
 		data, err := s.get(pName, false)
 		if err != nil {
 			return true, nil
@@ -443,7 +446,7 @@ func (s *SectionParser) checkOptions(fieldName string) (match bool, data interfa
 	return false, nil
 }
 
-func (s *SectionParser) get(attribute string, createIfNotExists ...bool) (data common.ParserData, err error) {
+func (s *SectionParser) get(attribute string, createIfNotExists ...bool) (common.ParserData, error) {
 	return s.Parser.Get(s.Section, s.Name, attribute, createIfNotExists...)
 }
 
@@ -663,7 +666,7 @@ func (s *SectionParser) advCheck() interface{} {
 	return nil
 }
 
-func (s *SectionParser) getSslChkData() (found bool, data interface{}) {
+func (s *SectionParser) getSslChkData() (bool, interface{}) {
 	data, err := s.get("option ssl-hello-chk", false)
 	if err == nil {
 		d := data.(*types.SimpleOption)
@@ -674,7 +677,7 @@ func (s *SectionParser) getSslChkData() (found bool, data interface{}) {
 	return false, nil
 }
 
-func (s *SectionParser) getSMTPChkData() (found bool, data interface{}) {
+func (s *SectionParser) getSMTPChkData() (bool, interface{}) {
 	data, err := s.get("option smtpchk", false)
 	if err == nil {
 		d := data.(*types.OptionSmtpchk)
@@ -689,7 +692,7 @@ func (s *SectionParser) getSMTPChkData() (found bool, data interface{}) {
 	return false, nil
 }
 
-func (s *SectionParser) getLdapCheckData() (found bool, data interface{}) {
+func (s *SectionParser) getLdapCheckData() (bool, interface{}) {
 	data, err := s.get("option ldap-check", false)
 	if err == nil {
 		d := data.(*types.SimpleOption)
@@ -700,7 +703,7 @@ func (s *SectionParser) getLdapCheckData() (found bool, data interface{}) {
 	return false, nil
 }
 
-func (s *SectionParser) getMysqlCheckData() (found bool, data interface{}) {
+func (s *SectionParser) getMysqlCheckData() (bool, interface{}) {
 	data, err := s.get("option mysql-check", false)
 	if err == nil {
 		d := data.(*types.OptionMysqlCheck)
@@ -715,7 +718,7 @@ func (s *SectionParser) getMysqlCheckData() (found bool, data interface{}) {
 	return false, nil
 }
 
-func (s *SectionParser) getPgsqlCheckData() (found bool, data interface{}) {
+func (s *SectionParser) getPgsqlCheckData() (bool, interface{}) {
 	data, err := s.get("option pgsql-check", false)
 	if err == nil {
 		d := data.(*types.OptionPgsqlCheck)
@@ -729,7 +732,7 @@ func (s *SectionParser) getPgsqlCheckData() (found bool, data interface{}) {
 	return false, nil
 }
 
-func (s *SectionParser) getTCPCheckData() (found bool, data interface{}) {
+func (s *SectionParser) getTCPCheckData() (bool, interface{}) {
 	data, err := s.get("option tcp-check", false)
 	if err == nil {
 		d := data.(*types.SimpleOption)
@@ -740,7 +743,7 @@ func (s *SectionParser) getTCPCheckData() (found bool, data interface{}) {
 	return false, nil
 }
 
-func (s *SectionParser) getRedisCheckData() (found bool, data interface{}) {
+func (s *SectionParser) getRedisCheckData() (bool, interface{}) {
 	data, err := s.get("option redis-check", false)
 	if err == nil {
 		d := data.(*types.SimpleOption)
@@ -751,7 +754,7 @@ func (s *SectionParser) getRedisCheckData() (found bool, data interface{}) {
 	return false, nil
 }
 
-func (s *SectionParser) getHttpchkData() (found bool, data interface{}) {
+func (s *SectionParser) getHttpchkData() (bool, interface{}) {
 	data, err := s.get("option httpchk", false)
 	if err == nil {
 		d := data.(*types.OptionHttpchk)
@@ -760,6 +763,7 @@ func (s *SectionParser) getHttpchkData() (found bool, data interface{}) {
 				Method:  d.Method,
 				URI:     d.URI,
 				Version: d.Version,
+				Host:    d.Host,
 			})
 			return true, "httpchk"
 		}
@@ -895,9 +899,15 @@ func (s *SectionParser) cookie() interface{} {
 	for i, domain := range d.Domain {
 		domains[i] = &models.Domain{Value: domain}
 	}
+	if len(d.Domain) == 0 {
+		domains = nil
+	}
 	attrs := make([]*models.Attr, len(d.Attr))
 	for i, attr := range d.Attr {
 		attrs[i] = &models.Attr{Value: attr}
+	}
+	if len(d.Attr) == 0 {
+		attrs = nil
 	}
 	return &models.Cookie{
 		Attrs:    attrs,
@@ -914,15 +924,6 @@ func (s *SectionParser) cookie() interface{} {
 		Type:     d.Type,
 		Secure:   d.Secure,
 	}
-}
-
-func (s *SectionParser) bindProcess() interface{} {
-	data, err := s.get("bind-process", false)
-	if err != nil {
-		return nil
-	}
-	d := data.(*types.BindProcess)
-	return d.Process
 }
 
 func (s *SectionParser) persistRule() interface{} {
@@ -1008,25 +1009,6 @@ func (s *SectionParser) forwardfor() interface{} {
 		Enabled: &enabled,
 	}
 	return bff
-}
-
-func (s *SectionParser) httpCheck() interface{} {
-	data, err := s.get("http-check", false)
-	if err != nil {
-		return nil
-	}
-	d := data.([]types.Action)
-	if s.Section == parser.Defaults || s.Section == parser.Backends {
-		for _, h := range d {
-			httpCheck, err := ParseHTTPCheck(h)
-			if err != nil {
-				continue
-			}
-			httpCheck.Index = misc.Int64P(0)
-			return httpCheck
-		}
-	}
-	return nil
 }
 
 func (s *SectionParser) emailAlert() interface{} {
@@ -1397,6 +1379,9 @@ func (s *SectionParser) forcePersistList() interface{} {
 			CondTest: &d[i].CondTest,
 		}
 	}
+	if len(d) == 0 {
+		items = nil
+	}
 	return items
 }
 
@@ -1419,6 +1404,9 @@ func (s *SectionParser) ignorePersistList() interface{} {
 			Cond:     &d[i].Cond,
 			CondTest: &d[i].CondTest,
 		}
+	}
+	if len(d) == 0 {
+		items = nil
 	}
 	return items
 }
@@ -1488,21 +1476,35 @@ func (s *SectionParser) originalto() interface{} {
 	return originalto
 }
 
+func (s *SectionParser) logSteps() interface{} {
+	if s.Section == parser.Frontends || s.Section == parser.Defaults {
+		data, err := s.get("log-steps", false)
+		if err != nil {
+			return nil
+		}
+		d := data.(*types.StringC)
+		return strings.Split(d.Value, ",")
+	}
+	return nil
+}
+
 // SectionObject represents a configuration section
 type SectionObject struct {
 	Object  interface{}
 	Parser  parser.Parser
 	Section parser.Section
 	Name    string
+	Options *options.ConfigurationOptions
 }
 
 // CreateEditSection creates or updates a section in the parser based on the provided object
-func CreateEditSection(object interface{}, section parser.Section, pName string, p parser.Parser) error {
+func CreateEditSection(object interface{}, section parser.Section, pName string, p parser.Parser, opt *options.ConfigurationOptions) error {
 	so := SectionObject{
 		Object:  object,
 		Section: section,
 		Name:    pName,
 		Parser:  p,
+		Options: opt,
 	}
 	return so.CreateEditSection()
 }
@@ -1513,7 +1515,7 @@ func (s *SectionObject) CreateEditSection() error {
 	if objValue.Kind() == reflect.Ptr {
 		objValue = reflect.ValueOf(s.Object).Elem()
 	}
-	for i := 0; i < objValue.NumField(); i++ {
+	for i := range objValue.NumField() {
 		typeField := objValue.Type().Field(i)
 		field := objValue.FieldByName(typeField.Name)
 		if typeField.Name != "Name" && typeField.Name != "ID" {
@@ -1546,14 +1548,14 @@ func (s *SectionObject) setFieldValue(fieldName string, field reflect.Value) err
 		return err
 	}
 
-	return errors.Errorf("Cannot parse option for %s %s: %s", s.Section, s.Name, fieldName)
+	return fmt.Errorf("cannot parse option for %s %s: %s", s.Section, s.Name, fieldName)
 }
 
-func (s *SectionObject) checkParams(fieldName string) (match bool) {
+func (s *SectionObject) checkParams(fieldName string) bool {
 	return s.Section != parser.FCGIApp && strings.HasSuffix(fieldName, "Params")
 }
 
-func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value) (match bool, err error) { //nolint:gocyclo,cyclop
+func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value) (bool, error) { //nolint:gocyclo,cyclop
 	switch fieldName {
 	case "Shard":
 		return true, s.shard(field)
@@ -1565,8 +1567,6 @@ func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value
 		return true, s.monitorFail(field)
 	case "StatsOptions":
 		return true, s.statsOptions(field)
-	case "HTTPCheck":
-		return true, s.httpCheck(field)
 	case "Forwardfor":
 		return true, s.forwardfor(field)
 	case "Redispatch":
@@ -1575,8 +1575,6 @@ func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value
 		return true, s.balance(field)
 	case "PersistRule":
 		return true, s.persistRule(field)
-	case "BindProcess":
-		return true, s.bindProcess(field)
 	case "Cookie":
 		return true, s.cookie(field)
 	case "HashType":
@@ -1665,12 +1663,14 @@ func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value
 		return true, s.source(field)
 	case "Originalto":
 		return true, s.originalto(field)
+	case "LogSteps":
+		return true, s.logSteps(field)
 	default:
 		return false, nil
 	}
 }
 
-func (s *SectionObject) checkTimeouts(fieldName string, field reflect.Value) (match bool, err error) {
+func (s *SectionObject) checkTimeouts(fieldName string, field reflect.Value) (bool, error) {
 	if strings.HasSuffix(fieldName, "Timeout") {
 		if pName := translateTimeout(fieldName); s.Parser.HasParser(s.Section, pName) {
 			if valueIsNil(field) {
@@ -1680,7 +1680,7 @@ func (s *SectionObject) checkTimeouts(fieldName string, field reflect.Value) (ma
 				return true, nil
 			}
 			t := &types.SimpleTimeout{}
-			t.Value = strconv.FormatInt(field.Elem().Int(), 10)
+			t.Value = misc.SerializeTime(field.Elem().Int(), s.Options.PreferredTimeSuffix)
 			if err := s.set(pName, t); err != nil {
 				return true, err
 			}
@@ -1690,8 +1690,8 @@ func (s *SectionObject) checkTimeouts(fieldName string, field reflect.Value) (ma
 	return false, nil
 }
 
-func (s *SectionObject) checkOptions(fieldName string, field reflect.Value) (match bool, err error) {
-	if pName := fmt.Sprintf("option %s", misc.DashCase(fieldName)); s.Parser.HasParser(s.Section, pName) {
+func (s *SectionObject) checkOptions(fieldName string, field reflect.Value) (bool, error) {
+	if pName := "option " + misc.DashCase(fieldName); s.Parser.HasParser(s.Section, pName) {
 		if valueIsNil(field) {
 			if err := s.set(pName, nil); err != nil {
 				return true, err
@@ -1712,7 +1712,7 @@ func (s *SectionObject) checkOptions(fieldName string, field reflect.Value) (mat
 	return false, nil
 }
 
-func (s *SectionObject) checkSingleLine(fieldName string, field reflect.Value) (match bool, err error) {
+func (s *SectionObject) checkSingleLine(fieldName string, field reflect.Value) (bool, error) {
 	if pName := misc.DashCase(fieldName); s.Parser.HasParser(s.Section, pName) {
 		if valueIsNil(field) {
 			if err := s.set(pName, nil); err != nil {
@@ -1722,7 +1722,7 @@ func (s *SectionObject) checkSingleLine(fieldName string, field reflect.Value) (
 		}
 		d := translateToParserData(field)
 		if d == nil {
-			return true, errors.Errorf("Cannot parse type for %s %s: %s", s.Section, s.Name, fieldName)
+			return true, fmt.Errorf("cannot parse type for %s %s: %s", s.Section, s.Name, fieldName)
 		}
 		if err := s.set(pName, d); err != nil {
 			return true, err
@@ -1847,7 +1847,7 @@ func (s *SectionObject) httpReuse(field reflect.Value) error {
 
 func (s *SectionObject) httpConnectionMode(field reflect.Value) error {
 	for _, opt := range []string{"httpclose", "http-server-close", "http-keep-alive"} {
-		attribute := fmt.Sprintf("option %s", opt)
+		attribute := "option " + opt
 
 		if err := s.set(attribute, nil); err != nil {
 			return err
@@ -2096,6 +2096,7 @@ func (s *SectionObject) getHTTPChkData() (common.ParserData, error) {
 		Method:   params.Method,
 		Version:  params.Version,
 		URI:      params.URI,
+		Host:     params.Host,
 	}, nil
 }
 
@@ -2128,10 +2129,10 @@ func (s *SectionObject) stickTable(field reflect.Value) error {
 			d.Length = strconv.FormatInt(*st.Keylen, 10)
 		}
 		if st.Expire != nil {
-			d.Expire = strconv.FormatInt(*st.Expire, 10)
+			d.Expire = misc.SerializeTime(*st.Expire, s.Options.PreferredTimeSuffix)
 		}
 		if st.Size != nil {
-			d.Size = strconv.FormatInt(*st.Size, 10)
+			d.Size = misc.SerializeSize(*st.Size)
 		}
 		if st.Srvkey != nil {
 			d.SrvKey = *st.Srvkey
@@ -2156,7 +2157,7 @@ func (s *SectionObject) defaultServer(field reflect.Value) error {
 			return misc.CreateTypeAssertError("default-server")
 		}
 		dServers := []types.DefaultServer{{}}
-		dServers[0].Params = serializeServerParams(ds.ServerParams)
+		dServers[0].Params = SerializeServerParams(ds.ServerParams, s.Options)
 		if err := s.set("default-server", dServers); err != nil {
 			return err
 		}
@@ -2209,6 +2210,9 @@ func (s *SectionObject) errorFilesFromHTTPErrors(field reflect.Value) error {
 	for i, ef := range efs {
 		errorFiles[i] = types.ErrorFiles{Codes: ef.Codes, Name: ef.Name}
 	}
+	if len(efs) == 0 {
+		errorFiles = nil
+	}
 	return s.set("errorfiles", errorFiles)
 }
 
@@ -2246,9 +2250,15 @@ func (s *SectionObject) cookie(field reflect.Value) error {
 		for i, domain := range d.Domains {
 			domains[i] = domain.Value
 		}
+		if len(d.Domains) == 0 {
+			domains = nil
+		}
 		attrs := make([]string, len(d.Attrs))
 		for i, attr := range d.Attrs {
 			attrs[i] = attr.Value
+		}
+		if len(d.Attrs) == 0 {
+			attrs = nil
 		}
 		data := types.Cookie{
 			Attr:     attrs,
@@ -2266,22 +2276,6 @@ func (s *SectionObject) cookie(field reflect.Value) error {
 			Secure:   d.Secure,
 		}
 		if err := s.set("cookie", &data); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *SectionObject) bindProcess(field reflect.Value) error {
-	if s.Section == parser.Defaults || s.Section == parser.Frontends || s.Section == parser.Backends {
-		if valueIsNil(field) {
-			return s.set("bind-process", nil)
-		}
-		b := field.String()
-		d := &types.BindProcess{
-			Process: b,
-		}
-		if err := s.set("bind-process", d); err != nil {
 			return err
 		}
 	}
@@ -2382,6 +2376,9 @@ func (s *SectionObject) redispatch(field reflect.Value) error {
 		if *br.Enabled == "disabled" {
 			d.NoOption = true
 		}
+		if br.Interval == 0 {
+			d = nil
+		}
 		if err := s.set("option redispatch", d); err != nil {
 			return err
 		}
@@ -2403,38 +2400,6 @@ func (s *SectionObject) forwardfor(field reflect.Value) error {
 		IfNone: ff.Ifnone,
 	}
 	return s.set("option forwardfor", d)
-}
-
-func (s *SectionObject) httpCheck(field reflect.Value) error {
-	if s.Section == parser.Defaults || s.Section == parser.Backends {
-		hc, ok := field.Interface().(*models.HTTPCheck)
-		if !ok {
-			return misc.CreateTypeAssertError("http-check")
-		}
-
-		if hc == nil {
-			return nil
-		}
-		httpChecks, err := ParseHTTPChecks(string(s.Section), s.Name, s.Parser)
-		if err != nil {
-			return err
-		}
-		if hc != nil {
-			for _, httpCheck := range httpChecks {
-				if reflect.DeepEqual(httpCheck, hc) {
-					return nil
-				}
-			}
-			check, err := SerializeHTTPCheck(*hc)
-			if err != nil {
-				return err
-			}
-			if err = s.Parser.Insert(s.Section, s.Name, "http-check", check, 0); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 func (s *SectionObject) monitorURI(field reflect.Value) error {
@@ -2602,7 +2567,7 @@ func (s *SectionObject) statsOptions(field reflect.Value) error {
 	for _, httpRequest := range opt.StatsHTTPRequests {
 		reqType := *httpRequest.Type
 		if reqType == "auth" && httpRequest.Realm != "" {
-			reqType = fmt.Sprintf("auth realm %s", httpRequest.Realm)
+			reqType = "auth realm " + httpRequest.Realm
 		}
 		s := &stats.HTTPRequest{
 			Type:     reqType,
@@ -2649,8 +2614,7 @@ func (s *SectionObject) compression(field reflect.Value) error { //nolint:gocogn
 		err = s.set("compression direction", nil)
 		if err != nil {
 			// compression direction does not exist on Frontends
-			var setErr error
-			if errors.As(parser_errors.ErrAttributeNotFound, &setErr) {
+			if errors.Is(err, parser_errors.ErrAttributeNotFound) {
 				return nil
 			}
 			return err
@@ -2659,7 +2623,7 @@ func (s *SectionObject) compression(field reflect.Value) error { //nolint:gocogn
 	}
 	compression, ok := field.Elem().Interface().(models.Compression)
 	if !ok {
-		return fmt.Errorf("error casting compression model")
+		return errors.New("error casting compression model")
 	}
 
 	if len(compression.Algorithms) > 0 {
@@ -2721,7 +2685,8 @@ func (s *SectionObject) clitcpkaIdle(field reflect.Value) error {
 		field = field.Elem()
 	}
 	v := field.Int()
-	return s.set("clitcpka-idle", types.StringC{Value: fmt.Sprintf("%dms", v)})
+	str := misc.SerializeTime(v, s.Options.PreferredTimeSuffix)
+	return s.set("clitcpka-idle", types.StringC{Value: str})
 }
 
 func (s *SectionObject) clitcpkaIntvl(field reflect.Value) error {
@@ -2732,7 +2697,8 @@ func (s *SectionObject) clitcpkaIntvl(field reflect.Value) error {
 		field = field.Elem()
 	}
 	v := field.Int()
-	return s.set("clitcpka-intvl", types.StringC{Value: fmt.Sprintf("%dms", v)})
+	str := misc.SerializeTime(v, s.Options.PreferredTimeSuffix)
+	return s.set("clitcpka-intvl", types.StringC{Value: str})
 }
 
 func (s *SectionObject) srvtcpkaIdle(field reflect.Value) error {
@@ -2743,7 +2709,8 @@ func (s *SectionObject) srvtcpkaIdle(field reflect.Value) error {
 		field = field.Elem()
 	}
 	v := field.Int()
-	return s.set("srvtcpka-idle", types.StringC{Value: fmt.Sprintf("%dms", v)})
+	str := misc.SerializeTime(v, s.Options.PreferredTimeSuffix)
+	return s.set("srvtcpka-idle", types.StringC{Value: str})
 }
 
 func (s *SectionObject) srvtcpkaIntvl(field reflect.Value) error {
@@ -2754,7 +2721,8 @@ func (s *SectionObject) srvtcpkaIntvl(field reflect.Value) error {
 		field = field.Elem()
 	}
 	v := field.Int()
-	return s.set("srvtcpka-intvl", types.StringC{Value: fmt.Sprintf("%dms", v)})
+	str := misc.SerializeTime(v, s.Options.PreferredTimeSuffix)
+	return s.set("srvtcpka-intvl", types.StringC{Value: str})
 }
 
 func (s *SectionObject) serverStateFileName(field reflect.Value) error {
@@ -2865,6 +2833,9 @@ func (s *SectionObject) forcePersistList(field reflect.Value) error {
 			CondTest: *data[i].CondTest,
 		}
 	}
+	if len(data) == 0 {
+		items = nil
+	}
 	return s.set("force-persist", items)
 }
 
@@ -2883,6 +2854,9 @@ func (s *SectionObject) ignorePersistList(field reflect.Value) error {
 			Cond:     *data[i].Cond,
 			CondTest: *data[i].CondTest,
 		}
+	}
+	if len(data) == 0 {
+		items = nil
 	}
 	return s.set("ignore-persist", items)
 }
@@ -2951,6 +2925,24 @@ func (s *SectionObject) originalto(field reflect.Value) error {
 	return s.set("option originalto", d)
 }
 
+func (s *SectionObject) logSteps(field reflect.Value) error {
+	if !(s.Section == parser.Defaults || s.Section == parser.Frontends) {
+		return nil
+	}
+	if valueIsNil(field) {
+		return s.set("log-steps", nil)
+	}
+	logSteps, ok := field.Interface().([]string)
+	if !ok {
+		return misc.CreateTypeAssertError("log-steps")
+	}
+	d := strings.Join(logSteps, ",")
+	if len(d) == 0 {
+		return s.set("log-steps", nil)
+	}
+	return s.set("log-steps", d)
+}
+
 func (c *client) deleteSection(section parser.Section, name string, transactionID string, version int64) error {
 	p, t, err := c.loadDataForChange(transactionID, version)
 	if err != nil {
@@ -2980,7 +2972,7 @@ func (c *client) editSection(section parser.Section, name string, data interface
 		return c.HandleError(name, "", "", t, transactionID == "", e)
 	}
 
-	if err := CreateEditSection(data, section, name, p); err != nil {
+	if err := CreateEditSection(data, section, name, p, &c.ConfigurationOptions); err != nil {
 		return c.HandleError(name, "", "", t, transactionID == "", err)
 	}
 
@@ -3002,7 +2994,7 @@ func (c *client) createSection(section parser.Section, name string, data interfa
 		return c.HandleError(name, "", "", t, transactionID == "", err)
 	}
 
-	if err := CreateEditSection(data, section, name, p); err != nil {
+	if err := CreateEditSection(data, section, name, p, &c.ConfigurationOptions); err != nil {
 		return c.HandleError(name, "", "", t, transactionID == "", err)
 	}
 
@@ -3091,5 +3083,5 @@ func parseOption(d interface{}) interface{} {
 
 func translateTimeout(mName string) string {
 	mName = strings.TrimSuffix(mName, "Timeout")
-	return fmt.Sprintf("timeout %s", misc.DashCase(mName))
+	return "timeout " + misc.DashCase(mName)
 }

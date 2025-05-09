@@ -4,12 +4,8 @@ tcp_response_rule:
   description: HAProxy TCP Response Rule configuration (corresponds to tcp-response)
   type: object
   required:
-    - index
     - type
   properties:
-    index:
-      type: integer
-      x-nullable: true
     type:
       type: string
       enum: [content, inspect-delay]
@@ -39,6 +35,7 @@ tcp_response_rule:
         - set-var-fmt
         - silent-drop
         - unset-var
+        - do-log
       x-nullable: false
       x-dependency:
         type:
@@ -47,6 +44,8 @@ tcp_response_rule:
     timeout:
       type: integer
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
       x-dependency:
         type:
           value: inspect-delay
@@ -106,7 +105,15 @@ tcp_response_rule:
       type: integer
       x-dependency:
         action:
-          value: [sc-add-gpc, sc-inc-gpc, sc-inc-gpc0, sc-inc-gpc1, sc-set-gpt, sc-set-gpt0]
+          value:
+            [
+              sc-add-gpc,
+              sc-inc-gpc,
+              sc-inc-gpc0,
+              sc-inc-gpc1,
+              sc-set-gpt,
+              sc-set-gpt0,
+            ]
           required: true
         type:
           value: content
@@ -166,6 +173,13 @@ tcp_response_rule:
           required: true
         type:
           value: content
+    rst_ttl:
+      type: integer
+      x-display-name: RST TTL
+      x-dependency:
+        type:
+          value: [silent-drop]
+          required: true
     mark_value:
       type: string
       pattern: "^(0x[0-9A-Fa-f]+|[0-9]+)$"

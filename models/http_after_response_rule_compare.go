@@ -19,25 +19,28 @@ package models
 
 // Equal checks if two structs of type HTTPAfterResponseRule are equal
 //
-// By default empty maps and slices are equal to nil:
-//
 //	var a, b HTTPAfterResponseRule
 //	equal := a.Equal(b)
 //
-// For more advanced use case you can configure these options (default values are shown):
-//
-//	var a, b HTTPAfterResponseRule
-//	equal := a.Equal(b,Options{
-//		SkipIndex: true,
-//	})
+// opts ...Options are ignored in this method
 func (s HTTPAfterResponseRule) Equal(t HTTPAfterResponseRule, opts ...Options) bool {
-	opt := getOptions(opts...)
-
 	if s.ACLFile != t.ACLFile {
 		return false
 	}
 
 	if s.ACLKeyfmt != t.ACLKeyfmt {
+		return false
+	}
+
+	if !equalPointers(s.CaptureID, t.CaptureID) {
+		return false
+	}
+
+	if s.CaptureLen != t.CaptureLen {
+		return false
+	}
+
+	if s.CaptureSample != t.CaptureSample {
 		return false
 	}
 
@@ -62,10 +65,6 @@ func (s HTTPAfterResponseRule) Equal(t HTTPAfterResponseRule, opts ...Options) b
 	}
 
 	if s.HdrName != t.HdrName {
-		return false
-	}
-
-	if !opt.SkipIndex && !equalPointers(s.Index, t.Index) {
 		return false
 	}
 
@@ -121,6 +120,10 @@ func (s HTTPAfterResponseRule) Equal(t HTTPAfterResponseRule, opts ...Options) b
 		return false
 	}
 
+	if s.VarFormat != t.VarFormat {
+		return false
+	}
+
 	if s.VarName != t.VarName {
 		return false
 	}
@@ -134,20 +137,11 @@ func (s HTTPAfterResponseRule) Equal(t HTTPAfterResponseRule, opts ...Options) b
 
 // Diff checks if two structs of type HTTPAfterResponseRule are equal
 //
-// By default empty maps and slices are equal to nil:
-//
 //	var a, b HTTPAfterResponseRule
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure these options (default values are shown):
-//
-//	var a, b HTTPAfterResponseRule
-//	diff := a.Diff(b,Options{
-//		SkipIndex: true,
-//	})
+// opts ...Options are ignored in this method
 func (s HTTPAfterResponseRule) Diff(t HTTPAfterResponseRule, opts ...Options) map[string][]interface{} {
-	opt := getOptions(opts...)
-
 	diff := make(map[string][]interface{})
 	if s.ACLFile != t.ACLFile {
 		diff["ACLFile"] = []interface{}{s.ACLFile, t.ACLFile}
@@ -155,6 +149,18 @@ func (s HTTPAfterResponseRule) Diff(t HTTPAfterResponseRule, opts ...Options) ma
 
 	if s.ACLKeyfmt != t.ACLKeyfmt {
 		diff["ACLKeyfmt"] = []interface{}{s.ACLKeyfmt, t.ACLKeyfmt}
+	}
+
+	if !equalPointers(s.CaptureID, t.CaptureID) {
+		diff["CaptureID"] = []interface{}{ValueOrNil(s.CaptureID), ValueOrNil(t.CaptureID)}
+	}
+
+	if s.CaptureLen != t.CaptureLen {
+		diff["CaptureLen"] = []interface{}{s.CaptureLen, t.CaptureLen}
+	}
+
+	if s.CaptureSample != t.CaptureSample {
+		diff["CaptureSample"] = []interface{}{s.CaptureSample, t.CaptureSample}
 	}
 
 	if s.Cond != t.Cond {
@@ -179,10 +185,6 @@ func (s HTTPAfterResponseRule) Diff(t HTTPAfterResponseRule, opts ...Options) ma
 
 	if s.HdrName != t.HdrName {
 		diff["HdrName"] = []interface{}{s.HdrName, t.HdrName}
-	}
-
-	if !opt.SkipIndex && !equalPointers(s.Index, t.Index) {
-		diff["Index"] = []interface{}{ValueOrNil(s.Index), ValueOrNil(t.Index)}
 	}
 
 	if s.LogLevel != t.LogLevel {
@@ -235,6 +237,10 @@ func (s HTTPAfterResponseRule) Diff(t HTTPAfterResponseRule, opts ...Options) ma
 
 	if s.VarExpr != t.VarExpr {
 		diff["VarExpr"] = []interface{}{s.VarExpr, t.VarExpr}
+	}
+
+	if s.VarFormat != t.VarFormat {
+		diff["VarFormat"] = []interface{}{s.VarFormat, t.VarFormat}
 	}
 
 	if s.VarName != t.VarName {

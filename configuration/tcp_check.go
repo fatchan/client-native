@@ -17,17 +17,16 @@ package configuration
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 
 	strfmt "github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	"github.com/haproxytech/config-parser/v5/common"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	actions "github.com/haproxytech/config-parser/v5/parsers/actions"
-	tcp_actions "github.com/haproxytech/config-parser/v5/parsers/tcp/actions"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	"github.com/haproxytech/client-native/v6/config-parser/common"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	actions "github.com/haproxytech/client-native/v6/config-parser/parsers/actions"
+	tcp_actions "github.com/haproxytech/client-native/v6/config-parser/parsers/tcp/actions"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
@@ -37,8 +36,9 @@ type TCPCheck interface {
 	GetTCPChecks(parentType, parentName string, transactionID string) (int64, models.TCPChecks, error)
 	GetTCPCheck(id int64, parentType string, parentName string, transactionID string) (int64, *models.TCPCheck, error)
 	DeleteTCPCheck(id int64, parentType string, parentName string, transactionID string, version int64) error
-	CreateTCPCheck(parentType string, parentName string, data *models.TCPCheck, transactionID string, version int64) error
+	CreateTCPCheck(id int64, parentType string, parentName string, data *models.TCPCheck, transactionID string, version int64) error
 	EditTCPCheck(id int64, parentType string, parentName string, data *models.TCPCheck, transactionID string, version int64) error
+	ReplaceTCPChecks(parentType string, parentName string, data models.TCPChecks, transactionID string, version int64) error
 }
 
 // GetTCPChecks returns configuration version and an array of configured tcp-checks in the specified parent.
@@ -93,7 +93,6 @@ func (c *client) GetTCPCheck(id int64, parentType string, parentName string, tra
 	if err != nil {
 		return v, nil, err
 	}
-	tcpCheck.Index = &id
 	return v, tcpCheck, nil
 }
 
@@ -124,7 +123,7 @@ func (c *client) DeleteTCPCheck(id int64, parentType string, parentName string, 
 
 // CreateTCPCheck creates a tcp check in the configuration. One of version or transationID is mandatory.
 // Returns error on fail, nil on success.
-func (c *client) CreateTCPCheck(parentType string, parentName string, data *models.TCPCheck, transactionID string, version int64) error {
+func (c *client) CreateTCPCheck(id int64, parentType string, parentName string, data *models.TCPCheck, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -152,8 +151,8 @@ func (c *client) CreateTCPCheck(parentType string, parentName string, data *mode
 		return err
 	}
 
-	if err := p.Insert(section, parentName, "tcp-check", s, int(*data.Index)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
+	if err := p.Insert(section, parentName, "tcp-check", s, int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 	return c.SaveData(p, t, transactionID == "")
 }
@@ -196,6 +195,56 @@ func (c *client) EditTCPCheck(id int64, parentType string, parentName string, da
 	return c.SaveData(p, t, transactionID == "")
 }
 
+// ReplaceTCPChecks replaces all TCP Check lines in configuration for a parentType/parentName.
+// One of version or transactionID is mandatory.
+// Returns error on fail, nil on success.
+func (c *client) ReplaceTCPChecks(parentType string, parentName string, data models.TCPChecks, transactionID string, version int64) error {
+	if c.UseModelsValidation {
+		validationErr := data.Validate(strfmt.Default)
+		if validationErr != nil {
+			return NewConfError(ErrValidationError, validationErr.Error())
+		}
+	}
+	p, t, err := c.loadDataForChange(transactionID, version)
+	if err != nil {
+		return err
+	}
+
+	checks, err := ParseTCPChecks(parentType, parentName, p)
+	if err != nil {
+		return c.HandleError("", parentType, parentName, "", false, err)
+	}
+
+	var section parser.Section
+	if parentType == BackendParentName {
+		section = parser.Backends
+	} else if parentType == DefaultsParentName {
+		section = parser.Defaults
+		if parentName == "" {
+			parentName = parser.DefaultSectionName
+		}
+	}
+
+	for i := range checks {
+		// Always delete index 0
+		if err := p.Delete(section, parentName, "tcp-check", 0); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	for i, httpCheck := range data {
+		s, err := SerializeTCPCheck(*httpCheck)
+		if err != nil {
+			return err
+		}
+		if err := p.Insert(section, parentName, "tcp-check", s, i); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	return c.SaveData(p, t, transactionID == "")
+}
+
 func ParseTCPChecks(t, pName string, p parser.Parser) (models.TCPChecks, error) {
 	var section parser.Section
 	switch t {
@@ -207,10 +256,10 @@ func ParseTCPChecks(t, pName string, p parser.Parser) (models.TCPChecks, error) 
 	case BackendParentName:
 		section = parser.Backends
 	default:
-		return nil, NewConfError(ErrValidationError, fmt.Sprintf("unsupported section in tcp_check: %s", t))
+		return nil, NewConfError(ErrValidationError, "unsupported section in tcp_check: "+t)
 	}
 
-	checks := models.TCPChecks{}
+	var checks models.TCPChecks
 	data, err := p.Get(section, pName, "tcp-check", false)
 	if err != nil {
 		if errors.Is(err, parser_errors.ErrFetch) {
@@ -222,26 +271,24 @@ func ParseTCPChecks(t, pName string, p parser.Parser) (models.TCPChecks, error) 
 	if !ok {
 		return nil, misc.CreateTypeAssertError("tcp-check")
 	}
-	for i, c := range items {
-		id := int64(i)
+	for _, c := range items {
 		check, err := ParseTCPCheck(c)
 		if err == nil {
-			check.Index = &id
 			checks = append(checks, check)
 		}
 	}
 	return checks, nil
 }
 
-func ParseTCPCheck(f types.Action) (check *models.TCPCheck, err error) {
+func ParseTCPCheck(f types.Action) (*models.TCPCheck, error) {
 	switch v := f.(type) {
 	case *tcp_actions.CheckComment:
-		check = &models.TCPCheck{
-			Action:     models.TCPCheckActionComment,
-			LogMessage: v.LogMessage,
-		}
+		return &models.TCPCheck{
+			Action:       models.TCPCheckActionComment,
+			CheckComment: v.LogMessage,
+		}, nil
 	case *actions.CheckConnect:
-		check = &models.TCPCheck{
+		return &models.TCPCheck{
 			Action:       models.TCPCheckActionConnect,
 			PortString:   v.Port,
 			Addr:         v.Addr,
@@ -254,9 +301,9 @@ func ParseTCPCheck(f types.Action) (check *models.TCPCheck, err error) {
 			ViaSocks4:    v.ViaSOCKS4,
 			Ssl:          v.SSL,
 			Linger:       v.Linger,
-		}
+		}, nil
 	case *actions.CheckExpect:
-		check = &models.TCPCheck{
+		check := &models.TCPCheck{
 			Action:          models.TCPCheckActionExpect,
 			CheckComment:    v.CheckComment,
 			OkStatus:        v.OKStatus,
@@ -272,60 +319,61 @@ func ParseTCPCheck(f types.Action) (check *models.TCPCheck, err error) {
 		if v.MinRecv != nil {
 			check.MinRecv = *v.MinRecv
 		}
+		return check, nil
 	case *tcp_actions.CheckSend:
-		check = &models.TCPCheck{
+		return &models.TCPCheck{
 			Action:       models.TCPCheckActionSend,
 			Data:         v.Data,
 			CheckComment: v.CheckComment,
-		}
+		}, nil
 	case *tcp_actions.CheckSendLf:
-		check = &models.TCPCheck{
+		return &models.TCPCheck{
 			Action:       models.TCPCheckActionSendDashLf,
 			Fmt:          v.Fmt,
 			CheckComment: v.CheckComment,
-		}
+		}, nil
 	case *tcp_actions.CheckSendBinary:
-		check = &models.TCPCheck{
+		return &models.TCPCheck{
 			Action:       models.TCPCheckActionSendDashBinary,
 			HexString:    v.HexString,
 			CheckComment: v.CheckComment,
-		}
+		}, nil
 	case *tcp_actions.CheckSendBinaryLf:
-		check = &models.TCPCheck{
+		return &models.TCPCheck{
 			Action:       models.TCPCheckActionSendDashBinaryDashLf,
 			HexFmt:       v.HexFmt,
 			CheckComment: v.CheckComment,
-		}
+		}, nil
 	case *actions.SetVarCheck:
-		check = &models.TCPCheck{
+		return &models.TCPCheck{
 			Action:   models.TCPCheckActionSetDashVar,
 			VarScope: v.VarScope,
 			VarName:  v.VarName,
 			VarExpr:  strings.Join(v.Expr.Expr, " "),
-		}
+		}, nil
 	case *actions.SetVarFmtCheck:
-		check = &models.TCPCheck{
+		return &models.TCPCheck{
 			Action:   models.TCPCheckActionSetDashVarDashFmt,
 			VarScope: v.VarScope,
 			VarName:  v.VarName,
 			VarFmt:   strings.Join(v.Format.Expr, " "),
-		}
+		}, nil
 	case *actions.UnsetVarCheck:
-		check = &models.TCPCheck{
+		return &models.TCPCheck{
 			Action:   models.TCPCheckActionUnsetDashVar,
 			VarScope: v.Scope,
 			VarName:  v.Name,
-		}
+		}, nil
 	}
 
-	return check, nil
+	return nil, nil //nolint:nilnil
 }
 
-func SerializeTCPCheck(f models.TCPCheck) (action types.Action, err error) { //nolint:ireturn
+func SerializeTCPCheck(f models.TCPCheck) (types.Action, error) { //nolint:ireturn
 	switch f.Action {
 	case models.TCPCheckActionComment:
 		return &tcp_actions.CheckComment{
-			LogMessage: f.LogMessage,
+			LogMessage: f.CheckComment,
 		}, nil
 	case models.TCPCheckActionConnect:
 		return &actions.CheckConnect{

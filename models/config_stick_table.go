@@ -34,8 +34,9 @@ import (
 //
 // swagger:model config_stick_table
 type ConfigStickTable struct {
-
 	// expire
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	Expire *int64 `json:"expire,omitempty"`
 
 	// keylen
@@ -50,10 +51,12 @@ type ConfigStickTable struct {
 	Peers string `json:"peers,omitempty"`
 
 	// size
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	Size *int64 `json:"size,omitempty"`
 
 	// srvkey
-	// Enum: [addr name]
+	// Enum: ["addr","name"]
 	// +kubebuilder:validation:Enum=addr;name;
 	Srvkey *string `json:"srvkey,omitempty"`
 
@@ -63,7 +66,7 @@ type ConfigStickTable struct {
 	Store string `json:"store,omitempty"`
 
 	// type
-	// Enum: [ip ipv6 integer string binary]
+	// Enum: ["ip","ipv6","integer","string","binary"]
 	// +kubebuilder:validation:Enum=ip;ipv6;integer;string;binary;
 	Type string `json:"type,omitempty"`
 
@@ -77,7 +80,15 @@ type ConfigStickTable struct {
 func (m *ConfigStickTable) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateExpire(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validatePeers(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateSize(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -103,12 +114,36 @@ func (m *ConfigStickTable) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *ConfigStickTable) validateExpire(formats strfmt.Registry) error {
+	if swag.IsZero(m.Expire) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("expire", "body", *m.Expire, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *ConfigStickTable) validatePeers(formats strfmt.Registry) error {
 	if swag.IsZero(m.Peers) { // not required
 		return nil
 	}
 
 	if err := validate.Pattern("peers", "body", m.Peers, `^[^\s]+$`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *ConfigStickTable) validateSize(formats strfmt.Registry) error {
+	if swag.IsZero(m.Size) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("size", "body", *m.Size, 0, false); err != nil {
 		return err
 	}
 

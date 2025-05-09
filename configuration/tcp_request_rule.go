@@ -22,15 +22,16 @@ import (
 	"strings"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	"github.com/haproxytech/config-parser/v5/common"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/parsers/actions"
-	http_actions "github.com/haproxytech/config-parser/v5/parsers/http/actions"
-	tcp_actions "github.com/haproxytech/config-parser/v5/parsers/tcp/actions"
-	tcp_types "github.com/haproxytech/config-parser/v5/parsers/tcp/types"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	"github.com/haproxytech/client-native/v6/config-parser/common"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/parsers/actions"
+	http_actions "github.com/haproxytech/client-native/v6/config-parser/parsers/http/actions"
+	tcp_actions "github.com/haproxytech/client-native/v6/config-parser/parsers/tcp/actions"
+	tcp_types "github.com/haproxytech/client-native/v6/config-parser/parsers/tcp/types"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
+	"github.com/haproxytech/client-native/v6/configuration/options"
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
 )
@@ -39,8 +40,9 @@ type TCPRequestRule interface {
 	GetTCPRequestRules(parentType, parentName string, transactionID string) (int64, models.TCPRequestRules, error)
 	GetTCPRequestRule(id int64, parentType, parentName string, transactionID string) (int64, *models.TCPRequestRule, error)
 	DeleteTCPRequestRule(id int64, parentType string, parentName string, transactionID string, version int64) error
-	CreateTCPRequestRule(parentType string, parentName string, data *models.TCPRequestRule, transactionID string, version int64) error
+	CreateTCPRequestRule(id int64, parentType string, parentName string, data *models.TCPRequestRule, transactionID string, version int64) error
 	EditTCPRequestRule(id int64, parentType string, parentName string, data *models.TCPRequestRule, transactionID string, version int64) error
+	ReplaceTCPRequestRules(parentType string, parentName string, data models.TCPRequestRules, transactionID string, version int64) error
 }
 
 // GetTCPRequestRules returns configuration version and an array of
@@ -77,11 +79,9 @@ func (c *client) GetTCPRequestRule(id int64, parentType, parentName string, tran
 		return 0, nil, err
 	}
 
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
+	section, parentName, err := getParserFromParent("tcp-request", parentType, parentName)
+	if err != nil {
+		return v, nil, err
 	}
 
 	data, err := p.GetOne(section, parentName, "tcp-request", int(id))
@@ -94,7 +94,6 @@ func (c *client) GetTCPRequestRule(id int64, parentType, parentName string, tran
 		return v, nil, err
 	}
 
-	tcpRule.Index = &id
 	return v, tcpRule, nil
 }
 
@@ -105,13 +104,10 @@ func (c *client) DeleteTCPRequestRule(id int64, parentType string, parentName st
 	if err != nil {
 		return err
 	}
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
+	section, parentName, err := getParserFromParent("tcp-request", parentType, parentName)
+	if err != nil {
+		return err
 	}
-
 	if err := p.Delete(section, parentName, "tcp-request", int(id)); err != nil {
 		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
@@ -121,7 +117,7 @@ func (c *client) DeleteTCPRequestRule(id int64, parentType string, parentName st
 
 // CreateTCPRequestRule creates a tcp request rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) CreateTCPRequestRule(parentType string, parentName string, data *models.TCPRequestRule, transactionID string, version int64) error {
+func (c *client) CreateTCPRequestRule(id int64, parentType string, parentName string, data *models.TCPRequestRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -134,20 +130,18 @@ func (c *client) CreateTCPRequestRule(parentType string, parentName string, data
 		return err
 	}
 
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
-	}
-
-	s, err := SerializeTCPRequestRule(*data)
+	section, parentName, err := getParserFromParent("tcp-request", parentType, parentName)
 	if err != nil {
 		return err
 	}
 
-	if err := p.Insert(section, parentName, "tcp-request", s, int(*data.Index)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
+	s, err := SerializeTCPRequestRule(*data, &c.ConfigurationOptions)
+	if err != nil {
+		return err
+	}
+
+	if err := p.Insert(section, parentName, "tcp-request", s, int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	return c.SaveData(p, t, transactionID == "")
@@ -155,8 +149,6 @@ func (c *client) CreateTCPRequestRule(parentType string, parentName string, data
 
 // EditTCPRequestRule edits a tcp request rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-//
-//nolint:dupl
 func (c *client) EditTCPRequestRule(id int64, parentType string, parentName string, data *models.TCPRequestRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
@@ -168,19 +160,16 @@ func (c *client) EditTCPRequestRule(id int64, parentType string, parentName stri
 	if err != nil {
 		return err
 	}
-
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
+	section, parentName, err := getParserFromParent("tcp-request", parentType, parentName)
+	if err != nil {
+		return err
 	}
 
 	if _, err = p.GetOne(section, parentName, "tcp-request", int(id)); err != nil {
 		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
-	s, err := SerializeTCPRequestRule(*data)
+	s, err := SerializeTCPRequestRule(*data, &c.ConfigurationOptions)
 	if err != nil {
 		return err
 	}
@@ -192,15 +181,60 @@ func (c *client) EditTCPRequestRule(id int64, parentType string, parentName stri
 	return c.SaveData(p, t, transactionID == "")
 }
 
-func ParseTCPRequestRules(t, pName string, p parser.Parser) (models.TCPRequestRules, error) {
-	section := parser.Global
-	if t == FrontendParentName {
-		section = parser.Frontends
-	} else if t == BackendParentName {
-		section = parser.Backends
+// ReplaceTCPRequestRules replaces all TCP Request Rule lines in configuration for a parentType/parentName.
+// One of version or transactionID is mandatory.
+// Returns error on fail, nil on success.
+//
+//nolint:dupl
+func (c *client) ReplaceTCPRequestRules(parentType string, parentName string, data models.TCPRequestRules, transactionID string, version int64) error {
+	if c.UseModelsValidation {
+		validationErr := data.Validate(strfmt.Default)
+		if validationErr != nil {
+			return NewConfError(ErrValidationError, validationErr.Error())
+		}
+	}
+	p, t, err := c.loadDataForChange(transactionID, version)
+	if err != nil {
+		return err
 	}
 
-	tcpReqRules := models.TCPRequestRules{}
+	section, parentName, err := getParserFromParent("tcp-request", parentType, parentName)
+	if err != nil {
+		return err
+	}
+
+	tcpRequestRules, err := ParseTCPRequestRules(parentType, parentName, p)
+	if err != nil {
+		return c.HandleError("", parentType, parentName, "", false, err)
+	}
+
+	for i := range tcpRequestRules {
+		// Always delete index 0
+		if err := p.Delete(section, parentName, "tcp-request", 0); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	for i, newTCPRequestRule := range data {
+		s, err := SerializeTCPRequestRule(*newTCPRequestRule, &c.ConfigurationOptions)
+		if err != nil {
+			return err
+		}
+		if err := p.Insert(section, parentName, "tcp-request", s, i); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	return c.SaveData(p, t, transactionID == "")
+}
+
+func ParseTCPRequestRules(t, pName string, p parser.Parser) (models.TCPRequestRules, error) {
+	section, pName, err := getParserFromParent("tcp-request", t, pName)
+	if err != nil {
+		return nil, err
+	}
+
+	var tcpReqRules models.TCPRequestRules
 	data, err := p.Get(section, pName, "tcp-request", false)
 	if err != nil {
 		if errors.Is(err, parser_errors.ErrFetch) {
@@ -213,18 +247,17 @@ func ParseTCPRequestRules(t, pName string, p parser.Parser) (models.TCPRequestRu
 	if !ok {
 		return nil, misc.CreateTypeAssertError("tcp request")
 	}
-	for i, r := range rules {
-		id := int64(i)
+	for _, r := range rules {
 		tcpReqRule, err := ParseTCPRequestRule(r)
 		if err == nil {
-			tcpReqRule.Index = &id
 			tcpReqRules = append(tcpReqRules, tcpReqRule)
 		}
 	}
 	return tcpReqRules, nil
 }
 
-func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err error) { //nolint:gocyclo,cyclop,maintidx
+func ParseTCPRequestRule(f types.TCPType) (*models.TCPRequestRule, error) { //nolint:gocyclo,cyclop,maintidx
+	var rule *models.TCPRequestRule
 	switch v := f.(type) {
 	case *tcp_types.InspectDelay:
 		return &models.TCPRequestRule{
@@ -238,7 +271,7 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 		}
 
 		switch a := v.Action.(type) {
-		case *tcp_actions.Accept:
+		case *actions.Accept:
 			rule.Action = models.TCPRequestRuleActionAccept
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
@@ -325,6 +358,7 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 			rule.CondTest = a.CondTest
 		case *actions.SilentDrop:
 			rule.Action = models.TCPRequestRuleActionSilentDashDrop
+			rule.RstTTL = a.RstTTL
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
 		case *actions.Lua:
@@ -378,6 +412,10 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 			rule.VarName = a.Name
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
+		case *actions.DoLog:
+			rule.Action = models.TCPRequestRuleActionDoDashLog
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
 		default:
 			return nil, NewConfError(ErrValidationError, fmt.Sprintf("unsupported action '%s' in tcp_request_rule", a))
 		}
@@ -389,7 +427,7 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 		}
 
 		switch a := v.Action.(type) {
-		case *tcp_actions.Accept:
+		case *actions.Accept:
 			rule.Action = models.TCPRequestRuleActionAccept
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
@@ -504,6 +542,7 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 			rule.CondTest = a.CondTest
 		case *actions.SilentDrop:
 			rule.Action = models.TCPRequestRuleActionSilentDashDrop
+			rule.RstTTL = a.RstTTL
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
 		case *actions.SendSpoeGroup:
@@ -586,6 +625,15 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 			rule.SwitchModeProto = a.Proto
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
+		case *actions.SetRetries:
+			rule.Action = models.TCPRequestRuleActionSetDashRetries
+			rule.Expr = a.Expr.String()
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
+		case *actions.DoLog:
+			rule.Action = models.TCPRequestRuleActionDoDashLog
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
 		default:
 			return nil, NewConfError(ErrValidationError, fmt.Sprintf("unsupported action '%s' in tcp_request_rule", a))
 		}
@@ -594,7 +642,7 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 			Type: models.TCPRequestRuleTypeSession,
 		}
 		switch a := v.Action.(type) {
-		case *tcp_actions.Accept:
+		case *actions.Accept:
 			rule.Action = models.TCPRequestRuleActionAccept
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
@@ -717,6 +765,11 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 			rule.CondTest = a.CondTest
 		case *actions.SilentDrop:
 			rule.Action = models.TCPRequestRuleActionSilentDashDrop
+			rule.RstTTL = a.RstTTL
+			rule.Cond = a.Cond
+			rule.CondTest = a.CondTest
+		case *actions.DoLog:
+			rule.Action = models.TCPRequestRuleActionDoDashLog
 			rule.Cond = a.Cond
 			rule.CondTest = a.CondTest
 		default:
@@ -728,13 +781,13 @@ func ParseTCPRequestRule(f types.TCPType) (rule *models.TCPRequestRule, err erro
 	return rule, nil
 }
 
-func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err error) { //nolint:gocyclo,cyclop,maintidx
+func SerializeTCPRequestRule(f models.TCPRequestRule, opt *options.ConfigurationOptions) (types.TCPType, error) { //nolint:gocyclo,cyclop,maintidx
 	switch f.Type {
 	case models.TCPRequestRuleTypeConnection:
 		switch f.Action {
 		case models.TCPRequestRuleActionAccept:
 			return &tcp_types.Connection{
-				Action: &tcp_actions.Accept{
+				Action: &actions.Accept{
 					Cond:     f.Cond,
 					CondTest: f.CondTest,
 				},
@@ -767,39 +820,6 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 					Len:      f.CaptureLen,
 					Cond:     f.Cond,
 					CondTest: f.CondTest,
-				},
-			}, nil
-		case models.TCPRequestRuleActionTrackDashSc0:
-			return &tcp_types.Connection{
-				Action: &actions.TrackSc{
-					Type:         actions.TrackScType,
-					StickCounter: 0,
-					Key:          f.TrackKey,
-					Table:        f.TrackTable,
-					Cond:         f.Cond,
-					CondTest:     f.CondTest,
-				},
-			}, nil
-		case models.TCPRequestRuleActionTrackDashSc1:
-			return &tcp_types.Connection{
-				Action: &actions.TrackSc{
-					Type:         actions.TrackScType,
-					StickCounter: 1,
-					Key:          f.TrackKey,
-					Table:        f.TrackTable,
-					Cond:         f.Cond,
-					CondTest:     f.CondTest,
-				},
-			}, nil
-		case models.TCPRequestRuleActionTrackDashSc2:
-			return &tcp_types.Connection{
-				Action: &actions.TrackSc{
-					Type:         actions.TrackScType,
-					StickCounter: 2,
-					Key:          f.TrackKey,
-					Table:        f.TrackTable,
-					Cond:         f.Cond,
-					CondTest:     f.CondTest,
 				},
 			}, nil
 		case models.TCPRequestRuleActionTrackDashSc:
@@ -876,6 +896,7 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 		case models.TCPRequestRuleActionSilentDashDrop:
 			return &tcp_types.Connection{
 				Action: &actions.SilentDrop{
+					RstTTL:   f.RstTTL,
 					Cond:     f.Cond,
 					CondTest: f.CondTest,
 				},
@@ -982,13 +1003,20 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 					CondTest: f.CondTest,
 				},
 			}, nil
+		case models.TCPRequestRuleActionDoDashLog:
+			return &tcp_types.Connection{
+				Action: &actions.DoLog{
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
 		}
 		return nil, NewConfError(ErrValidationError, fmt.Sprintf("unsupported action '%s' in tcp_request_rule", f.Action))
 	case models.TCPRequestRuleTypeContent:
 		switch f.Action {
 		case models.TCPRequestRuleActionAccept:
 			return &tcp_types.Content{
-				Action: &tcp_actions.Accept{
+				Action: &actions.Accept{
 					Cond:     f.Cond,
 					CondTest: f.CondTest,
 				},
@@ -1034,39 +1062,6 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 					Expr:     common.Expression{Expr: strings.Split(f.Expr, " ")},
 					Cond:     f.Cond,
 					CondTest: f.CondTest,
-				},
-			}, nil
-		case models.TCPRequestRuleActionTrackDashSc0:
-			return &tcp_types.Content{
-				Action: &actions.TrackSc{
-					Type:         actions.TrackScType,
-					StickCounter: 0,
-					Key:          f.TrackKey,
-					Table:        f.TrackTable,
-					Cond:         f.Cond,
-					CondTest:     f.CondTest,
-				},
-			}, nil
-		case models.TCPRequestRuleActionTrackDashSc1:
-			return &tcp_types.Content{
-				Action: &actions.TrackSc{
-					Type:         actions.TrackScType,
-					StickCounter: 1,
-					Key:          f.TrackKey,
-					Table:        f.TrackTable,
-					Cond:         f.Cond,
-					CondTest:     f.CondTest,
-				},
-			}, nil
-		case models.TCPRequestRuleActionTrackDashSc2:
-			return &tcp_types.Content{
-				Action: &actions.TrackSc{
-					Type:         actions.TrackScType,
-					StickCounter: 2,
-					Key:          f.TrackKey,
-					Table:        f.TrackTable,
-					Cond:         f.Cond,
-					CondTest:     f.CondTest,
 				},
 			}, nil
 		case models.TCPRequestRuleActionTrackDashSc:
@@ -1186,6 +1181,7 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 		case models.TCPRequestRuleActionSilentDashDrop:
 			return &tcp_types.Content{
 				Action: &actions.SilentDrop{
+					RstTTL:   f.RstTTL,
 					Cond:     f.Cond,
 					CondTest: f.CondTest,
 				},
@@ -1316,13 +1312,28 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 					CondTest: f.CondTest,
 				},
 			}, nil
+		case models.TCPRequestRuleActionSetDashRetries:
+			return &tcp_types.Content{
+				Action: &actions.SetRetries{
+					Expr:     common.Expression{Expr: strings.Split(f.Expr, " ")},
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
+		case models.TCPRequestRuleActionDoDashLog:
+			return &tcp_types.Content{
+				Action: &actions.DoLog{
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
 		}
 		return nil, NewConfError(ErrValidationError, fmt.Sprintf("unsupported action '%s' in tcp_request_rule", f.Action))
 	case models.TCPRequestRuleTypeSession:
 		switch f.Action {
 		case models.TCPRequestRuleActionAccept:
 			return &tcp_types.Session{
-				Action: &tcp_actions.Accept{
+				Action: &actions.Accept{
 					Cond:     f.Cond,
 					CondTest: f.CondTest,
 				},
@@ -1341,39 +1352,6 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 				Action: &actions.Reject{
 					Cond:     f.Cond,
 					CondTest: f.CondTest,
-				},
-			}, nil
-		case models.TCPRequestRuleActionTrackDashSc0:
-			return &tcp_types.Session{
-				Action: &actions.TrackSc{
-					Type:         actions.TrackScType,
-					StickCounter: 0,
-					Key:          f.TrackKey,
-					Table:        f.TrackTable,
-					Cond:         f.Cond,
-					CondTest:     f.CondTest,
-				},
-			}, nil
-		case models.TCPRequestRuleActionTrackDashSc1:
-			return &tcp_types.Session{
-				Action: &actions.TrackSc{
-					Type:         actions.TrackScType,
-					StickCounter: 1,
-					Key:          f.TrackKey,
-					Table:        f.TrackTable,
-					Cond:         f.Cond,
-					CondTest:     f.CondTest,
-				},
-			}, nil
-		case models.TCPRequestRuleActionTrackDashSc2:
-			return &tcp_types.Session{
-				Action: &actions.TrackSc{
-					Type:         actions.TrackScType,
-					StickCounter: 2,
-					Key:          f.TrackKey,
-					Table:        f.TrackTable,
-					Cond:         f.Cond,
-					CondTest:     f.CondTest,
 				},
 			}, nil
 		case models.TCPRequestRuleActionTrackDashSc:
@@ -1527,6 +1505,7 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 		case models.TCPRequestRuleActionSilentDashDrop:
 			return &tcp_types.Session{
 				Action: &actions.SilentDrop{
+					RstTTL:   f.RstTTL,
 					Cond:     f.Cond,
 					CondTest: f.CondTest,
 				},
@@ -1547,6 +1526,13 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 					CondTest: f.CondTest,
 				},
 			}, nil
+		case models.TCPRequestRuleActionDoDashLog:
+			return &tcp_types.Session{
+				Action: &actions.DoLog{
+					Cond:     f.Cond,
+					CondTest: f.CondTest,
+				},
+			}, nil
 		}
 		return nil, NewConfError(ErrValidationError, fmt.Sprintf("unsupported action '%s' in tcp_request_rule", f.Action))
 	case models.TCPRequestRuleTypeInspectDashDelay:
@@ -1554,7 +1540,7 @@ func SerializeTCPRequestRule(f models.TCPRequestRule) (rule types.TCPType, err e
 			return nil, NewConfError(ErrValidationError, fmt.Sprintf("unsupported action '%s' in tcp_request_rule", f.Type))
 		}
 		return &tcp_types.InspectDelay{
-			Timeout: strconv.FormatInt(*f.Timeout, 10),
+			Timeout: misc.SerializeTime(*f.Timeout, opt.PreferredTimeSuffix),
 		}, nil
 	}
 	return nil, NewConfError(ErrValidationError, fmt.Sprintf("unsupported action '%s' in tcp_request_rule", f.Type))

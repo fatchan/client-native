@@ -40,7 +40,7 @@ type StatsOptions struct {
 	StatsAdmin bool `json:"stats_admin,omitempty"`
 
 	// stats admin cond
-	// Enum: [if unless]
+	// Enum: ["if","unless"]
 	// +kubebuilder:validation:Enum=if;unless;
 	StatsAdminCond string `json:"stats_admin_cond,omitempty"`
 
@@ -71,6 +71,8 @@ type StatsOptions struct {
 	StatsRealmRealm *string `json:"stats_realm_realm,omitempty"`
 
 	// stats refresh delay
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	StatsRefreshDelay *int64 `json:"stats_refresh_delay,omitempty"`
 
 	// stats show desc
@@ -110,6 +112,10 @@ func (m *StatsOptions) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateStatsMaxconn(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateStatsRefreshDelay(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -233,6 +239,18 @@ func (m *StatsOptions) validateStatsMaxconn(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *StatsOptions) validateStatsRefreshDelay(formats strfmt.Registry) error {
+	if swag.IsZero(m.StatsRefreshDelay) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("stats_refresh_delay", "body", *m.StatsRefreshDelay, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *StatsOptions) validateStatsShowNodeName(formats strfmt.Registry) error {
 	if swag.IsZero(m.StatsShowNodeName) { // not required
 		return nil
@@ -280,6 +298,11 @@ func (m *StatsOptions) contextValidateStatsAuths(ctx context.Context, formats st
 	for i := 0; i < len(m.StatsAuths); i++ {
 
 		if m.StatsAuths[i] != nil {
+
+			if swag.IsZero(m.StatsAuths[i]) { // not required
+				return nil
+			}
+
 			if err := m.StatsAuths[i].ContextValidate(ctx, formats); err != nil {
 				if ve, ok := err.(*errors.Validation); ok {
 					return ve.ValidateName("stats_auths" + "." + strconv.Itoa(i))
@@ -300,6 +323,11 @@ func (m *StatsOptions) contextValidateStatsHTTPRequests(ctx context.Context, for
 	for i := 0; i < len(m.StatsHTTPRequests); i++ {
 
 		if m.StatsHTTPRequests[i] != nil {
+
+			if swag.IsZero(m.StatsHTTPRequests[i]) { // not required
+				return nil
+			}
+
 			if err := m.StatsHTTPRequests[i].ContextValidate(ctx, formats); err != nil {
 				if ve, ok := err.(*errors.Validation); ok {
 					return ve.ValidateName("stats_http_requests" + "." + strconv.Itoa(i))

@@ -49,11 +49,13 @@ type RuntimeAddServer struct {
 	AgentAddr string `json:"agent-addr,omitempty"`
 
 	// agent check
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	AgentCheck string `json:"agent-check,omitempty"`
 
 	// agent inter
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	AgentInter *int64 `json:"agent-inter,omitempty"`
 
 	// agent port
@@ -75,17 +77,17 @@ type RuntimeAddServer struct {
 	Alpn string `json:"alpn,omitempty"`
 
 	// backup
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Backup string `json:"backup,omitempty"`
 
 	// check
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Check string `json:"check,omitempty"`
 
 	// check send proxy
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	CheckSendProxy string `json:"check-send-proxy,omitempty"`
 
@@ -95,7 +97,7 @@ type RuntimeAddServer struct {
 	CheckSni string `json:"check-sni,omitempty"`
 
 	// check ssl
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	CheckSsl string `json:"check-ssl,omitempty"`
 
@@ -110,7 +112,7 @@ type RuntimeAddServer struct {
 	CheckProto string `json:"check_proto,omitempty"`
 
 	// check via socks4
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	CheckViaSocks4 string `json:"check_via_socks4,omitempty"`
 
@@ -124,6 +126,8 @@ type RuntimeAddServer struct {
 	CrlFile string `json:"crl_file,omitempty"`
 
 	// downinter
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	Downinter *int64 `json:"downinter,omitempty"`
 
 	// error limit
@@ -133,30 +137,32 @@ type RuntimeAddServer struct {
 	Fall *int64 `json:"fall,omitempty"`
 
 	// fastinter
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	Fastinter *int64 `json:"fastinter,omitempty"`
 
 	// force sslv3
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceSslv3 string `json:"force_sslv3,omitempty"`
 
 	// force tlsv10
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceTlsv10 string `json:"force_tlsv10,omitempty"`
 
 	// force tlsv11
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceTlsv11 string `json:"force_tlsv11,omitempty"`
 
 	// force tlsv12
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceTlsv12 string `json:"force_tlsv12,omitempty"`
 
 	// force tlsv13
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceTlsv13 string `json:"force_tlsv13,omitempty"`
 
@@ -177,10 +183,12 @@ type RuntimeAddServer struct {
 	ID string `json:"id,omitempty"`
 
 	// inter
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	Inter *int64 `json:"inter,omitempty"`
 
 	// maintenance
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Maintenance string `json:"maintenance,omitempty"`
 
@@ -198,27 +206,27 @@ type RuntimeAddServer struct {
 	Name string `json:"name,omitempty"`
 
 	// no sslv3
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoSslv3 string `json:"no_sslv3,omitempty"`
 
 	// no tlsv10
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoTlsv10 string `json:"no_tlsv10,omitempty"`
 
 	// no tlsv11
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoTlsv11 string `json:"no_tlsv11,omitempty"`
 
 	// no tlsv12
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoTlsv12 string `json:"no_tlsv12,omitempty"`
 
 	// no tlsv13
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoTlsv13 string `json:"no_tlsv13,omitempty"`
 
@@ -226,22 +234,22 @@ type RuntimeAddServer struct {
 	Npn string `json:"npn,omitempty"`
 
 	// observe
-	// Enum: [layer4 layer7]
+	// Enum: ["layer4","layer7"]
 	// +kubebuilder:validation:Enum=layer4;layer7;
 	Observe string `json:"observe,omitempty"`
 
 	// on error
-	// Enum: [fastinter fail-check sudden-death mark-down]
+	// Enum: ["fastinter","fail-check","sudden-death","mark-down"]
 	// +kubebuilder:validation:Enum=fastinter;fail-check;sudden-death;mark-down;
 	OnError string `json:"on-error,omitempty"`
 
 	// on marked down
-	// Enum: [shutdown-sessions]
+	// Enum: ["shutdown-sessions"]
 	// +kubebuilder:validation:Enum=shutdown-sessions;
 	OnMarkedDown string `json:"on-marked-down,omitempty"`
 
 	// on marked up
-	// Enum: [shutdown-backup-sessions]
+	// Enum: ["shutdown-backup-sessions"]
 	// +kubebuilder:validation:Enum=shutdown-backup-sessions;
 	OnMarkedUp string `json:"on-marked-up,omitempty"`
 
@@ -252,6 +260,8 @@ type RuntimeAddServer struct {
 	PoolMaxConn *int64 `json:"pool_max_conn,omitempty"`
 
 	// pool purge delay
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	PoolPurgeDelay *int64 `json:"pool_purge_delay,omitempty"`
 
 	// port
@@ -274,26 +284,28 @@ type RuntimeAddServer struct {
 	Rise *int64 `json:"rise,omitempty"`
 
 	// send proxy
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendProxy string `json:"send-proxy,omitempty"`
 
 	// send proxy v2
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendProxyV2 string `json:"send-proxy-v2,omitempty"`
 
 	// send proxy v2 ssl
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendProxyV2Ssl string `json:"send_proxy_v2_ssl,omitempty"`
 
 	// send proxy v2 ssl cn
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendProxyV2SslCn string `json:"send_proxy_v2_ssl_cn,omitempty"`
 
 	// slowstart
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	Slowstart *int64 `json:"slowstart,omitempty"`
 
 	// sni
@@ -305,7 +317,7 @@ type RuntimeAddServer struct {
 	Source string `json:"source,omitempty"`
 
 	// ssl
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Ssl string `json:"ssl,omitempty"`
 
@@ -320,27 +332,27 @@ type RuntimeAddServer struct {
 	SslCertificate string `json:"ssl_certificate,omitempty"`
 
 	// ssl max ver
-	// Enum: [SSLv3 TLSv1.0 TLSv1.1 TLSv1.2 TLSv1.3]
+	// Enum: ["SSLv3","TLSv1.0","TLSv1.1","TLSv1.2","TLSv1.3"]
 	// +kubebuilder:validation:Enum=SSLv3;TLSv1.0;TLSv1.1;TLSv1.2;TLSv1.3;
 	SslMaxVer string `json:"ssl_max_ver,omitempty"`
 
 	// ssl min ver
-	// Enum: [SSLv3 TLSv1.0 TLSv1.1 TLSv1.2 TLSv1.3]
+	// Enum: ["SSLv3","TLSv1.0","TLSv1.1","TLSv1.2","TLSv1.3"]
 	// +kubebuilder:validation:Enum=SSLv3;TLSv1.0;TLSv1.1;TLSv1.2;TLSv1.3;
 	SslMinVer string `json:"ssl_min_ver,omitempty"`
 
 	// ssl reuse
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	SslReuse string `json:"ssl_reuse,omitempty"`
 
 	// tfo
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Tfo string `json:"tfo,omitempty"`
 
 	// tls tickets
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	TLSTickets string `json:"tls_tickets,omitempty"`
 
@@ -348,7 +360,7 @@ type RuntimeAddServer struct {
 	Track string `json:"track,omitempty"`
 
 	// verify
-	// Enum: [none required]
+	// Enum: ["none","required"]
 	// +kubebuilder:validation:Enum=none;required;
 	Verify string `json:"verify,omitempty"`
 
@@ -359,7 +371,7 @@ type RuntimeAddServer struct {
 	Weight *int64 `json:"weight,omitempty"`
 
 	// ws
-	// Enum: [auto h1 h2]
+	// Enum: ["auto","h1","h2"]
 	// +kubebuilder:validation:Enum=auto;h1;h2;
 	Ws string `json:"ws,omitempty"`
 }
@@ -377,6 +389,10 @@ func (m *RuntimeAddServer) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateAgentCheck(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateAgentInter(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -420,6 +436,14 @@ func (m *RuntimeAddServer) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateDowninter(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateFastinter(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateForceSslv3(formats); err != nil {
 		res = append(res, err)
 	}
@@ -445,6 +469,10 @@ func (m *RuntimeAddServer) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateHealthCheckPort(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateInter(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -488,6 +516,10 @@ func (m *RuntimeAddServer) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validatePoolPurgeDelay(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validatePort(formats); err != nil {
 		res = append(res, err)
 	}
@@ -513,6 +545,10 @@ func (m *RuntimeAddServer) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateSendProxyV2SslCn(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateSlowstart(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -626,6 +662,18 @@ func (m *RuntimeAddServer) validateAgentCheck(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateAgentCheckEnum("agent-check", "body", m.AgentCheck); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *RuntimeAddServer) validateAgentInter(formats strfmt.Registry) error {
+	if swag.IsZero(m.AgentInter) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("agent-inter", "body", *m.AgentInter, 0, false); err != nil {
 		return err
 	}
 
@@ -906,6 +954,30 @@ func (m *RuntimeAddServer) validateCheckViaSocks4(formats strfmt.Registry) error
 	return nil
 }
 
+func (m *RuntimeAddServer) validateDowninter(formats strfmt.Registry) error {
+	if swag.IsZero(m.Downinter) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("downinter", "body", *m.Downinter, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *RuntimeAddServer) validateFastinter(formats strfmt.Registry) error {
+	if swag.IsZero(m.Fastinter) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("fastinter", "body", *m.Fastinter, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 var runtimeAddServerTypeForceSslv3PropEnum []interface{}
 
 func init() {
@@ -1138,6 +1210,18 @@ func (m *RuntimeAddServer) validateHealthCheckPort(formats strfmt.Registry) erro
 	}
 
 	if err := validate.MaximumInt("health_check_port", "body", *m.HealthCheckPort, 65535, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *RuntimeAddServer) validateInter(formats strfmt.Registry) error {
+	if swag.IsZero(m.Inter) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("inter", "body", *m.Inter, 0, false); err != nil {
 		return err
 	}
 
@@ -1564,6 +1648,18 @@ func (m *RuntimeAddServer) validateOnMarkedUp(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *RuntimeAddServer) validatePoolPurgeDelay(formats strfmt.Registry) error {
+	if swag.IsZero(m.PoolPurgeDelay) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("pool_purge_delay", "body", *m.PoolPurgeDelay, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *RuntimeAddServer) validatePort(formats strfmt.Registry) error {
 	if swag.IsZero(m.Port) { // not required
 		return nil
@@ -1790,6 +1886,18 @@ func (m *RuntimeAddServer) validateSendProxyV2SslCn(formats strfmt.Registry) err
 
 	// value enum
 	if err := m.validateSendProxyV2SslCnEnum("send_proxy_v2_ssl_cn", "body", m.SendProxyV2SslCn); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *RuntimeAddServer) validateSlowstart(formats strfmt.Registry) error {
+	if swag.IsZero(m.Slowstart) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("slowstart", "body", *m.Slowstart, 0, false); err != nil {
 		return err
 	}
 

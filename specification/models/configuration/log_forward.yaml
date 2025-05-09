@@ -1,5 +1,22 @@
 ---
 log_forward:
+  type: object
+  description: LogForward with all it's children resources
+  x-go-name: LogForward
+  allOf:
+    - $ref: "#/definitions/log_forward_base"
+    - type: object
+      properties:
+        binds:
+          additionalProperties:
+            $ref: "#/definitions/bind"
+        dgram_binds:
+          additionalProperties:
+            $ref: "#/definitions/dgram_bind"
+        log_target_list:
+          $ref: "#/definitions/log_targets"
+          x-go-name: LogTargetList
+log_forward_base:
   title: Log Forward
   description: HAProxy log forward configuration
   type: object
@@ -18,5 +35,9 @@ log_forward:
       x-nullable: true
     timeout_client:
       type: integer
+      minimum: 0
+      maximum: 2147483647
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
   additionalProperties: false

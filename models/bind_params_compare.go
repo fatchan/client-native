@@ -19,11 +19,20 @@ package models
 
 // Equal checks if two structs of type BindParams are equal
 //
+// By default empty maps and slices are equal to nil:
+//
 //	var a, b BindParams
 //	equal := a.Equal(b)
 //
-// opts ...Options are ignored in this method
+// For more advanced use case you can configure these options (default values are shown):
+//
+//	var a, b BindParams
+//	equal := a.Equal(b,Options{
+//		NilSameAsEmpty: true,
+//	})
 func (s BindParams) Equal(t BindParams, opts ...Options) bool {
+	opt := getOptions(opts...)
+
 	if s.AcceptNetscalerCip != t.AcceptNetscalerCip {
 		return false
 	}
@@ -88,6 +97,10 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 		return false
 	}
 
+	if !equalComparableSlice(s.DefaultCrtList, t.DefaultCrtList, opt) {
+		return false
+	}
+
 	if s.DeferAccept != t.DeferAccept {
 		return false
 	}
@@ -129,6 +142,10 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 	}
 
 	if s.Group != t.Group {
+		return false
+	}
+
+	if s.GUIDPrefix != t.GUIDPrefix {
 		return false
 	}
 
@@ -212,10 +229,6 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 		return false
 	}
 
-	if s.Process != t.Process {
-		return false
-	}
-
 	if s.Proto != t.Proto {
 		return false
 	}
@@ -229,6 +242,14 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 	}
 
 	if s.QuicSocket != t.QuicSocket {
+		return false
+	}
+
+	if !equalPointers(s.QuicCcAlgoBurstSize, t.QuicCcAlgoBurstSize) {
+		return false
+	}
+
+	if !equalPointers(s.QuicCcAlgoMaxWindow, t.QuicCcAlgoMaxWindow) {
 		return false
 	}
 
@@ -260,6 +281,10 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 		return false
 	}
 
+	if s.Sslv3 != t.Sslv3 {
+		return false
+	}
+
 	if s.StrictSni != t.StrictSni {
 		return false
 	}
@@ -277,6 +302,22 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 	}
 
 	if s.TLSTicketKeys != t.TLSTicketKeys {
+		return false
+	}
+
+	if s.Tlsv10 != t.Tlsv10 {
+		return false
+	}
+
+	if s.Tlsv11 != t.Tlsv11 {
+		return false
+	}
+
+	if s.Tlsv12 != t.Tlsv12 {
+		return false
+	}
+
+	if s.Tlsv13 != t.Tlsv13 {
 		return false
 	}
 
@@ -309,11 +350,20 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 
 // Diff checks if two structs of type BindParams are equal
 //
+// By default empty maps and slices are equal to nil:
+//
 //	var a, b BindParams
 //	diff := a.Diff(b)
 //
-// opts ...Options are ignored in this method
+// For more advanced use case you can configure these options (default values are shown):
+//
+//	var a, b BindParams
+//	diff := a.Diff(b,Options{
+//		NilSameAsEmpty: true,
+//	})
 func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{} {
+	opt := getOptions(opts...)
+
 	diff := make(map[string][]interface{})
 	if s.AcceptNetscalerCip != t.AcceptNetscalerCip {
 		diff["AcceptNetscalerCip"] = []interface{}{s.AcceptNetscalerCip, t.AcceptNetscalerCip}
@@ -379,6 +429,10 @@ func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{}
 		diff["Curves"] = []interface{}{s.Curves, t.Curves}
 	}
 
+	if !equalComparableSlice(s.DefaultCrtList, t.DefaultCrtList, opt) {
+		diff["DefaultCrtList"] = []interface{}{s.DefaultCrtList, t.DefaultCrtList}
+	}
+
 	if s.DeferAccept != t.DeferAccept {
 		diff["DeferAccept"] = []interface{}{s.DeferAccept, t.DeferAccept}
 	}
@@ -421,6 +475,10 @@ func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{}
 
 	if s.Group != t.Group {
 		diff["Group"] = []interface{}{s.Group, t.Group}
+	}
+
+	if s.GUIDPrefix != t.GUIDPrefix {
+		diff["GUIDPrefix"] = []interface{}{s.GUIDPrefix, t.GUIDPrefix}
 	}
 
 	if s.ID != t.ID {
@@ -503,10 +561,6 @@ func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{}
 		diff["PreferClientCiphers"] = []interface{}{s.PreferClientCiphers, t.PreferClientCiphers}
 	}
 
-	if s.Process != t.Process {
-		diff["Process"] = []interface{}{s.Process, t.Process}
-	}
-
 	if s.Proto != t.Proto {
 		diff["Proto"] = []interface{}{s.Proto, t.Proto}
 	}
@@ -521,6 +575,14 @@ func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{}
 
 	if s.QuicSocket != t.QuicSocket {
 		diff["QuicSocket"] = []interface{}{s.QuicSocket, t.QuicSocket}
+	}
+
+	if !equalPointers(s.QuicCcAlgoBurstSize, t.QuicCcAlgoBurstSize) {
+		diff["QuicCcAlgoBurstSize"] = []interface{}{ValueOrNil(s.QuicCcAlgoBurstSize), ValueOrNil(t.QuicCcAlgoBurstSize)}
+	}
+
+	if !equalPointers(s.QuicCcAlgoMaxWindow, t.QuicCcAlgoMaxWindow) {
+		diff["QuicCcAlgoMaxWindow"] = []interface{}{ValueOrNil(s.QuicCcAlgoMaxWindow), ValueOrNil(t.QuicCcAlgoMaxWindow)}
 	}
 
 	if s.SeverityOutput != t.SeverityOutput {
@@ -551,6 +613,10 @@ func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{}
 		diff["SslMinVer"] = []interface{}{s.SslMinVer, t.SslMinVer}
 	}
 
+	if s.Sslv3 != t.Sslv3 {
+		diff["Sslv3"] = []interface{}{s.Sslv3, t.Sslv3}
+	}
+
 	if s.StrictSni != t.StrictSni {
 		diff["StrictSni"] = []interface{}{s.StrictSni, t.StrictSni}
 	}
@@ -569,6 +635,22 @@ func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{}
 
 	if s.TLSTicketKeys != t.TLSTicketKeys {
 		diff["TLSTicketKeys"] = []interface{}{s.TLSTicketKeys, t.TLSTicketKeys}
+	}
+
+	if s.Tlsv10 != t.Tlsv10 {
+		diff["Tlsv10"] = []interface{}{s.Tlsv10, t.Tlsv10}
+	}
+
+	if s.Tlsv11 != t.Tlsv11 {
+		diff["Tlsv11"] = []interface{}{s.Tlsv11, t.Tlsv11}
+	}
+
+	if s.Tlsv12 != t.Tlsv12 {
+		diff["Tlsv12"] = []interface{}{s.Tlsv12, t.Tlsv12}
+	}
+
+	if s.Tlsv13 != t.Tlsv13 {
+		diff["Tlsv13"] = []interface{}{s.Tlsv13, t.Tlsv13}
 	}
 
 	if s.Transparent != t.Transparent {

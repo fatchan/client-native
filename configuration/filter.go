@@ -17,14 +17,16 @@ package configuration
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/parsers/filters"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/parsers/filters"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
+	"github.com/haproxytech/client-native/v6/configuration/options"
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
 )
@@ -33,8 +35,9 @@ type Filter interface {
 	GetFilters(parentType, parentName string, transactionID string) (int64, models.Filters, error)
 	GetFilter(id int64, parentType, parentName string, transactionID string) (int64, *models.Filter, error)
 	DeleteFilter(id int64, parentType string, parentName string, transactionID string, version int64) error
-	CreateFilter(parentType string, parentName string, data *models.Filter, transactionID string, version int64) error
+	CreateFilter(id int64, parentType string, parentName string, data *models.Filter, transactionID string, version int64) error
 	EditFilter(id int64, parentType string, parentName string, data *models.Filter, transactionID string, version int64) error
+	ReplaceFilters(parentType string, parentName string, data models.Filters, transactionID string, version int64) error
 }
 
 // GetFilters returns configuration version and an array of
@@ -84,7 +87,6 @@ func (c *client) GetFilter(id int64, parentType, parentName string, transactionI
 	}
 
 	filter := ParseFilter(data.(types.Filter))
-	filter.Index = &id
 
 	return v, filter, nil
 }
@@ -113,7 +115,7 @@ func (c *client) DeleteFilter(id int64, parentType string, parentName string, tr
 
 // CreateFilter creates a filter in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) CreateFilter(parentType string, parentName string, data *models.Filter, transactionID string, version int64) error {
+func (c *client) CreateFilter(id int64, parentType string, parentName string, data *models.Filter, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -133,8 +135,8 @@ func (c *client) CreateFilter(parentType string, parentName string, data *models
 		section = parser.Frontends
 	}
 
-	if err := p.Insert(section, parentName, "filter", SerializeFilter(*data), int(*data.Index)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
+	if err := p.Insert(section, parentName, "filter", SerializeFilter(*data, &c.ConfigurationOptions), int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	return c.SaveData(p, t, transactionID == "")
@@ -154,33 +156,81 @@ func (c *client) EditFilter(id int64, parentType string, parentName string, data
 		return err
 	}
 
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
+	section, err := getFilterParserFromParent(parentType)
+	if err != nil {
+		return err
 	}
 
 	if _, err := p.GetOne(section, parentName, "filter", int(id)); err != nil {
 		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
-	if err := p.Set(section, parentName, "filter", SerializeFilter(*data), int(id)); err != nil {
+	if err := p.Set(section, parentName, "filter", SerializeFilter(*data, &c.ConfigurationOptions), int(id)); err != nil {
 		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	return c.SaveData(p, t, transactionID == "")
 }
 
-func ParseFilters(t, pName string, p parser.Parser) (models.Filters, error) {
-	section := parser.Global
-	if t == FrontendParentName {
-		section = parser.Frontends
-	} else if t == BackendParentName {
-		section = parser.Backends
+// ReplaceFilters replaces all Filter lines in configuration for a parentType/parentName.
+// One of version or transactionID is mandatory.
+// Returns error on fail, nil on success.
+func (c *client) ReplaceFilters(parentType string, parentName string, data models.Filters, transactionID string, version int64) error {
+	if c.UseModelsValidation {
+		validationErr := data.Validate(strfmt.Default)
+		if validationErr != nil {
+			return NewConfError(ErrValidationError, validationErr.Error())
+		}
+	}
+	p, t, err := c.loadDataForChange(transactionID, version)
+	if err != nil {
+		return err
 	}
 
-	f := models.Filters{}
+	section, err := getFilterParserFromParent(parentType)
+	if err != nil {
+		return err
+	}
+
+	filters, err := ParseFilters(parentType, parentName, p)
+	if err != nil {
+		return c.HandleError("", parentType, parentName, "", false, err)
+	}
+
+	for i := range filters {
+		// Always delete index 0
+		if err := p.Delete(section, parentName, "filter", 0); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	for i, newFilter := range data {
+		if err := p.Insert(section, parentName, "filter", SerializeFilter(*newFilter, &c.ConfigurationOptions), i); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	return c.SaveData(p, t, transactionID == "")
+}
+
+func getFilterParserFromParent(parent string) (parser.Section, error) {
+	switch parent {
+	case BackendParentName:
+		return parser.Backends, nil
+	case FrontendParentName:
+		return parser.Frontends, nil
+	default:
+		return "", fmt.Errorf("unsupported parent: %s", parent)
+	}
+}
+
+func ParseFilters(t, pName string, p parser.Parser) (models.Filters, error) {
+	section, err := getFilterParserFromParent(t)
+	if err != nil {
+		return nil, err
+	}
+
+	var f models.Filters
 	data, err := p.Get(section, pName, "filter", false)
 	if err != nil {
 		if errors.Is(err, parser_errors.ErrFetch) {
@@ -193,11 +243,9 @@ func ParseFilters(t, pName string, p parser.Parser) (models.Filters, error) {
 	if !ok {
 		return nil, misc.CreateTypeAssertError("filter")
 	}
-	for i, filter := range filters {
-		id := int64(i)
+	for _, filter := range filters {
 		mFilter := ParseFilter(filter)
 		if mFilter != nil {
-			mFilter.Index = &id
 			f = append(f, mFilter)
 		}
 	}
@@ -270,7 +318,7 @@ func ParseFilter(f types.Filter) *models.Filter {
 	return nil
 }
 
-func SerializeFilter(f models.Filter) types.Filter {
+func SerializeFilter(f models.Filter, opt *options.ConfigurationOptions) types.Filter {
 	switch f.Type {
 	case "trace":
 		return &filters.Trace{
@@ -300,9 +348,9 @@ func SerializeFilter(f models.Filter) types.Filter {
 		return &filters.BandwidthLimit{
 			Attribute:     "bwlim-in",
 			Name:          f.BandwidthLimitName,
-			DefaultLimit:  strconv.FormatInt(f.DefaultLimit, 10),
-			DefaultPeriod: strconv.FormatInt(f.DefaultPeriod, 10),
-			Limit:         strconv.FormatInt(f.Limit, 10),
+			DefaultLimit:  misc.SerializeSize(f.DefaultLimit),
+			DefaultPeriod: misc.SerializeTime(f.DefaultPeriod, opt.PreferredTimeSuffix),
+			Limit:         misc.SerializeSize(f.Limit),
 			Key:           f.Key,
 			Table:         &f.Table,
 		}
@@ -310,9 +358,9 @@ func SerializeFilter(f models.Filter) types.Filter {
 		return &filters.BandwidthLimit{
 			Attribute:     "bwlim-out",
 			Name:          f.BandwidthLimitName,
-			DefaultLimit:  strconv.FormatInt(f.DefaultLimit, 10),
-			DefaultPeriod: strconv.FormatInt(f.DefaultPeriod, 10),
-			Limit:         strconv.FormatInt(f.Limit, 10),
+			DefaultLimit:  misc.SerializeSize(f.DefaultLimit),
+			DefaultPeriod: misc.SerializeTime(f.DefaultPeriod, opt.PreferredTimeSuffix),
+			Limit:         misc.SerializeSize(f.Limit),
 			Key:           f.Key,
 			Table:         &f.Table,
 		}

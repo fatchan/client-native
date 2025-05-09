@@ -80,20 +80,101 @@ bind_params:
       x-dependency:
         ssl:
           value: true
+    default_crt_list:
+      type: array
+      x-omitempty: true
+      items:
+        type: string
+        pattern: '^[^\s]+$'
     defer_accept:
       type: boolean
     expose_fd_listeners:
       type: boolean
+    sslv3:
+      type: string
+      enum: [enabled, disabled]
+      x-dependency:
+        ssl:
+          value: true
     force_sslv3:
+      description: This field is deprecated in favor of sslv3, and will be removed in a future release
       type: boolean
+      x-deprecated: true
+    no_sslv3:
+      description: This field is deprecated in favor of sslv3, and will be removed in a future release
+      type: boolean
+      x-dependency:
+        ssl:
+          value: true
+      x-deprecated: true
+    tlsv10:
+      type: string
+      enum: [enabled, disabled]
+      x-dependency:
+        ssl:
+          value: true
     force_tlsv10:
+      description: This field is deprecated in favor of tlsv10, and will be removed in a future release
       type: boolean
+      x-deprecated: true
+    no_tlsv10:
+      description: This field is deprecated in favor of tlsv10, and will be removed in a future release
+      type: boolean
+      x-dependency:
+        ssl:
+          value: true
+      x-deprecated: true
+    tlsv11:
+      type: string
+      enum: [enabled, disabled]
+      x-dependency:
+        ssl:
+          value: true
     force_tlsv11:
+      description: This field is deprecated in favor of tlsv11, and will be removed in a future release
       type: boolean
+      x-deprecated: true
+    no_tlsv11:
+      description: This field is deprecated in favor of tlsv11, and will be removed in a future release
+      type: boolean
+      x-dependency:
+        ssl:
+          value: true
+      x-deprecated: true
+    tlsv12:
+      type: string
+      enum: [enabled, disabled]
+      x-dependency:
+        ssl:
+          value: true
+    no_tlsv12:
+      description: This field is deprecated in favor of tlsv12, and will be removed in a future release
+      type: boolean
+      x-dependency:
+        ssl:
+          value: true
+      x-deprecated: true
     force_tlsv12:
+      description: This field is deprecated in favor of tlsv12, and will be removed in a future release
       type: boolean
+      x-deprecated: true
+    tlsv13:
+      type: string
+      enum: [enabled, disabled]
+      x-dependency:
+        ssl:
+          value: true
     force_tlsv13:
+      description: This field is deprecated in favor of tlsv13, and will be removed in a future release
       type: boolean
+      x-deprecated: true
+    no_tlsv13:
+      description: This field is deprecated in favor of tlsv13, and will be removed in a future release
+      type: boolean
+      x-dependency:
+        ssl:
+          value: true
+      x-deprecated: true
     generate_certificates:
       type: boolean
       x-dependency:
@@ -105,6 +186,9 @@ bind_params:
     group:
       type: string
       x-display-name: Group name
+    guid_prefix:
+      type: string
+      pattern: '^[A-Za-z0-9-_.:]+$'
     id:
       type: string
       x-display-name: Socket ID
@@ -149,32 +233,7 @@ bind_params:
       x-dependency:
         ssl:
           value: true
-    no_sslv3:
-      type: boolean
-      x-dependency:
-        ssl:
-          value: true
     no_tls_tickets:
-      type: boolean
-      x-dependency:
-        ssl:
-          value: true
-    no_tlsv10:
-      type: boolean
-      x-dependency:
-        ssl:
-          value: true
-    no_tlsv11:
-      type: boolean
-      x-dependency:
-        ssl:
-          value: true
-    no_tlsv12:
-      type: boolean
-      x-dependency:
-        ssl:
-          value: true
-    no_tlsv13:
       type: boolean
       x-dependency:
         ssl:
@@ -183,9 +242,6 @@ bind_params:
       type: string
     prefer_client_ciphers:
       type: boolean
-    process:
-      type: string
-      pattern: '^[^\s]+$'
     proto:
       type: string
       x-display-name: Protocol name
@@ -248,10 +304,26 @@ bind_params:
       example: none
     quic-cc-algo:
       type: string
-      enum: [cubic, newreno]
+      enum: [cubic, newreno, bbr, nocc]
     quic-force-retry:
       type: boolean
     quic-socket:
       type: string
       enum: [connection, listener]
+    quic_cc_algo_max_window:
+      type: integer
+      minimum: 10
+      maximum: 4194304
+      x-nullable: true
+      x-size: true
+      x-default-unit: k
+      x-dependency:
+        quic-cc-algo:
+    quic_cc_algo_burst_size:
+      type: integer
+      minimum: 0
+      maximum: 1024
+      x-nullable: true
+      x-dependency:
+        quic-cc-algo:
   additionalProperties: false

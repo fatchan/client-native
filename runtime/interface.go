@@ -72,6 +72,8 @@ type Servers interface {
 	SetServerWeight(backend, server string, weight string) error
 	// SetServerHealth set health for server
 	SetServerHealth(backend, server string, health string) error
+	// EnableServerHealth
+	EnableServerHealth(backend, server string) error
 	// EnableAgentCheck enable agent check for server
 	EnableAgentCheck(backend, server string) error
 	// DisableAgentCheck disable agent check for server
@@ -104,13 +106,13 @@ type ACLs interface {
 
 type Tables interface {
 	// SetTableEntry create or update a stick-table entry in the table.
-	SetTableEntry(table, key string, dataType models.StickTableEntry, process int) error
-	// Show tables show tables from runtime API and return it structured, if process is 0, return for all processes
-	ShowTables(process int) (models.StickTables, error)
-	// GetTableEntries returns all entries for specified table in the given process with filters and a key
-	GetTableEntries(name string, process int, filter []string, key string) (models.StickTableEntries, error)
-	// Show table show tables {name} from runtime API associated with process id and return it structured
-	ShowTable(name string, process int) (*models.StickTable, error)
+	SetTableEntry(table, key string, dataType models.StickTableEntry) error
+	// Show tables show tables from runtime API and return it structured
+	ShowTables() (models.StickTables, error)
+	// GetTableEntries returns all entries for specified table with filters and a key
+	GetTableEntries(name string, filter []string, key string) (models.StickTableEntries, error)
+	// Show table show tables {name} from runtime API and return it structured
+	ShowTable(name string) (*models.StickTable, error)
 }
 
 type Frontend interface {
@@ -122,7 +124,7 @@ type Info interface {
 	// GetStats returns stats from the socket
 	GetStats() models.NativeStats
 	// GetInfo returns info from the socket
-	GetInfo() (models.ProcessInfos, error)
+	GetInfo() (models.ProcessInfo, error)
 	// GetVersion() returns running HAProxy version
 	GetVersion() (HAProxyVersion, error)
 }
@@ -130,11 +132,25 @@ type Info interface {
 type Manage interface {
 	// Reloads HAProxy's configuration file. Similar to SIGUSR2. Returns the startup logs.
 	Reload() (string, error)
+	// Clears max counters
+	ClearCounters() error
+	// Clears counters
+	ClearAllCounters() error
 }
 
 type Raw interface {
-	// ExecuteRaw does not process response, just returns its values for all processes
-	ExecuteRaw(command string) ([]string, error)
+	// ExecuteRaw does not process response, just returns its value
+	ExecuteRaw(command string) (string, error)
+}
+
+type Cert interface {
+	NewCertEntry(filename string) error
+	SetCertEntry(filename, payload string) error
+	CommitCertEntry(filename string) error
+	AbortCertEntry(filename string) error
+	AddCrtListEntry(crtList string, entry CrtListEntry) error
+	DeleteCrtListEntry(crtList, filename string, lineNumber *int64) error
+	DeleteCertEntry(filename string) error
 }
 
 type SSL interface {
@@ -152,9 +168,12 @@ type Runtime interface {
 	ACLs
 	Tables
 	Raw
+	Cert
+	SocketPath() string
+	IsStatsSocket() bool
 }
 
-func New(ctx context.Context, opt ...options.RuntimeOption) (Runtime, error) {
+func New(_ context.Context, opt ...options.RuntimeOption) (Runtime, error) {
 	c := &client{
 		options: options.RuntimeOptions{},
 	}
@@ -168,9 +187,9 @@ func New(ctx context.Context, opt ...options.RuntimeOption) (Runtime, error) {
 	}
 
 	if c.options.MasterSocketData != nil {
-		err = c.initWithMasterSocket(ctx, c.options)
+		err = c.initWithMasterSocket(c.options)
 	} else {
-		err = c.initWithSockets(ctx, c.options)
+		err = c.initWithSockets(c.options)
 	}
 	if err != nil {
 		return nil, err

@@ -57,7 +57,7 @@ func expectedResources[T any](elementKey string) (map[string]T, error) {
 	var elems map[string]T
 	err = json.Unmarshal(j, &elems)
 	if err != nil {
-		// Case Defaults, Globals
+		// Case Defaults, Globals, Traces
 		var elem T
 		err = json.Unmarshal(j, &elem)
 		if err != nil {
@@ -85,6 +85,8 @@ func expectedChildResources[P, T any](res map[string][]T, parentKey, parentNameK
 			pkey = configuration.BackendParentName
 		case "fcgi_apps":
 			pkey = configuration.FCGIAppParentName
+		case "log_profiles":
+			pkey = configuration.LogProfileParentName
 		case "log_forwards":
 			pkey = configuration.LogForwardParentName
 		case "userlists":
@@ -99,6 +101,8 @@ func expectedChildResources[P, T any](res map[string][]T, parentKey, parentNameK
 			pkey = configuration.RingParentName
 		case "defaults":
 			pkey = configuration.DefaultsParentName
+		case "crt_stores":
+			pkey = configuration.CrtStoreParentName
 		}
 		key := fmt.Sprintf("%s/%s", pkey, pname)
 		if pname == "dynamic_update_rule_list" {
@@ -227,6 +231,7 @@ func StructuredToCacheMap() map[string]models.Caches {
 func StructuredToACLMap() map[string]models.Acls {
 	res := make(map[string]models.Acls)
 	resources := make(map[string][]models.ACL)
+	_ = expectedChildResources[models.Defaults, models.ACL](resources, "defaults", "name", "acl_list")
 	_ = expectedChildResources[models.Frontend, models.ACL](resources, "frontends", "name", "acl_list")
 	_ = expectedChildResources[models.Backend, models.ACL](resources, "backends", "name", "acl_list")
 	_ = expectedChildResources[models.FCGIApp, models.ACL](resources, "fcgi_apps", "name", "acl_list")
@@ -270,6 +275,11 @@ func StructuredToCaptureMap() map[string]models.Captures {
 
 func StructuredToGlobalMap() models.Global {
 	resources, _ := expectedResources[models.Global]("global")
+	return resources[""]
+}
+
+func StructuredToTracesMap() models.Traces {
+	resources, _ := expectedResources[models.Traces]("traces")
 	return resources[""]
 }
 
@@ -328,6 +338,7 @@ func StructuredToHTTPAfterResponseRuleMap() map[string]models.HTTPAfterResponseR
 	resources := make(map[string][]models.HTTPAfterResponseRule)
 	_ = expectedChildResources[models.Frontend, models.HTTPAfterResponseRule](resources, "frontends", "name", "http_after_response_rule_list")
 	_ = expectedChildResources[models.Backend, models.HTTPAfterResponseRule](resources, "backends", "name", "http_after_response_rule_list")
+	_ = expectedChildResources[models.Defaults, models.HTTPAfterResponseRule](resources, "defaults", "name", "http_after_response_rule_list")
 	for k, v := range resources {
 		res[k] = toSliceOfPtrs(v)
 	}
@@ -371,6 +382,7 @@ func StructuredToHTTPRequestRuleMap() map[string]models.HTTPRequestRules {
 	resources := make(map[string][]models.HTTPRequestRule)
 	_ = expectedChildResources[models.Backend, models.HTTPRequestRule](resources, "backends", "name", "http_request_rule_list")
 	_ = expectedChildResources[models.Frontend, models.HTTPRequestRule](resources, "frontends", "name", "http_request_rule_list")
+	_ = expectedChildResources[models.Defaults, models.HTTPRequestRule](resources, "defaults", "name", "http_request_rule_list")
 	for k, v := range resources {
 		res[k] = toSliceOfPtrs(v)
 	}
@@ -382,6 +394,18 @@ func StructuredToHTTPResponseRuleMap() map[string]models.HTTPResponseRules {
 	resources := make(map[string][]models.HTTPResponseRule)
 	_ = expectedChildResources[models.Backend, models.HTTPResponseRule](resources, "backends", "name", "http_response_rule_list")
 	_ = expectedChildResources[models.Frontend, models.HTTPResponseRule](resources, "frontends", "name", "http_response_rule_list")
+	_ = expectedChildResources[models.Defaults, models.HTTPResponseRule](resources, "defaults", "name", "http_response_rule_list")
+	for k, v := range resources {
+		res[k] = toSliceOfPtrs(v)
+	}
+	return res
+}
+
+func StructuredToQUICInitialRuleMap() map[string]models.QUICInitialRules {
+	res := make(map[string]models.QUICInitialRules)
+	resources := make(map[string][]models.QUICInitialRule)
+	_ = expectedChildResources[models.Backend, models.QUICInitialRule](resources, "frontends", "name", "quic_initial_rule_list")
+	_ = expectedChildResources[models.Defaults, models.QUICInitialRule](resources, "defaults", "name", "quic_initial_rule_list")
 	for k, v := range resources {
 		res[k] = toSliceOfPtrs(v)
 	}
@@ -425,6 +449,15 @@ func StructuredToMailerEntryMap() map[string]models.MailerEntries {
 func StructuredToMailersSectionMap() map[string]models.MailersSections {
 	resources, _ := expectedResources[models.MailersSection]("mailers_sections")
 	res := make(map[string]models.MailersSections)
+	keyRoot := ""
+	t := toResMap(keyRoot, resources)
+	res[keyRoot] = t[keyRoot]
+	return res
+}
+
+func StructuredToCrtStoreMap() map[string]models.CrtStores {
+	resources, _ := expectedResources[models.CrtStore]("crt_stores")
+	res := make(map[string]models.CrtStores)
 	keyRoot := ""
 	t := toResMap(keyRoot, resources)
 	res[keyRoot] = t[keyRoot]
@@ -534,6 +567,8 @@ func StructuredToTCPRequestRuleMap() map[string]models.TCPRequestRules {
 	resources := make(map[string][]models.TCPRequestRule)
 	_ = expectedChildResources[models.Backend, models.TCPRequestRule](resources, "backends", "name", "tcp_request_rule_list")
 	_ = expectedChildResources[models.Frontend](resources, "frontends", "name", "tcp_request_rule_list")
+	_ = expectedChildResources[models.Defaults](resources, "defaults", "name", "tcp_request_rule_list")
+
 	for k, v := range resources {
 		res[k] = toSliceOfPtrs(v)
 	}
@@ -568,5 +603,14 @@ func StructuredToUserMap() map[string]models.Users {
 	for k, v := range resources {
 		res[k] = toSliceOfPtrs(v)
 	}
+	return res
+}
+
+func StructuredToLogProfileMap() map[string]models.LogProfiles {
+	resources, _ := expectedResources[models.LogProfile]("log_profiles")
+	res := make(map[string]models.LogProfiles)
+	keyRoot := ""
+	t := toResMap(keyRoot, resources)
+	res[keyRoot] = t[keyRoot]
 	return res
 }

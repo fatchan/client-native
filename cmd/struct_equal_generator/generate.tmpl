@@ -1,4 +1,3 @@
-
 {{- range .Functions}}
 {{- $topLevel := . }}
 // {{.Name}} checks if two structs of type {{.Data.Name}} are equal
@@ -103,7 +102,11 @@ func (s {{.Data.Name}}) {{.Name}}(t {{.Data.Name}}, opts ...Options) {{- if eq $
 				}
 
 				for k,v := range s.{{.Name}} {
+				{{- if eq .Name "Metadata" }}
+					if !reflect.DeepEqual(t.{{.Name}}[k], v) {
+				{{- else }}
 					if !t.{{.Name}}[k].Equal(v, opt) {
+				{{- end }}
 						{{- if eq $topLevel.Name "Equal" }}
 							return false
 						{{- else if eq $topLevel.Name "Diff" }}
@@ -181,7 +184,7 @@ func (s {{.Data.Name}}) {{.Name}}(t {{.Data.Name}}, opts ...Options) {{- if eq $
 						}
 					{{- else }}
 						{{- if HasPrefix .SubType.Type "*" }}
-							if !equalPointers(s.{{.Name}}, t.{{.Name}}) {
+							if !equalPointers(s.{{.Name}}[i], t.{{.Name}}[i]) {
 								{{- if eq $topLevel.Name "Equal" }}
 									return false
 								{{- else if eq $topLevel.Name "Diff" }}

@@ -19,20 +19,11 @@ package models
 
 // Equal checks if two structs of type TCPResponseRule are equal
 //
-// By default empty maps and slices are equal to nil:
-//
 //	var a, b TCPResponseRule
 //	equal := a.Equal(b)
 //
-// For more advanced use case you can configure these options (default values are shown):
-//
-//	var a, b TCPResponseRule
-//	equal := a.Equal(b,Options{
-//		SkipIndex: true,
-//	})
+// opts ...Options are ignored in this method
 func (s TCPResponseRule) Equal(t TCPResponseRule, opts ...Options) bool {
-	opt := getOptions(opts...)
-
 	if s.Action != t.Action {
 		return false
 	}
@@ -61,10 +52,6 @@ func (s TCPResponseRule) Equal(t TCPResponseRule, opts ...Options) bool {
 		return false
 	}
 
-	if !opt.SkipIndex && !equalPointers(s.Index, t.Index) {
-		return false
-	}
-
 	if s.LogLevel != t.LogLevel {
 		return false
 	}
@@ -82,6 +69,10 @@ func (s TCPResponseRule) Equal(t TCPResponseRule, opts ...Options) bool {
 	}
 
 	if s.NiceValue != t.NiceValue {
+		return false
+	}
+
+	if s.RstTTL != t.RstTTL {
 		return false
 	}
 
@@ -138,20 +129,11 @@ func (s TCPResponseRule) Equal(t TCPResponseRule, opts ...Options) bool {
 
 // Diff checks if two structs of type TCPResponseRule are equal
 //
-// By default empty maps and slices are equal to nil:
-//
 //	var a, b TCPResponseRule
 //	diff := a.Diff(b)
 //
-// For more advanced use case you can configure these options (default values are shown):
-//
-//	var a, b TCPResponseRule
-//	diff := a.Diff(b,Options{
-//		SkipIndex: true,
-//	})
+// opts ...Options are ignored in this method
 func (s TCPResponseRule) Diff(t TCPResponseRule, opts ...Options) map[string][]interface{} {
-	opt := getOptions(opts...)
-
 	diff := make(map[string][]interface{})
 	if s.Action != t.Action {
 		diff["Action"] = []interface{}{s.Action, t.Action}
@@ -181,10 +163,6 @@ func (s TCPResponseRule) Diff(t TCPResponseRule, opts ...Options) map[string][]i
 		diff["Expr"] = []interface{}{s.Expr, t.Expr}
 	}
 
-	if !opt.SkipIndex && !equalPointers(s.Index, t.Index) {
-		diff["Index"] = []interface{}{ValueOrNil(s.Index), ValueOrNil(t.Index)}
-	}
-
 	if s.LogLevel != t.LogLevel {
 		diff["LogLevel"] = []interface{}{s.LogLevel, t.LogLevel}
 	}
@@ -203,6 +181,10 @@ func (s TCPResponseRule) Diff(t TCPResponseRule, opts ...Options) map[string][]i
 
 	if s.NiceValue != t.NiceValue {
 		diff["NiceValue"] = []interface{}{s.NiceValue, t.NiceValue}
+	}
+
+	if s.RstTTL != t.RstTTL {
+		diff["RstTTL"] = []interface{}{s.RstTTL, t.RstTTL}
 	}
 
 	if s.ScExpr != t.ScExpr {

@@ -65,7 +65,7 @@ func checkBackends(t *testing.T, got map[string]models.Backends) {
 		for _, g := range v {
 			for _, w := range want {
 				if g.Name == w.Name {
-					require.True(t, g.Equal(*w), "k=%s - diff %v", k, cmp.Diff(*g, *w))
+					require.True(t, g.BackendBase.Equal(w.BackendBase), "k=%s - diff %v", k, cmp.Diff(*g, *w))
 					break
 				}
 			}
@@ -108,115 +108,121 @@ func TestCreateEditDeleteBackend(t *testing.T) {
 	srvtcpkaTimeout := int64(10000)
 	statsRealm := "Haproxy Stats"
 	b := &models.Backend{
-		Name: "created",
-		Mode: "http",
-		Balance: &models.Balance{
-			Algorithm: &balanceAlgorithm,
-			URILen:    100,
-			URIDepth:  250,
-		},
-		BindProcess: "4",
-		Cookie: &models.Cookie{
-			Domains: []*models.Domain{
-				{Value: "dom1"},
-				{Value: "dom2"},
+		BackendBase: models.BackendBase{
+			Name: "created",
+			Mode: "http",
+			Balance: &models.Balance{
+				Algorithm: &balanceAlgorithm,
+				URILen:    100,
+				URIDepth:  250,
 			},
-			Attrs:    []*models.Attr{},
-			Dynamic:  true,
-			Httponly: true,
-			Indirect: true,
-			Maxidle:  5,
-			Maxlife:  20,
-			Name:     &cookieName,
-			Nocache:  true,
-			Postonly: true,
-			Preserve: false,
-			Secure:   false,
-			Type:     "prefix",
-		},
-		HashType: &models.HashType{
-			Method:   "map-based",
-			Function: "crc32",
-		},
-		DefaultServer: &models.DefaultServer{
-			ServerParams: models.ServerParams{
-				Fall:       &tOut,
-				Inter:      &tOut,
-				LogBufsize: misc.Int64P(123),
+			Cookie: &models.Cookie{
+				Domains: []*models.Domain{
+					{Value: "dom1"},
+					{Value: "dom2"},
+				},
+				Attrs:    []*models.Attr{},
+				Dynamic:  true,
+				Httponly: true,
+				Indirect: true,
+				Maxidle:  5,
+				Maxlife:  20,
+				Name:     &cookieName,
+				Nocache:  true,
+				Postonly: true,
+				Preserve: false,
+				Secure:   false,
+				Type:     "prefix",
+			},
+			HashType: &models.HashType{
+				Method:   "map-based",
+				Function: "crc32",
+			},
+			DefaultServer: &models.DefaultServer{
+				ServerParams: models.ServerParams{
+					Fall:       &tOut,
+					Inter:      &tOut,
+					LogBufsize: misc.Int64P(123),
+				},
+			},
+			HTTPConnectionMode:   "http-keep-alive",
+			ConnectTimeout:       &tOut,
+			ExternalCheck:        "enabled",
+			ExternalCheckCommand: "/bin/false",
+			ExternalCheckPath:    "/bin",
+			Allbackups:           "enabled",
+			AdvCheck:             "smtpchk",
+			SmtpchkParams: &models.SmtpchkParams{
+				Hello:  "HELO",
+				Domain: "example.com",
+			},
+			AcceptInvalidHTTPResponse:            "enabled",
+			AcceptUnsafeViolationsInHTTPResponse: "enabled",
+			Compression: &models.Compression{
+				Offload:   true,
+				Direction: "both",
+				TypesReq: []string{
+					"text/html",
+					"text/plain",
+				},
+				TypesRes: []string{
+					"text/plain",
+				},
+				AlgoReq: "deflate",
+				AlgosRes: []string{
+					"deflate",
+					"gzip",
+				},
+			},
+			LogHealthChecks:    "enabled",
+			Checkcache:         "enabled",
+			IndependentStreams: "enabled",
+			Nolinger:           "enabled",
+			Originalto: &models.Originalto{
+				Enabled: misc.StringP("enabled"),
+				Except:  "127.0.0.1",
+				Header:  "X-Client-Dst",
+			},
+			Persist:          "enabled",
+			PreferLastServer: "enabled",
+			SpopCheck:        "enabled",
+			TCPSmartConnect:  "enabled",
+			Transparent:      "enabled",
+			SpliceAuto:       "enabled",
+			SpliceRequest:    "enabled",
+			SpliceResponse:   "enabled",
+			SrvtcpkaCnt:      &srvtcpkaCnt,
+			SrvtcpkaIdle:     &srvtcpkaTimeout,
+			SrvtcpkaIntvl:    &srvtcpkaTimeout,
+			StatsOptions: &models.StatsOptions{
+				StatsShowModules: true,
+				StatsRealm:       true,
+				StatsRealmRealm:  &statsRealm,
+				StatsAuths: []*models.StatsAuth{
+					{User: misc.StringP("user1"), Passwd: misc.StringP("pwd1")},
+					{User: misc.StringP("user2"), Passwd: misc.StringP("pwd2")},
+				},
+				StatsHTTPRequests: []*models.StatsHTTPRequest{
+					{Type: misc.StringP("allow"), Cond: "if", CondTest: "something"},
+					{Type: misc.StringP("auth"), Realm: "haproxy\\ stats"},
+				},
+			},
+			EmailAlert: &models.EmailAlert{
+				From:    misc.StringP("prod01@example.com"),
+				To:      misc.StringP("sre@example.com"),
+				Level:   "warning",
+				Mailers: misc.StringP("localmailer1"),
+			},
+			ErrorFilesFromHTTPErrors: []*models.Errorfiles{
+				{Name: "test_errors", Codes: []int64{400}},
+				{Name: "test_errors_all"},
+			},
+			Disabled: true,
+			Redispatch: &models.Redispatch{
+				Enabled:  misc.StringP("enabled"),
+				Interval: 0,
 			},
 		},
-		HTTPConnectionMode:   "http-keep-alive",
-		ConnectTimeout:       &tOut,
-		ExternalCheck:        "enabled",
-		ExternalCheckCommand: "/bin/false",
-		ExternalCheckPath:    "/bin",
-		Allbackups:           "enabled",
-		AdvCheck:             "smtpchk",
-		SmtpchkParams: &models.SmtpchkParams{
-			Hello:  "HELO",
-			Domain: "example.com",
-		},
-		AcceptInvalidHTTPResponse: "enabled",
-		Compression: &models.Compression{
-			Offload:   true,
-			Direction: "both",
-			TypesReq: []string{
-				"text/html",
-				"text/plain",
-			},
-			TypesRes: []string{
-				"text/plain",
-			},
-			AlgoReq: "deflate",
-			AlgosRes: []string{
-				"deflate",
-				"gzip",
-			},
-		},
-		LogHealthChecks:    "enabled",
-		Checkcache:         "enabled",
-		IndependentStreams: "enabled",
-		Nolinger:           "enabled",
-		Originalto: &models.Originalto{
-			Enabled: misc.StringP("enabled"),
-			Except:  "127.0.0.1",
-			Header:  "X-Client-Dst",
-		},
-		Persist:          "enabled",
-		PreferLastServer: "enabled",
-		SpopCheck:        "enabled",
-		TCPSmartConnect:  "enabled",
-		Transparent:      "enabled",
-		SpliceAuto:       "enabled",
-		SpliceRequest:    "enabled",
-		SpliceResponse:   "enabled",
-		SrvtcpkaCnt:      &srvtcpkaCnt,
-		SrvtcpkaIdle:     &srvtcpkaTimeout,
-		SrvtcpkaIntvl:    &srvtcpkaTimeout,
-		StatsOptions: &models.StatsOptions{
-			StatsShowModules: true,
-			StatsRealm:       true,
-			StatsRealmRealm:  &statsRealm,
-			StatsAuths: []*models.StatsAuth{
-				{User: misc.StringP("user1"), Passwd: misc.StringP("pwd1")},
-				{User: misc.StringP("user2"), Passwd: misc.StringP("pwd2")},
-			},
-			StatsHTTPRequests: []*models.StatsHTTPRequest{
-				{Type: misc.StringP("allow"), Cond: "if", CondTest: "something"},
-				{Type: misc.StringP("auth"), Realm: "haproxy\\ stats"},
-			},
-		},
-		EmailAlert: &models.EmailAlert{
-			From:    misc.StringP("prod01@example.com"),
-			To:      misc.StringP("sre@example.com"),
-			Level:   "warning",
-			Mailers: misc.StringP("localmailer1"),
-		},
-		ErrorFilesFromHTTPErrors: []*models.Errorfiles{
-			{Name: "test_errors", Codes: []int64{400}},
-			{Name: "test_errors_all"},
-		},
-		Disabled: true,
 	}
 
 	err := clientTest.CreateBackend(b, "", version)
@@ -230,6 +236,9 @@ func TestCreateEditDeleteBackend(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
+
+	// A redispatch with a zero interval is automatically removed from configuration.
+	b.Redispatch = nil
 
 	var givenJSONB []byte
 	givenJSONB, err = b.MarshalBinary()
@@ -265,124 +274,125 @@ func TestCreateEditDeleteBackend(t *testing.T) {
 	s := int64(25600)
 	backends := []*models.Backend{
 		{
-			From: "test_defaults",
-			Name: "created",
-			Mode: "http",
-			Balance: &models.Balance{
-				Algorithm: &balanceAlgorithm,
-				URILen:    10,
-				URIDepth:  25,
-			},
-			BindProcess: "3",
-			Cookie: &models.Cookie{
-				Domains: []*models.Domain{
-					{Value: "dom1"},
-					{Value: "dom3"},
+			BackendBase: models.BackendBase{
+				From: "test_defaults",
+				Name: "created",
+				Mode: "http",
+				Balance: &models.Balance{
+					Algorithm: &balanceAlgorithm,
+					URILen:    10,
+					URIDepth:  25,
 				},
-				Dynamic:  true,
-				Httponly: true,
-				Indirect: false,
-				Maxidle:  150,
-				Maxlife:  100,
-				Name:     &cookieName,
-				Nocache:  false,
-				Postonly: false,
-				Preserve: true,
-				Secure:   true,
-				Type:     "rewrite",
-			},
-			HTTPConnectionMode: "httpclose",
-			ConnectTimeout:     &tOut,
-			StickTable: &models.ConfigStickTable{
-				Expire: &e,
-				Keylen: &kl,
-				Size:   &s,
-				Store:  "gpc0,http_req_rate(40s)",
-				Type:   "string",
-			},
-			AdvCheck: "mysql-check",
-			MysqlCheckParams: &models.MysqlCheckParams{
-				Username:      "user",
-				ClientVersion: "pre-41",
-			},
-			EmailAlert: &models.EmailAlert{
-				From:    misc.StringP("prod01@example.com"),
-				To:      misc.StringP("sre@example.com"),
-				Level:   "warning",
-				Mailers: misc.StringP("localmailer1"),
-			},
-			Originalto: &models.Originalto{
-				Enabled: misc.StringP("enabled"),
-				Except:  "127.0.0.1",
-			},
-		},
+				Cookie: &models.Cookie{
+					Domains: []*models.Domain{
+						{Value: "dom1"},
+						{Value: "dom3"},
+					},
+					Dynamic:  true,
+					Httponly: true,
+					Indirect: false,
+					Maxidle:  150,
+					Maxlife:  100,
+					Name:     &cookieName,
+					Nocache:  false,
+					Postonly: false,
+					Preserve: true,
+					Secure:   true,
+					Type:     "rewrite",
+				},
+				HTTPConnectionMode: "httpclose",
+				ConnectTimeout:     &tOut,
+				StickTable: &models.ConfigStickTable{
+					Expire: &e,
+					Keylen: &kl,
+					Size:   &s,
+					Store:  "gpc0,http_req_rate(40s)",
+					Type:   "string",
+				},
+				AdvCheck: "mysql-check",
+				MysqlCheckParams: &models.MysqlCheckParams{
+					Username:      "user",
+					ClientVersion: "pre-41",
+				},
+				EmailAlert: &models.EmailAlert{
+					From:    misc.StringP("prod01@example.com"),
+					To:      misc.StringP("sre@example.com"),
+					Level:   "warning",
+					Mailers: misc.StringP("localmailer1"),
+				},
+				Originalto: &models.Originalto{
+					Enabled: misc.StringP("enabled"),
+					Except:  "127.0.0.1",
+				},
+			}},
 		{
-			Name: "created",
-			Mode: "http",
-			Balance: &models.Balance{
-				Algorithm: &balanceAlgorithm,
-			},
-			Cookie: &models.Cookie{
-				Domains: []*models.Domain{
-					{Value: "dom4"},
-					{Value: "dom5"},
+			BackendBase: models.BackendBase{
+				Name: "created",
+				Mode: "http",
+				Balance: &models.Balance{
+					Algorithm: &balanceAlgorithm,
 				},
-				Name: &cookieName,
-			},
-			ConnectTimeout: &tOut,
-			StickTable:     &models.ConfigStickTable{},
-			AdvCheck:       "httpchk",
-			HttpchkParams: &models.HttpchkParams{
-				Method: "HEAD",
-				URI:    "/",
-			},
-			Checkcache:         "disabled",
-			IndependentStreams: "disabled",
-			Nolinger:           "disabled",
-			Persist:            "disabled",
-			PreferLastServer:   "disabled",
-			SpopCheck:          "disabled",
-			TCPSmartConnect:    "disabled",
-			Transparent:        "disabled",
-			SpliceAuto:         "disabled",
-			SpliceRequest:      "disabled",
-			SpliceResponse:     "disabled",
-			SrvtcpkaCnt:        &srvtcpkaCnt,
-			SrvtcpkaIdle:       &srvtcpkaTimeout,
-			SrvtcpkaIntvl:      &srvtcpkaTimeout,
-			StatsOptions: &models.StatsOptions{
-				StatsShowModules: true,
-				StatsRealm:       true,
-				StatsRealmRealm:  &statsRealm,
-				StatsAuths: []*models.StatsAuth{
-					{User: misc.StringP("new_user1"), Passwd: misc.StringP("new_pwd1")},
-					{User: misc.StringP("new_user2"), Passwd: misc.StringP("new_pwd2")},
+				Cookie: &models.Cookie{
+					Domains: []*models.Domain{
+						{Value: "dom4"},
+						{Value: "dom5"},
+					},
+					Name: &cookieName,
 				},
-				StatsHTTPRequests: []*models.StatsHTTPRequest{
-					{Type: misc.StringP("allow"), Cond: "if", CondTest: "something_else"},
-					{Type: misc.StringP("auth"), Realm: "haproxy\\ stats2"},
+				ConnectTimeout: &tOut,
+				StickTable:     &models.ConfigStickTable{},
+				AdvCheck:       "httpchk",
+				HttpchkParams: &models.HttpchkParams{
+					Method: "HEAD",
+					URI:    "/",
 				},
-			},
-			EmailAlert: &models.EmailAlert{
-				From:    misc.StringP("prod01@example.com"),
-				To:      misc.StringP("sre@example.com"),
-				Level:   "warning",
-				Mailers: misc.StringP("localmailer1"),
-			},
-			Originalto: &models.Originalto{
-				Enabled: misc.StringP("enabled"),
-				Except:  "127.0.0.1",
-				Header:  "X-Client-Dst",
-			},
-			ForcePersistList: []*models.ForcePersist{
-				{Cond: misc.StringP("unless"), CondTest: misc.StringP("invalid_src")},
-				{Cond: misc.StringP("if"), CondTest: misc.StringP("auth_ok")},
-			},
-			IgnorePersistList: []*models.IgnorePersist{
-				{Cond: misc.StringP("if"), CondTest: misc.StringP("host_www")},
-				{Cond: misc.StringP("unless"), CondTest: misc.StringP("missing_cl")},
-			},
-		},
+				Checkcache:         "disabled",
+				IndependentStreams: "disabled",
+				Nolinger:           "disabled",
+				Persist:            "disabled",
+				PreferLastServer:   "disabled",
+				SpopCheck:          "disabled",
+				TCPSmartConnect:    "disabled",
+				Transparent:        "disabled",
+				SpliceAuto:         "disabled",
+				SpliceRequest:      "disabled",
+				SpliceResponse:     "disabled",
+				SrvtcpkaCnt:        &srvtcpkaCnt,
+				SrvtcpkaIdle:       &srvtcpkaTimeout,
+				SrvtcpkaIntvl:      &srvtcpkaTimeout,
+				StatsOptions: &models.StatsOptions{
+					StatsShowModules: true,
+					StatsRealm:       true,
+					StatsRealmRealm:  &statsRealm,
+					StatsAuths: []*models.StatsAuth{
+						{User: misc.StringP("new_user1"), Passwd: misc.StringP("new_pwd1")},
+						{User: misc.StringP("new_user2"), Passwd: misc.StringP("new_pwd2")},
+					},
+					StatsHTTPRequests: []*models.StatsHTTPRequest{
+						{Type: misc.StringP("allow"), Cond: "if", CondTest: "something_else"},
+						{Type: misc.StringP("auth"), Realm: "haproxy\\ stats2"},
+					},
+				},
+				EmailAlert: &models.EmailAlert{
+					From:    misc.StringP("prod01@example.com"),
+					To:      misc.StringP("sre@example.com"),
+					Level:   "warning",
+					Mailers: misc.StringP("localmailer1"),
+				},
+				Originalto: &models.Originalto{
+					Enabled: misc.StringP("enabled"),
+					Except:  "127.0.0.1",
+					Header:  "X-Client-Dst",
+				},
+				ForcePersistList: []*models.ForcePersist{
+					{Cond: misc.StringP("unless"), CondTest: misc.StringP("invalid_src")},
+					{Cond: misc.StringP("if"), CondTest: misc.StringP("auth_ok")},
+				},
+				IgnorePersistList: []*models.IgnorePersist{
+					{Cond: misc.StringP("if"), CondTest: misc.StringP("host_www")},
+					{Cond: misc.StringP("unless"), CondTest: misc.StringP("missing_cl")},
+				},
+			}},
 	}
 
 	for i, backend := range backends {
@@ -532,10 +542,6 @@ func compareBackends(x, y *models.Backend, t *testing.T) bool { //nolint:gocogni
 	x.Cookie = nil
 	y.Cookie = nil
 
-	if x.BindProcess != y.BindProcess {
-		return false
-	}
-
 	if !reflect.DeepEqual(x.DefaultServer, y.DefaultServer) {
 		return false
 	}
@@ -634,15 +640,17 @@ func TestCreateEditDeleteBackendHTTPConnectionMode(t *testing.T) {
 
 	// Backend with HTTPConnectionMode only
 	b := &models.Backend{
-		Name: "special-httpconnectionmode",
-		Mode: "http",
-		DefaultServer: &models.DefaultServer{
-			ServerParams: models.ServerParams{
-				Fall:  &tOut,
-				Inter: &tOut,
+		BackendBase: models.BackendBase{
+			Name: "special-httpconnectionmode",
+			Mode: "http",
+			DefaultServer: &models.DefaultServer{
+				ServerParams: models.ServerParams{
+					Fall:  &tOut,
+					Inter: &tOut,
+				},
 			},
+			HTTPConnectionMode: "http-keep-alive",
 		},
-		HTTPConnectionMode: "http-keep-alive",
 	}
 
 	err := clientTest.CreateBackend(b, "", version)
@@ -680,46 +688,49 @@ func TestCreateEditDeleteBackendHTTPConnectionMode(t *testing.T) {
 		{
 			// Update HTTPConnectionMode
 			backend: &models.Backend{
-				Name: "special-httpconnectionmode",
-				Mode: "http",
-				DefaultServer: &models.DefaultServer{
-					ServerParams: models.ServerParams{
-						Fall:  &tOut,
-						Inter: &tOut,
+				BackendBase: models.BackendBase{
+					Name: "special-httpconnectionmode",
+					Mode: "http",
+					DefaultServer: &models.DefaultServer{
+						ServerParams: models.ServerParams{
+							Fall:  &tOut,
+							Inter: &tOut,
+						},
 					},
-				},
-				HTTPConnectionMode: "httpclose",
-			},
+					HTTPConnectionMode: "httpclose",
+				}},
 			expectedHTTPConnectionMode: "httpclose",
 		},
 		{
 			// Use both - Priority on HTTPConnection
 			backend: &models.Backend{
-				Name: "special-httpconnectionmode",
-				Mode: "http",
-				DefaultServer: &models.DefaultServer{
-					ServerParams: models.ServerParams{
-						Fall:  &tOut,
-						Inter: &tOut,
+				BackendBase: models.BackendBase{
+					Name: "special-httpconnectionmode",
+					Mode: "http",
+					DefaultServer: &models.DefaultServer{
+						ServerParams: models.ServerParams{
+							Fall:  &tOut,
+							Inter: &tOut,
+						},
 					},
-				},
-				HTTPConnectionMode: "http-keep-alive",
-			},
+					HTTPConnectionMode: "http-keep-alive",
+				}},
 			expectedHTTPConnectionMode: "http-keep-alive",
 		},
 		{
 			// remove option
 			backend: &models.Backend{
-				Name: "special-httpconnectionmode",
-				Mode: "http",
-				DefaultServer: &models.DefaultServer{
-					ServerParams: models.ServerParams{
-						Fall:  &tOut,
-						Inter: &tOut,
+				BackendBase: models.BackendBase{
+					Name: "special-httpconnectionmode",
+					Mode: "http",
+					DefaultServer: &models.DefaultServer{
+						ServerParams: models.ServerParams{
+							Fall:  &tOut,
+							Inter: &tOut,
+						},
 					},
-				},
-				HTTPConnectionMode: "",
-			},
+					HTTPConnectionMode: "",
+				}},
 			expectedHTTPConnectionMode: "",
 		},
 	}

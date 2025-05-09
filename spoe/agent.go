@@ -16,13 +16,13 @@
 package spoe
 
 import (
+	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	"github.com/haproxytech/config-parser/v5/spoe"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	"github.com/haproxytech/client-native/v6/config-parser/spoe"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	conf "github.com/haproxytech/client-native/v6/configuration"
 	"github.com/haproxytech/client-native/v6/misc"
@@ -266,8 +266,7 @@ func (c *SingleSpoe) GetAgent(scope, name, transactionID string) (int64, *models
 		return v, nil, err
 	}
 	if logs, ok := data.([]types.Log); ok {
-		for i, l := range logs {
-			indx := int64(i)
+		for _, l := range logs {
 			d := &models.LogTarget{
 				Address:  l.Address,
 				Facility: l.Facility,
@@ -277,7 +276,6 @@ func (c *SingleSpoe) GetAgent(scope, name, transactionID string) (int64, *models
 				Level:    l.Level,
 				Minlevel: l.MinLevel,
 				Nolog:    l.NoLog,
-				Index:    &indx,
 			}
 			agent.Log = append(agent.Log, d)
 		}
@@ -353,7 +351,7 @@ func (c *SingleSpoe) EditAgent(scope string, data *models.SpoeAgent, transaction
 
 func (c *SingleSpoe) createEditAgent(scope string, data *models.SpoeAgent, t string, transactionID string, p *spoe.Parser) error { //nolint:gocognit,gocyclo,cyclop,maintidx
 	if data == nil {
-		return fmt.Errorf("spoe agent not initialized")
+		return errors.New("spoe agent not initialized")
 	}
 	name := *data.Name
 
@@ -522,7 +520,7 @@ func (c *SingleSpoe) createEditAgent(scope string, data *models.SpoeAgent, t str
 	}
 
 	if data.HelloTimeout > 0 {
-		d := &types.StringC{Value: strconv.FormatInt(data.HelloTimeout, 10)}
+		d := &types.StringC{Value: misc.SerializeTime(data.HelloTimeout, c.Transaction.ConfigurationOptions.PreferredTimeSuffix)}
 		if err := p.Set(scope, parser.SPOEAgent, name, "timeout hello", d); err != nil {
 			return c.Transaction.HandleError(d.Value, "", "", t, transactionID == "", err)
 		}
@@ -531,7 +529,7 @@ func (c *SingleSpoe) createEditAgent(scope string, data *models.SpoeAgent, t str
 	}
 
 	if data.IdleTimeout > 0 {
-		d := &types.StringC{Value: strconv.FormatInt(data.IdleTimeout, 10)}
+		d := &types.StringC{Value: misc.SerializeTime(data.IdleTimeout, c.Transaction.ConfigurationOptions.PreferredTimeSuffix)}
 		if err := p.Set(scope, parser.SPOEAgent, name, "timeout idle", d); err != nil {
 			return c.Transaction.HandleError(d.Value, "", "", t, transactionID == "", err)
 		}
@@ -540,7 +538,7 @@ func (c *SingleSpoe) createEditAgent(scope string, data *models.SpoeAgent, t str
 	}
 
 	if data.ProcessingTimeout > 0 {
-		d := &types.StringC{Value: strconv.FormatInt(data.ProcessingTimeout, 10)}
+		d := &types.StringC{Value: misc.SerializeTime(data.ProcessingTimeout, c.Transaction.ConfigurationOptions.PreferredTimeSuffix)}
 		if err := p.Set(scope, parser.SPOEAgent, name, "timeout processing", d); err != nil {
 			return c.Transaction.HandleError(d.Value, "", "", t, transactionID == "", err)
 		}

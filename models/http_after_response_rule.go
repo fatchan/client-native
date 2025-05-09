@@ -33,7 +33,7 @@ import (
 // HTTPAfterResponseRule HTTP after Response Rule
 //
 // HAProxy HTTP after response rule configuration (corresponds to http-after-response directives)
-// Example: {"cond":"unless","cond_test":"{ src 192.168.0.0/16 }","hdr_format":"max-age=31536000","hdr_name":"Strict-Transport-Security","index":0,"type":"set-header"}
+// Example: {"cond":"unless","cond_test":"{ src 192.168.0.0/16 }","hdr_format":"max-age=31536000","hdr_name":"Strict-Transport-Security","type":"set-header"}
 //
 // swagger:model http_after_response_rule
 type HTTPAfterResponseRule struct {
@@ -47,8 +47,19 @@ type HTTPAfterResponseRule struct {
 	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	ACLKeyfmt string `json:"acl_keyfmt,omitempty"`
 
+	// capture id
+	CaptureID *int64 `json:"capture_id,omitempty"`
+
+	// capture len
+	CaptureLen int64 `json:"capture_len,omitempty"`
+
+	// capture sample
+	// Pattern: ^(?:[A-Za-z]+\("([A-Za-z\s]+)"\)|[A-Za-z]+)
+	// +kubebuilder:validation:Pattern=`^(?:[A-Za-z]+\("([A-Za-z\s]+)"\)|[A-Za-z]+)`
+	CaptureSample string `json:"capture_sample,omitempty"`
+
 	// cond
-	// Enum: [if unless]
+	// Enum: ["if","unless"]
 	// +kubebuilder:validation:Enum=if;unless;
 	Cond string `json:"cond,omitempty"`
 
@@ -67,13 +78,8 @@ type HTTPAfterResponseRule struct {
 	// hdr name
 	HdrName string `json:"hdr_name,omitempty"`
 
-	// index
-	// Required: true
-	// +kubebuilder:validation:Optional
-	Index *int64 `json:"index"`
-
 	// log level
-	// Enum: [emerg alert crit err warning notice info debug silent]
+	// Enum: ["emerg","alert","crit","err","warning","notice","info","debug","silent"]
 	// +kubebuilder:validation:Enum=emerg;alert;crit;err;warning;notice;info;debug;silent;
 	LogLevel string `json:"log_level,omitempty"`
 
@@ -115,18 +121,21 @@ type HTTPAfterResponseRule struct {
 	StatusReason string `json:"status_reason,omitempty"`
 
 	// strict mode
-	// Enum: [on off]
+	// Enum: ["on","off"]
 	// +kubebuilder:validation:Enum=on;off;
 	StrictMode string `json:"strict_mode,omitempty"`
 
 	// type
 	// Required: true
-	// Enum: [add-header allow del-acl del-header del-map replace-header replace-value sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt sc-set-gpt0 set-header set-log-level set-map set-status set-var strict-mode unset-var]
-	// +kubebuilder:validation:Enum=add-header;allow;del-acl;del-header;del-map;replace-header;replace-value;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt;sc-set-gpt0;set-header;set-log-level;set-map;set-status;set-var;strict-mode;unset-var;
+	// Enum: ["add-header","allow","capture","del-acl","del-header","del-map","replace-header","replace-value","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","set-header","set-log-level","set-map","set-status","set-var","set-var-fmt","strict-mode","unset-var","do-log"]
+	// +kubebuilder:validation:Enum=add-header;allow;capture;del-acl;del-header;del-map;replace-header;replace-value;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt;sc-set-gpt0;set-header;set-log-level;set-map;set-status;set-var;set-var-fmt;strict-mode;unset-var;do-log;
 	Type string `json:"type"`
 
 	// var expr
 	VarExpr string `json:"var_expr,omitempty"`
+
+	// var format
+	VarFormat string `json:"var_format,omitempty"`
 
 	// var name
 	// Pattern: ^[^\s]+$
@@ -151,11 +160,11 @@ func (m *HTTPAfterResponseRule) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateCond(formats); err != nil {
+	if err := m.validateCaptureSample(formats); err != nil {
 		res = append(res, err)
 	}
 
-	if err := m.validateIndex(formats); err != nil {
+	if err := m.validateCond(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -225,6 +234,18 @@ func (m *HTTPAfterResponseRule) validateACLKeyfmt(formats strfmt.Registry) error
 	return nil
 }
 
+func (m *HTTPAfterResponseRule) validateCaptureSample(formats strfmt.Registry) error {
+	if swag.IsZero(m.CaptureSample) { // not required
+		return nil
+	}
+
+	if err := validate.Pattern("capture_sample", "body", m.CaptureSample, `^(?:[A-Za-z]+\("([A-Za-z\s]+)"\)|[A-Za-z]+)`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 var httpAfterResponseRuleTypeCondPropEnum []interface{}
 
 func init() {
@@ -261,15 +282,6 @@ func (m *HTTPAfterResponseRule) validateCond(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateCondEnum("cond", "body", m.Cond); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPAfterResponseRule) validateIndex(formats strfmt.Registry) error {
-
-	if err := validate.Required("index", "body", m.Index); err != nil {
 		return err
 	}
 
@@ -437,7 +449,7 @@ var httpAfterResponseRuleTypeTypePropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["add-header","allow","del-acl","del-header","del-map","replace-header","replace-value","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","set-header","set-log-level","set-map","set-status","set-var","strict-mode","unset-var"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["add-header","allow","capture","del-acl","del-header","del-map","replace-header","replace-value","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","set-header","set-log-level","set-map","set-status","set-var","set-var-fmt","strict-mode","unset-var","do-log"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -452,6 +464,9 @@ const (
 
 	// HTTPAfterResponseRuleTypeAllow captures enum value "allow"
 	HTTPAfterResponseRuleTypeAllow string = "allow"
+
+	// HTTPAfterResponseRuleTypeCapture captures enum value "capture"
+	HTTPAfterResponseRuleTypeCapture string = "capture"
 
 	// HTTPAfterResponseRuleTypeDelDashACL captures enum value "del-acl"
 	HTTPAfterResponseRuleTypeDelDashACL string = "del-acl"
@@ -501,11 +516,17 @@ const (
 	// HTTPAfterResponseRuleTypeSetDashVar captures enum value "set-var"
 	HTTPAfterResponseRuleTypeSetDashVar string = "set-var"
 
+	// HTTPAfterResponseRuleTypeSetDashVarDashFmt captures enum value "set-var-fmt"
+	HTTPAfterResponseRuleTypeSetDashVarDashFmt string = "set-var-fmt"
+
 	// HTTPAfterResponseRuleTypeStrictDashMode captures enum value "strict-mode"
 	HTTPAfterResponseRuleTypeStrictDashMode string = "strict-mode"
 
 	// HTTPAfterResponseRuleTypeUnsetDashVar captures enum value "unset-var"
 	HTTPAfterResponseRuleTypeUnsetDashVar string = "unset-var"
+
+	// HTTPAfterResponseRuleTypeDoDashLog captures enum value "do-log"
+	HTTPAfterResponseRuleTypeDoDashLog string = "do-log"
 )
 
 // prop value enum

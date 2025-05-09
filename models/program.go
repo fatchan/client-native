@@ -52,7 +52,7 @@ type Program struct {
 	Name string `json:"name"`
 
 	// HAProxy stops and recreates child programs at reload.
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	StartOnReload string `json:"start-on-reload,omitempty"`
 

@@ -15,6 +15,8 @@
 // limitations under the License.
 //
 
+//go:build equal
+
 package models
 
 import (
@@ -22,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/go-faker/faker/v4"
+	"github.com/go-faker/faker/v4/pkg/options"
 
 	jsoniter "github.com/json-iterator/go"
 )
@@ -33,17 +36,17 @@ func TestFilterEqual(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample Filter
 		var result Filter
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		byteJSON, err := json.Marshal(sample)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 
 		samples = append(samples, struct {
@@ -57,11 +60,11 @@ func TestFilterEqual(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected Filter to be equal, but it is not %s %s", a, b)
 		}
@@ -75,17 +78,16 @@ func TestFilterEqualFalse(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample Filter
 		var result Filter
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		err = faker.FakeData(&result)
+		err = faker.FakeData(&result, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		result.DefaultLimit = sample.DefaultLimit + 1
 		result.DefaultPeriod = sample.DefaultPeriod + 1
-		result.Index = Ptr(*sample.Index + 1)
 		result.Limit = sample.Limit + 1
 		result.MinSize = sample.MinSize + 1
 		result.TraceHexdump = !sample.TraceHexdump
@@ -102,11 +104,11 @@ func TestFilterEqualFalse(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected Filter to be different, but it is not %s %s", a, b)
 		}
@@ -120,17 +122,17 @@ func TestFilterDiff(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample Filter
 		var result Filter
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		byteJSON, err := json.Marshal(sample)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 
 		samples = append(samples, struct {
@@ -144,11 +146,11 @@ func TestFilterDiff(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected Filter to be equal, but it is not %s %s, %v", a, b, result)
 		}
@@ -162,17 +164,16 @@ func TestFilterDiffFalse(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample Filter
 		var result Filter
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		err = faker.FakeData(&result)
+		err = faker.FakeData(&result, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		result.DefaultLimit = sample.DefaultLimit + 1
 		result.DefaultPeriod = sample.DefaultPeriod + 1
-		result.Index = Ptr(*sample.Index + 1)
 		result.Limit = sample.Limit + 1
 		result.MinSize = sample.MinSize + 1
 		result.TraceHexdump = !sample.TraceHexdump
@@ -185,17 +186,17 @@ func TestFilterDiffFalse(t *testing.T) {
 
 	for _, sample := range samples {
 		result := sample.a.Diff(sample.b)
-		if len(result) != 17-1 {
+		if len(result) != 16 {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
-			t.Errorf("Expected Filter to be different in 17 cases, but it is not (%d) %s %s", len(result), a, b)
+			t.Errorf("Expected Filter to be different in 16 cases, but it is not (%d) %s %s", len(result), a, b)
 		}
 	}
 }

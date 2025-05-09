@@ -15,6 +15,8 @@
 // limitations under the License.
 //
 
+//go:build equal
+
 package models
 
 import (
@@ -22,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/go-faker/faker/v4"
+	"github.com/go-faker/faker/v4/pkg/options"
 
 	jsoniter "github.com/json-iterator/go"
 )
@@ -33,17 +36,17 @@ func TestHTTPRequestRuleEqual(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample HTTPRequestRule
 		var result HTTPRequestRule
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		byteJSON, err := json.Marshal(sample)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 
 		samples = append(samples, struct {
@@ -57,11 +60,11 @@ func TestHTTPRequestRuleEqual(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected HTTPRequestRule to be equal, but it is not %s %s", a, b)
 		}
@@ -75,23 +78,23 @@ func TestHTTPRequestRuleEqualFalse(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample HTTPRequestRule
 		var result HTTPRequestRule
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		err = faker.FakeData(&result)
+		err = faker.FakeData(&result, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		result.CaptureID = Ptr(*sample.CaptureID + 1)
 		result.CaptureLen = sample.CaptureLen + 1
 		result.DenyStatus = Ptr(*sample.DenyStatus + 1)
-		result.Index = Ptr(*sample.Index + 1)
 		result.NiceValue = sample.NiceValue + 1
 		result.NormalizerFull = !sample.NormalizerFull
 		result.NormalizerStrict = !sample.NormalizerStrict
 		result.RedirCode = Ptr(*sample.RedirCode + 1)
 		result.ReturnStatusCode = Ptr(*sample.ReturnStatusCode + 1)
+		result.RstTTL = sample.RstTTL + 1
 		result.ScID = sample.ScID + 1
 		result.ScIdx = sample.ScIdx + 1
 		result.ScInt = Ptr(*sample.ScInt + 1)
@@ -109,11 +112,11 @@ func TestHTTPRequestRuleEqualFalse(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected HTTPRequestRule to be different, but it is not %s %s", a, b)
 		}
@@ -127,17 +130,17 @@ func TestHTTPRequestRuleDiff(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample HTTPRequestRule
 		var result HTTPRequestRule
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		byteJSON, err := json.Marshal(sample)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 
 		samples = append(samples, struct {
@@ -151,11 +154,11 @@ func TestHTTPRequestRuleDiff(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected HTTPRequestRule to be equal, but it is not %s %s, %v", a, b, result)
 		}
@@ -169,23 +172,23 @@ func TestHTTPRequestRuleDiffFalse(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample HTTPRequestRule
 		var result HTTPRequestRule
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		err = faker.FakeData(&result)
+		err = faker.FakeData(&result, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		result.CaptureID = Ptr(*sample.CaptureID + 1)
 		result.CaptureLen = sample.CaptureLen + 1
 		result.DenyStatus = Ptr(*sample.DenyStatus + 1)
-		result.Index = Ptr(*sample.Index + 1)
 		result.NiceValue = sample.NiceValue + 1
 		result.NormalizerFull = !sample.NormalizerFull
 		result.NormalizerStrict = !sample.NormalizerStrict
 		result.RedirCode = Ptr(*sample.RedirCode + 1)
 		result.ReturnStatusCode = Ptr(*sample.ReturnStatusCode + 1)
+		result.RstTTL = sample.RstTTL + 1
 		result.ScID = sample.ScID + 1
 		result.ScIdx = sample.ScIdx + 1
 		result.ScInt = Ptr(*sample.ScInt + 1)
@@ -199,15 +202,15 @@ func TestHTTPRequestRuleDiffFalse(t *testing.T) {
 
 	for _, sample := range samples {
 		result := sample.a.Diff(sample.b)
-		if len(result) != 70-1 {
+		if len(result) != 70 {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected HTTPRequestRule to be different in 70 cases, but it is not (%d) %s %s", len(result), a, b)
 		}

@@ -20,11 +20,11 @@ import (
 	"fmt"
 
 	strfmt "github.com/go-openapi/strfmt"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
-	parser "github.com/haproxytech/config-parser/v5"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/types"
 )
 
 type MailerEntry interface {
@@ -153,7 +153,7 @@ func (c *client) EditMailerEntry(name string, mailersSection string, data *model
 }
 
 func ParseMailerEntries(mailersSection string, p parser.Parser) (models.MailerEntries, error) {
-	mailerEntry := models.MailerEntries{}
+	var mailerEntry models.MailerEntries
 
 	data, err := p.Get(parser.Mailers, mailersSection, "mailer", false)
 	if err != nil {

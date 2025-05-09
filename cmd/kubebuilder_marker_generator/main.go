@@ -32,7 +32,7 @@ func main() {
 	}
 }
 
-func generate(fileName string) error { //nolint:gocognit,unparam
+func generate(fileName string) error { //nolint:gocognit
 	f, err := decorator.ParseFile(token.NewFileSet(), fileName, nil, 0)
 	if err != nil {
 		log.Fatal(err)
@@ -58,7 +58,8 @@ func generate(fileName string) error { //nolint:gocognit,unparam
 									// We must keep empty strings:
 									// For example in Globals HttpclientSslVerify: // Enum: [ none required]
 									// from swagger: enum: ["", "none", "required"]
-									for _, enum := range strings.Split(comment, " ") {
+									for _, enum := range strings.Split(comment, ",") {
+										enum = strings.Trim(enum, "\"")
 										if enum == "" {
 											newComment += `""`
 										}
@@ -86,7 +87,21 @@ func generate(fileName string) error { //nolint:gocognit,unparam
 										field.Decorations().Start.Append("// +kubebuilder:validation:Optional")
 									}
 								}
-
+								if strings.HasPrefix(comment, "// metadata") {
+									decorations := field.Decorations().Start
+									preserveField := "// +kubebuilder:pruning:PreserveUnknownFields"
+									schemalessField := "// +kubebuilder:validation:Schemaless"
+									updatedDecorations := make([]string, 0)
+									copy(updatedDecorations, decorations)
+									if !containsDecoration(updatedDecorations, preserveField) {
+										updatedDecorations = append(updatedDecorations, preserveField)
+									}
+									if !containsDecoration(updatedDecorations, schemalessField) {
+										updatedDecorations = append(updatedDecorations, schemalessField)
+									}
+									field.Decorations().Start = updatedDecorations
+									field.Decorations().Before = dst.NewLine
+								}
 							}
 							// if len(field.Names) > 0 {
 							// log.Printf("Comments before the field %s: %v\n", field.Names[0].Name, comments)
@@ -152,4 +167,15 @@ func cleanup(comments []string, prefixToRemove string) []string {
 		}
 	}
 	return res
+}
+
+// Helper function to check if a decoration exists
+func containsDecoration(decorations []string, decoration string) bool {
+	for _, d := range decorations {
+		// Normalize whitespace to prevent mismatch
+		if strings.TrimSpace(d) == strings.TrimSpace(decoration) {
+			return true
+		}
+	}
+	return false
 }

@@ -22,11 +22,12 @@ import (
 	"strings"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/params"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/params"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
+	"github.com/haproxytech/client-native/v6/configuration/options"
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
 )
@@ -37,11 +38,13 @@ type Server interface {
 	DeleteServer(name string, parentType string, parentName string, transactionID string, version int64) error
 	CreateServer(parentType string, parentName string, data *models.Server, transactionID string, version int64) error
 	EditServer(name string, parentType string, parentName string, data *models.Server, transactionID string, version int64) error
+	CreateOrEditServer(parentType string, parentName string, data *models.Server, transactionID string, version int64) error
 	GetServerSwitchingRules(backend string, transactionID string) (int64, models.ServerSwitchingRules, error)
 	GetServerSwitchingRule(id int64, backend string, transactionID string) (int64, *models.ServerSwitchingRule, error)
 	DeleteServerSwitchingRule(id int64, backend string, transactionID string, version int64) error
-	CreateServerSwitchingRule(backend string, data *models.ServerSwitchingRule, transactionID string, version int64) error
+	CreateServerSwitchingRule(id int64, backend string, data *models.ServerSwitchingRule, transactionID string, version int64) error
 	EditServerSwitchingRule(id int64, backend string, data *models.ServerSwitchingRule, transactionID string, version int64) error
+	ReplaceServerSwitchingRules(backend string, data models.ServerSwitchingRules, transactionID string, version int64) error
 }
 
 // GetServers returns configuration version and an array of
@@ -127,7 +130,7 @@ func (c *client) CreateServer(parentType string, parentName string, data *models
 		return c.HandleError(data.Name, parentType, parentName, t, transactionID == "", e)
 	}
 
-	if err := p.Insert(sectionType(parentType), parentName, "server", SerializeServer(*data), -1); err != nil {
+	if err := p.Insert(sectionType(parentType), parentName, "server", SerializeServer(*data, &c.ConfigurationOptions), -1); err != nil {
 		return c.HandleError(data.Name, parentType, parentName, t, transactionID == "", err)
 	}
 
@@ -154,7 +157,34 @@ func (c *client) EditServer(name string, parentType string, parentName string, d
 		return c.HandleError(data.Name, parentType, parentName, t, transactionID == "", e)
 	}
 
-	if err := p.Set(sectionType(parentType), parentName, "server", SerializeServer(*data), i); err != nil {
+	if err := p.Set(sectionType(parentType), parentName, "server", SerializeServer(*data, &c.ConfigurationOptions), i); err != nil {
+		return c.HandleError(data.Name, parentType, parentName, t, transactionID == "", err)
+	}
+
+	return c.SaveData(p, t, transactionID == "")
+}
+
+func (c *client) CreateOrEditServer(parentType string, parentName string, data *models.Server, transactionID string, version int64) error {
+	if c.UseModelsValidation {
+		validationErr := data.Validate(strfmt.Default)
+		if validationErr != nil {
+			return NewConfError(ErrValidationError, validationErr.Error())
+		}
+	}
+	p, t, err := c.loadDataForChange(transactionID, version)
+	if err != nil {
+		return err
+	}
+
+	server, i := GetServerByName(data.Name, parentType, parentName, p)
+	// Edition func by default
+	f := p.Set
+	if server == nil {
+		i = -1
+		// If server does not exist then Create func
+		f = p.Insert
+	}
+	if err := f(sectionType(parentType), parentName, "server", SerializeServer(*data, &c.ConfigurationOptions), i); err != nil {
 		return c.HandleError(data.Name, parentType, parentName, t, transactionID == "", err)
 	}
 
@@ -162,7 +192,7 @@ func (c *client) EditServer(name string, parentType string, parentName string, d
 }
 
 func ParseServers(parentType string, parentName string, p parser.Parser) (models.Servers, error) {
-	servers := models.Servers{}
+	var servers models.Servers
 
 	data, err := p.Get(sectionType(parentType), parentName, "server", false)
 	if err != nil {
@@ -185,7 +215,8 @@ func ParseServers(parentType string, parentName string, p parser.Parser) (models
 	return servers, nil
 }
 
-func ParseAddress(address string) (ipOrAddress string, port *int64) {
+func ParseAddress(address string) (string, *int64) {
+	var port *int64
 	if strings.HasPrefix(address, "[") && strings.ContainsRune(address, ']') { // IPv6 with port [2001:0DB8:0000:0000:0000:0000:1428:57ab]:80
 		split := strings.Split(address, "]")
 		split[0] = strings.TrimPrefix(split[0], "[")
@@ -212,11 +243,11 @@ func ParseAddress(address string) (ipOrAddress string, port *int64) {
 		// This is an imperfect solution, which is why dataplaneapi
 		// adds brackets to IPv6 when it can.
 		idx := strings.LastIndex(address, ":")
-		p, err := strconv.ParseUint(address[idx+1:], 10, 16)
+		p, err := strconv.ParseInt(address[idx+1:], 10, 16)
 		if err != nil {
 			return address, nil
 		}
-		return address[:idx], misc.Int64P(int(p))
+		return address[:idx], &p
 	case c == 0:
 		return address, nil // IPv4 or socket address
 	default:
@@ -246,6 +277,8 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 				serverParams.Check = "disabled"
 			case "check-send-proxy":
 				serverParams.CheckSendProxy = "enabled"
+			case "no-check-send-proxy":
+				serverParams.CheckSendProxy = "disabled"
 			case "check-ssl":
 				serverParams.CheckSsl = "enabled"
 			case "no-check-ssl":
@@ -257,24 +290,35 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 			case "enabled":
 				serverParams.Maintenance = "disabled"
 			case "force-sslv3":
+				serverParams.Sslv3 = "enabled"
 				serverParams.ForceSslv3 = "enabled"
-			case "force-tlsv10":
-				serverParams.ForceTlsv10 = "enabled"
 			case "no-sslv3":
-				serverParams.NoSslv3 = "enabled"
+				serverParams.Sslv3 = "disabled"
+				serverParams.ForceSslv3 = "disabled"
+				serverParams.NoSslv3 = "enabled" // deprecated kept for backward compatibility
+			case "force-tlsv10":
+				serverParams.Tlsv10 = "enabled"
+				serverParams.ForceTlsv10 = "enabled"
 			case "no-tlsv10":
+				serverParams.Tlsv10 = "disabled"
 				serverParams.ForceTlsv10 = "disabled"
 			case "force-tlsv11":
+				serverParams.Tlsv11 = "enabled"
 				serverParams.ForceTlsv11 = "enabled"
 			case "no-tlsv11":
+				serverParams.Tlsv11 = "disabled"
 				serverParams.ForceTlsv11 = "disabled"
 			case "force-tlsv12":
+				serverParams.Tlsv12 = "enabled"
 				serverParams.ForceTlsv12 = "enabled"
 			case "no-tlsv12":
+				serverParams.Tlsv12 = "disabled"
 				serverParams.ForceTlsv12 = "disabled"
 			case "force-tlsv13":
+				serverParams.Tlsv13 = "enabled"
 				serverParams.ForceTlsv13 = "enabled"
 			case "no-tlsv13":
+				serverParams.Tlsv13 = "disabled"
 				serverParams.ForceTlsv13 = "disabled"
 			case "send-proxy":
 				serverParams.SendProxy = "enabled"
@@ -312,6 +356,8 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 				serverParams.Stick = "enabled"
 			case "non-stick":
 				serverParams.Stick = "disabled"
+			case "no-verifyhost":
+				serverParams.NoVerifyhost = "enabled"
 			}
 		case *params.ServerOptionValue:
 			switch v.Name {
@@ -357,8 +403,12 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 				}
 			case "fall":
 				serverParams.Fall = misc.ParseTimeout(v.Value)
+			case "guid":
+				serverParams.GUID = v.Value
 			case "init-addr":
 				serverParams.InitAddr = &v.Value
+			case "init-state":
+				serverParams.InitState = v.Value
 			case "inter":
 				serverParams.Inter = misc.ParseTimeout(v.Value)
 			case "fastinter":
@@ -477,6 +527,10 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 				}
 			case "ws":
 				serverParams.Ws = v.Value
+			case "pool-conn-name":
+				serverParams.PoolConnName = v.Value
+			case "hash-key":
+				serverParams.HashKey = v.Value
 			}
 		case *params.ServerOptionIDValue:
 			if v.Name == "set-proxy-v2-tlv-fmt" {
@@ -503,6 +557,7 @@ func ParseServer(ondiskServer types.Server) *models.Server {
 	}
 	s.Address = address
 	s.Port = port
+	s.Metadata = parseMetadata(ondiskServer.Comment)
 	for _, p := range ondiskServer.Params {
 		if v, ok := p.(*params.ServerOptionValue); ok {
 			if v.Name == "id" {
@@ -517,7 +572,8 @@ func ParseServer(ondiskServer types.Server) *models.Server {
 	return s
 }
 
-func serializeServerParams(s models.ServerParams) (options []params.ServerOption) { //nolint:gocognit,gocyclo,cyclop,cyclop,maintidx
+func SerializeServerParams(s models.ServerParams, opt *options.ConfigurationOptions) []params.ServerOption { //nolint:gocognit,gocyclo,cyclop,cyclop,maintidx
+	var options []params.ServerOption
 	// ServerOptionWord
 	if s.AgentCheck == "enabled" {
 		options = append(options, &params.ServerOptionWord{Name: "agent-check"})
@@ -555,11 +611,25 @@ func serializeServerParams(s models.ServerParams) (options []params.ServerOption
 	if s.CheckViaSocks4 == "enabled" {
 		options = append(options, &params.ServerOptionWord{Name: "check-via-socks4"})
 	}
+	if s.Sslv3 == "enabled" {
+		options = append(options, &params.ServerOptionWord{Name: "force-sslv3"})
+	}
+	if s.Sslv3 == "disabled" ||
+		s.NoSslv3 == "enabled" { // deprecated, keeping the behavior, for backward compatibility. Can be removed when field is removed
+		options = append(options, &params.ServerOptionWord{Name: "no-sslv3"})
+	}
 	if s.ForceSslv3 == "enabled" {
 		options = append(options, &params.ServerOptionWord{Name: "force-sslv3"})
 	}
-	if s.NoSslv3 == "enabled" {
+	if s.ForceSslv3 == "disabled" ||
+		s.NoSslv3 == "enabled" { // deprecated, keeping the behavior, for backward compatibility. Can be removed when field is removed
 		options = append(options, &params.ServerOptionWord{Name: "no-sslv3"})
+	}
+	if s.Tlsv10 == "enabled" {
+		options = append(options, &params.ServerOptionWord{Name: "force-tlsv10"})
+	}
+	if s.Tlsv10 == "disabled" {
+		options = append(options, &params.ServerOptionWord{Name: "no-tlsv10"})
 	}
 	if s.ForceTlsv10 == "enabled" {
 		options = append(options, &params.ServerOptionWord{Name: "force-tlsv10"})
@@ -567,17 +637,35 @@ func serializeServerParams(s models.ServerParams) (options []params.ServerOption
 	if s.ForceTlsv10 == "disabled" {
 		options = append(options, &params.ServerOptionWord{Name: "no-tlsv10"})
 	}
+	if s.Tlsv11 == "enabled" {
+		options = append(options, &params.ServerOptionWord{Name: "force-tlsv11"})
+	}
+	if s.Tlsv11 == "disabled" {
+		options = append(options, &params.ServerOptionWord{Name: "no-tlsv11"})
+	}
 	if s.ForceTlsv11 == "enabled" {
 		options = append(options, &params.ServerOptionWord{Name: "force-tlsv11"})
 	}
 	if s.ForceTlsv11 == "disabled" {
 		options = append(options, &params.ServerOptionWord{Name: "no-tlsv11"})
 	}
+	if s.Tlsv12 == "enabled" {
+		options = append(options, &params.ServerOptionWord{Name: "force-tlsv12"})
+	}
+	if s.Tlsv12 == "disabled" {
+		options = append(options, &params.ServerOptionWord{Name: "no-tlsv12"})
+	}
 	if s.ForceTlsv12 == "enabled" {
 		options = append(options, &params.ServerOptionWord{Name: "force-tlsv12"})
 	}
 	if s.ForceTlsv12 == "disabled" {
 		options = append(options, &params.ServerOptionWord{Name: "no-tlsv12"})
+	}
+	if s.Tlsv13 == "enabled" {
+		options = append(options, &params.ServerOptionWord{Name: "force-tlsv13"})
+	}
+	if s.Tlsv13 == "disabled" {
+		options = append(options, &params.ServerOptionWord{Name: "no-tlsv13"})
 	}
 	if s.ForceTlsv13 == "enabled" {
 		options = append(options, &params.ServerOptionWord{Name: "force-tlsv13"})
@@ -649,7 +737,7 @@ func serializeServerParams(s models.ServerParams) (options []params.ServerOption
 		options = append(options, &params.ServerOptionValue{Name: "agent-send", Value: s.AgentSend})
 	}
 	if s.AgentInter != nil {
-		options = append(options, &params.ServerOptionValue{Name: "agent-inter", Value: strconv.FormatInt(*s.AgentInter, 10)})
+		options = append(options, &params.ServerOptionValue{Name: "agent-inter", Value: misc.SerializeTime(*s.AgentInter, opt.PreferredTimeSuffix)})
 	}
 	if s.AgentAddr != "" {
 		options = append(options, &params.ServerOptionValue{Name: "agent-addr", Value: s.AgentAddr})
@@ -696,20 +784,26 @@ func serializeServerParams(s models.ServerParams) (options []params.ServerOption
 	if s.ErrorLimit != 0 {
 		options = append(options, &params.ServerOptionValue{Name: "error-limit", Value: strconv.FormatInt(s.ErrorLimit, 10)})
 	}
+	if s.GUID != "" {
+		options = append(options, &params.ServerOptionValue{Name: "guid", Value: s.GUID})
+	}
 	if s.Fall != nil {
 		options = append(options, &params.ServerOptionValue{Name: "fall", Value: strconv.FormatInt(*s.Fall, 10)})
 	}
 	if s.InitAddr != nil {
 		options = append(options, &params.ServerOptionValue{Name: "init-addr", Value: *s.InitAddr})
 	}
+	if s.InitState != "" {
+		options = append(options, &params.ServerOptionValue{Name: "init-state", Value: s.InitState})
+	}
 	if s.Inter != nil {
-		options = append(options, &params.ServerOptionValue{Name: "inter", Value: strconv.FormatInt(*s.Inter, 10)})
+		options = append(options, &params.ServerOptionValue{Name: "inter", Value: misc.SerializeTime(*s.Inter, opt.PreferredTimeSuffix)})
 	}
 	if s.Fastinter != nil {
-		options = append(options, &params.ServerOptionValue{Name: "fastinter", Value: strconv.FormatInt(*s.Fastinter, 10)})
+		options = append(options, &params.ServerOptionValue{Name: "fastinter", Value: misc.SerializeTime(*s.Fastinter, opt.PreferredTimeSuffix)})
 	}
 	if s.Downinter != nil {
-		options = append(options, &params.ServerOptionValue{Name: "downinter", Value: strconv.FormatInt(*s.Downinter, 10)})
+		options = append(options, &params.ServerOptionValue{Name: "downinter", Value: misc.SerializeTime(*s.Downinter, opt.PreferredTimeSuffix)})
 	}
 	if s.LogBufsize != nil {
 		options = append(options, &params.ServerOptionValue{Name: "log-bufsize", Value: strconv.FormatInt(*s.LogBufsize, 10)})
@@ -754,7 +848,7 @@ func serializeServerParams(s models.ServerParams) (options []params.ServerOption
 		options = append(options, &params.ServerOptionValue{Name: "pool-max-conn", Value: strconv.FormatInt(*s.PoolMaxConn, 10)})
 	}
 	if s.PoolPurgeDelay != nil {
-		options = append(options, &params.ServerOptionValue{Name: "pool-purge-delay", Value: strconv.FormatInt(*s.PoolPurgeDelay, 10)})
+		options = append(options, &params.ServerOptionValue{Name: "pool-purge-delay", Value: misc.SerializeTime(*s.PoolPurgeDelay, opt.PreferredTimeSuffix)})
 	}
 	if s.HealthCheckAddress != "" {
 		options = append(options, &params.ServerOptionValue{Name: "addr", Value: s.HealthCheckAddress})
@@ -793,7 +887,7 @@ func serializeServerParams(s models.ServerParams) (options []params.ServerOption
 		options = append(options, &params.ServerOptionValue{Name: "sigalgs", Value: s.Sigalgs})
 	}
 	if s.Slowstart != nil {
-		options = append(options, &params.ServerOptionValue{Name: "slowstart", Value: strconv.FormatInt(*s.Slowstart, 10)})
+		options = append(options, &params.ServerOptionValue{Name: "slowstart", Value: misc.SerializeTime(*s.Slowstart, opt.PreferredTimeSuffix)})
 	}
 	if s.Sni != "" {
 		options = append(options, &params.ServerOptionValue{Name: "sni", Value: s.Sni})
@@ -814,7 +908,7 @@ func serializeServerParams(s models.ServerParams) (options []params.ServerOption
 		options = append(options, &params.ServerOptionIDValue{Name: "set-proxy-v2-tlv-fmt", ID: *s.SetProxyV2TlvFmt.ID, Value: *s.SetProxyV2TlvFmt.Value})
 	}
 	if s.TCPUt != nil {
-		options = append(options, &params.ServerOptionValue{Name: "tcp-ut", Value: strconv.FormatInt(*s.TCPUt, 10)})
+		options = append(options, &params.ServerOptionValue{Name: "tcp-ut", Value: misc.SerializeTime(*s.TCPUt, opt.PreferredTimeSuffix)})
 	}
 	if s.Track != "" {
 		options = append(options, &params.ServerOptionValue{Name: "track", Value: s.Track})
@@ -825,16 +919,25 @@ func serializeServerParams(s models.ServerParams) (options []params.ServerOption
 	if s.Verifyhost != "" {
 		options = append(options, &params.ServerOptionValue{Name: "verifyhost", Value: s.Verifyhost})
 	}
+	if s.NoVerifyhost == "enabled" {
+		options = append(options, &params.ServerOptionWord{Name: "no-verifyhost"})
+	}
 	if s.Weight != nil {
 		options = append(options, &params.ServerOptionValue{Name: "weight", Value: strconv.FormatInt(*s.Weight, 10)})
 	}
 	if s.Ws != "" {
 		options = append(options, &params.ServerOptionValue{Name: "ws", Value: s.Ws})
 	}
+	if s.PoolConnName != "" {
+		options = append(options, &params.ServerOptionValue{Name: "pool-conn-name", Value: s.PoolConnName})
+	}
+	if s.HashKey != "" {
+		options = append(options, &params.ServerOptionValue{Name: "hash-key", Value: s.HashKey})
+	}
 	return options
 }
 
-func SerializeServer(s models.Server) types.Server {
+func SerializeServer(s models.Server, opt *options.ConfigurationOptions) types.Server {
 	server := types.Server{
 		Name:   s.Name,
 		Params: []params.ServerOption{},
@@ -844,7 +947,9 @@ func SerializeServer(s models.Server) types.Server {
 	} else {
 		server.Address = misc.SanitizeIPv6Address(s.Address)
 	}
-	server.Params = serializeServerParams(s.ServerParams)
+	comment, _ := serializeMetadata(s.Metadata)
+	server.Comment = comment
+	server.Params = SerializeServerParams(s.ServerParams, opt)
 	if s.ID != nil {
 		server.Params = append(server.Params, &params.ServerOptionValue{Name: "id", Value: strconv.FormatInt(*s.ID, 10)})
 	}
@@ -852,17 +957,11 @@ func SerializeServer(s models.Server) types.Server {
 }
 
 func GetServerByName(name string, parentType string, parentName string, p parser.Parser) (*models.Server, int) {
-	servers, err := ParseServers(parentType, parentName, p)
+	server, i, err := FindServers(parentType, parentName, name, p)
 	if err != nil {
-		return nil, 0
+		return nil, i
 	}
-
-	for i, s := range servers {
-		if s.Name == name {
-			return s, i
-		}
-	}
-	return nil, 0
+	return server, i
 }
 
 func sectionType(parentType string) parser.Section {
@@ -876,4 +975,27 @@ func sectionType(parentType string) parser.Section {
 		sectionType = parser.Peers
 	}
 	return sectionType
+}
+
+func FindServers(parentType string, parentName string, serverName string, p parser.Parser) (*models.Server, int, error) {
+	data, err := p.Get(sectionType(parentType), parentName, "server", false)
+	if err != nil {
+		if errors.Is(err, parser_errors.ErrFetch) {
+			return nil, 0, nil
+		}
+		return nil, 0, err
+	}
+
+	ondiskServers, ok := data.([]types.Server)
+	if !ok {
+		return nil, 0, misc.CreateTypeAssertError("server")
+	}
+
+	for i, ondiskServer := range ondiskServers {
+		if ondiskServer.Name == serverName {
+			return ParseServer(ondiskServer), i, nil
+		}
+	}
+
+	return nil, 0, nil
 }

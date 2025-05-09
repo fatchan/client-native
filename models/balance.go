@@ -36,7 +36,7 @@ import (
 type Balance struct {
 	// algorithm
 	// Required: true
-	// Enum: [first hash hdr leastconn random rdp-cookie roundrobin source static-rr uri url_param]
+	// Enum: ["first","hash","hdr","leastconn","random","rdp-cookie","roundrobin","source","static-rr","uri","url_param"]
 	// +kubebuilder:validation:Enum=first;hash;hdr;leastconn;random;rdp-cookie;roundrobin;source;static-rr;uri;url_param;
 	Algorithm *string `json:"algorithm"`
 

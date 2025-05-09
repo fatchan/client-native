@@ -23,6 +23,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -85,6 +86,9 @@ type BindParams struct {
 	// curves
 	Curves string `json:"curves,omitempty"`
 
+	// default crt list
+	DefaultCrtList []string `json:"default_crt_list,omitempty"`
+
 	// defer accept
 	DeferAccept bool `json:"defer_accept,omitempty"`
 
@@ -94,19 +98,19 @@ type BindParams struct {
 	// expose fd listeners
 	ExposeFdListeners bool `json:"expose_fd_listeners,omitempty"`
 
-	// force sslv3
+	// This field is deprecated in favor of sslv3, and will be removed in a future release
 	ForceSslv3 bool `json:"force_sslv3,omitempty"`
 
-	// force tlsv10
+	// This field is deprecated in favor of tlsv10, and will be removed in a future release
 	ForceTlsv10 bool `json:"force_tlsv10,omitempty"`
 
-	// force tlsv11
+	// This field is deprecated in favor of tlsv11, and will be removed in a future release
 	ForceTlsv11 bool `json:"force_tlsv11,omitempty"`
 
-	// force tlsv12
+	// This field is deprecated in favor of tlsv12, and will be removed in a future release
 	ForceTlsv12 bool `json:"force_tlsv12,omitempty"`
 
-	// force tlsv13
+	// This field is deprecated in favor of tlsv13, and will be removed in a future release
 	ForceTlsv13 bool `json:"force_tlsv13,omitempty"`
 
 	// generate certificates
@@ -118,6 +122,11 @@ type BindParams struct {
 	// group
 	Group string `json:"group,omitempty"`
 
+	// guid prefix
+	// Pattern: ^[A-Za-z0-9-_.:]+$
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9-_.:]+$`
+	GUIDPrefix string `json:"guid_prefix,omitempty"`
+
 	// id
 	ID string `json:"id,omitempty"`
 
@@ -126,7 +135,7 @@ type BindParams struct {
 
 	// level
 	// Example: user
-	// Enum: [user operator admin]
+	// Enum: ["user","operator","admin"]
 	// +kubebuilder:validation:Enum=user;operator;admin;
 	Level string `json:"level,omitempty"`
 
@@ -162,22 +171,22 @@ type BindParams struct {
 	// no ca names
 	NoCaNames bool `json:"no_ca_names,omitempty"`
 
-	// no sslv3
+	// This field is deprecated in favor of sslv3, and will be removed in a future release
 	NoSslv3 bool `json:"no_sslv3,omitempty"`
 
 	// no tls tickets
 	NoTLSTickets bool `json:"no_tls_tickets,omitempty"`
 
-	// no tlsv10
+	// This field is deprecated in favor of tlsv10, and will be removed in a future release
 	NoTlsv10 bool `json:"no_tlsv10,omitempty"`
 
-	// no tlsv11
+	// This field is deprecated in favor of tlsv11, and will be removed in a future release
 	NoTlsv11 bool `json:"no_tlsv11,omitempty"`
 
-	// no tlsv12
+	// This field is deprecated in favor of tlsv12, and will be removed in a future release
 	NoTlsv12 bool `json:"no_tlsv12,omitempty"`
 
-	// no tlsv13
+	// This field is deprecated in favor of tlsv13, and will be removed in a future release
 	NoTlsv13 bool `json:"no_tlsv13,omitempty"`
 
 	// npn
@@ -186,30 +195,39 @@ type BindParams struct {
 	// prefer client ciphers
 	PreferClientCiphers bool `json:"prefer_client_ciphers,omitempty"`
 
-	// process
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
-	Process string `json:"process,omitempty"`
-
 	// proto
 	Proto string `json:"proto,omitempty"`
 
 	// quic cc algo
-	// Enum: [cubic newreno]
-	// +kubebuilder:validation:Enum=cubic;newreno;
+	// Enum: ["cubic","newreno","bbr","nocc"]
+	// +kubebuilder:validation:Enum=cubic;newreno;bbr;nocc;
 	QuicCcAlgo string `json:"quic-cc-algo,omitempty"`
 
 	// quic force retry
 	QuicForceRetry bool `json:"quic-force-retry,omitempty"`
 
 	// quic socket
-	// Enum: [connection listener]
+	// Enum: ["connection","listener"]
 	// +kubebuilder:validation:Enum=connection;listener;
 	QuicSocket string `json:"quic-socket,omitempty"`
 
+	// quic cc algo burst size
+	// Maximum: 1024
+	// Minimum: 0
+	// +kubebuilder:validation:Maximum=1024
+	// +kubebuilder:validation:Minimum=0
+	QuicCcAlgoBurstSize *int64 `json:"quic_cc_algo_burst_size,omitempty"`
+
+	// quic cc algo max window
+	// Maximum: 4.194304e+06
+	// Minimum: 10
+	// +kubebuilder:validation:Maximum=4.194304e+06
+	// +kubebuilder:validation:Minimum=10
+	QuicCcAlgoMaxWindow *int64 `json:"quic_cc_algo_max_window,omitempty"`
+
 	// severity output
 	// Example: none
-	// Enum: [none number string]
+	// Enum: ["none","number","string"]
 	// +kubebuilder:validation:Enum=none;number;string;
 	SeverityOutput string `json:"severity_output,omitempty"`
 
@@ -230,14 +248,19 @@ type BindParams struct {
 	SslCertificate string `json:"ssl_certificate,omitempty"`
 
 	// ssl max ver
-	// Enum: [SSLv3 TLSv1.0 TLSv1.1 TLSv1.2 TLSv1.3]
+	// Enum: ["SSLv3","TLSv1.0","TLSv1.1","TLSv1.2","TLSv1.3"]
 	// +kubebuilder:validation:Enum=SSLv3;TLSv1.0;TLSv1.1;TLSv1.2;TLSv1.3;
 	SslMaxVer string `json:"ssl_max_ver,omitempty"`
 
 	// ssl min ver
-	// Enum: [SSLv3 TLSv1.0 TLSv1.1 TLSv1.2 TLSv1.3]
+	// Enum: ["SSLv3","TLSv1.0","TLSv1.1","TLSv1.2","TLSv1.3"]
 	// +kubebuilder:validation:Enum=SSLv3;TLSv1.0;TLSv1.1;TLSv1.2;TLSv1.3;
 	SslMinVer string `json:"ssl_min_ver,omitempty"`
+
+	// sslv3
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	Sslv3 string `json:"sslv3,omitempty"`
 
 	// strict sni
 	StrictSni bool `json:"strict_sni,omitempty"`
@@ -253,6 +276,26 @@ type BindParams struct {
 
 	// tls ticket keys
 	TLSTicketKeys string `json:"tls_ticket_keys,omitempty"`
+
+	// tlsv10
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	Tlsv10 string `json:"tlsv10,omitempty"`
+
+	// tlsv11
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	Tlsv11 string `json:"tlsv11,omitempty"`
+
+	// tlsv12
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	Tlsv12 string `json:"tlsv12,omitempty"`
+
+	// tlsv13
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	Tlsv13 string `json:"tlsv13,omitempty"`
 
 	// transparent
 	Transparent bool `json:"transparent,omitempty"`
@@ -271,7 +314,7 @@ type BindParams struct {
 
 	// verify
 	// Example: none
-	// Enum: [none optional required]
+	// Enum: ["none","optional","required"]
 	// +kubebuilder:validation:Enum=none;optional;required;
 	Verify string `json:"verify,omitempty"`
 }
@@ -284,6 +327,14 @@ func (m *BindParams) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateDefaultCrtList(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateGUIDPrefix(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateLevel(formats); err != nil {
 		res = append(res, err)
 	}
@@ -292,15 +343,19 @@ func (m *BindParams) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateProcess(formats); err != nil {
-		res = append(res, err)
-	}
-
 	if err := m.validateQuicCcAlgo(formats); err != nil {
 		res = append(res, err)
 	}
 
 	if err := m.validateQuicSocket(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateQuicCcAlgoBurstSize(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateQuicCcAlgoMaxWindow(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -324,6 +379,26 @@ func (m *BindParams) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateSslv3(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTlsv10(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTlsv11(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTlsv12(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTlsv13(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateVerify(formats); err != nil {
 		res = append(res, err)
 	}
@@ -340,6 +415,34 @@ func (m *BindParams) validateAlpn(formats strfmt.Registry) error {
 	}
 
 	if err := validate.Pattern("alpn", "body", m.Alpn, `^[^\s]+$`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *BindParams) validateDefaultCrtList(formats strfmt.Registry) error {
+	if swag.IsZero(m.DefaultCrtList) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(m.DefaultCrtList); i++ {
+
+		if err := validate.Pattern("default_crt_list"+"."+strconv.Itoa(i), "body", m.DefaultCrtList[i], `^[^\s]+$`); err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
+func (m *BindParams) validateGUIDPrefix(formats strfmt.Registry) error {
+	if swag.IsZero(m.GUIDPrefix) { // not required
+		return nil
+	}
+
+	if err := validate.Pattern("guid_prefix", "body", m.GUIDPrefix, `^[A-Za-z0-9-_.:]+$`); err != nil {
 		return err
 	}
 
@@ -403,23 +506,11 @@ func (m *BindParams) validateName(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *BindParams) validateProcess(formats strfmt.Registry) error {
-	if swag.IsZero(m.Process) { // not required
-		return nil
-	}
-
-	if err := validate.Pattern("process", "body", m.Process, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 var bindParamsTypeQuicCcAlgoPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["cubic","newreno"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["cubic","newreno","bbr","nocc"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -434,6 +525,12 @@ const (
 
 	// BindParamsQuicCcAlgoNewreno captures enum value "newreno"
 	BindParamsQuicCcAlgoNewreno string = "newreno"
+
+	// BindParamsQuicCcAlgoBbr captures enum value "bbr"
+	BindParamsQuicCcAlgoBbr string = "bbr"
+
+	// BindParamsQuicCcAlgoNocc captures enum value "nocc"
+	BindParamsQuicCcAlgoNocc string = "nocc"
 )
 
 // prop value enum
@@ -493,6 +590,38 @@ func (m *BindParams) validateQuicSocket(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateQuicSocketEnum("quic-socket", "body", m.QuicSocket); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *BindParams) validateQuicCcAlgoBurstSize(formats strfmt.Registry) error {
+	if swag.IsZero(m.QuicCcAlgoBurstSize) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("quic_cc_algo_burst_size", "body", *m.QuicCcAlgoBurstSize, 0, false); err != nil {
+		return err
+	}
+
+	if err := validate.MaximumInt("quic_cc_algo_burst_size", "body", *m.QuicCcAlgoBurstSize, 1024, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *BindParams) validateQuicCcAlgoMaxWindow(formats strfmt.Registry) error {
+	if swag.IsZero(m.QuicCcAlgoMaxWindow) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("quic_cc_algo_max_window", "body", *m.QuicCcAlgoMaxWindow, 10, false); err != nil {
+		return err
+	}
+
+	if err := validate.MaximumInt("quic_cc_algo_max_window", "body", *m.QuicCcAlgoMaxWindow, 4.194304e+06, false); err != nil {
 		return err
 	}
 
@@ -664,6 +793,216 @@ func (m *BindParams) validateSslMinVer(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateSslMinVerEnum("ssl_min_ver", "body", m.SslMinVer); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var bindParamsTypeSslv3PropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		bindParamsTypeSslv3PropEnum = append(bindParamsTypeSslv3PropEnum, v)
+	}
+}
+
+const (
+
+	// BindParamsSslv3Enabled captures enum value "enabled"
+	BindParamsSslv3Enabled string = "enabled"
+
+	// BindParamsSslv3Disabled captures enum value "disabled"
+	BindParamsSslv3Disabled string = "disabled"
+)
+
+// prop value enum
+func (m *BindParams) validateSslv3Enum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, bindParamsTypeSslv3PropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *BindParams) validateSslv3(formats strfmt.Registry) error {
+	if swag.IsZero(m.Sslv3) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateSslv3Enum("sslv3", "body", m.Sslv3); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var bindParamsTypeTlsv10PropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		bindParamsTypeTlsv10PropEnum = append(bindParamsTypeTlsv10PropEnum, v)
+	}
+}
+
+const (
+
+	// BindParamsTlsv10Enabled captures enum value "enabled"
+	BindParamsTlsv10Enabled string = "enabled"
+
+	// BindParamsTlsv10Disabled captures enum value "disabled"
+	BindParamsTlsv10Disabled string = "disabled"
+)
+
+// prop value enum
+func (m *BindParams) validateTlsv10Enum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, bindParamsTypeTlsv10PropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *BindParams) validateTlsv10(formats strfmt.Registry) error {
+	if swag.IsZero(m.Tlsv10) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateTlsv10Enum("tlsv10", "body", m.Tlsv10); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var bindParamsTypeTlsv11PropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		bindParamsTypeTlsv11PropEnum = append(bindParamsTypeTlsv11PropEnum, v)
+	}
+}
+
+const (
+
+	// BindParamsTlsv11Enabled captures enum value "enabled"
+	BindParamsTlsv11Enabled string = "enabled"
+
+	// BindParamsTlsv11Disabled captures enum value "disabled"
+	BindParamsTlsv11Disabled string = "disabled"
+)
+
+// prop value enum
+func (m *BindParams) validateTlsv11Enum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, bindParamsTypeTlsv11PropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *BindParams) validateTlsv11(formats strfmt.Registry) error {
+	if swag.IsZero(m.Tlsv11) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateTlsv11Enum("tlsv11", "body", m.Tlsv11); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var bindParamsTypeTlsv12PropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		bindParamsTypeTlsv12PropEnum = append(bindParamsTypeTlsv12PropEnum, v)
+	}
+}
+
+const (
+
+	// BindParamsTlsv12Enabled captures enum value "enabled"
+	BindParamsTlsv12Enabled string = "enabled"
+
+	// BindParamsTlsv12Disabled captures enum value "disabled"
+	BindParamsTlsv12Disabled string = "disabled"
+)
+
+// prop value enum
+func (m *BindParams) validateTlsv12Enum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, bindParamsTypeTlsv12PropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *BindParams) validateTlsv12(formats strfmt.Registry) error {
+	if swag.IsZero(m.Tlsv12) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateTlsv12Enum("tlsv12", "body", m.Tlsv12); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var bindParamsTypeTlsv13PropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		bindParamsTypeTlsv13PropEnum = append(bindParamsTypeTlsv13PropEnum, v)
+	}
+}
+
+const (
+
+	// BindParamsTlsv13Enabled captures enum value "enabled"
+	BindParamsTlsv13Enabled string = "enabled"
+
+	// BindParamsTlsv13Disabled captures enum value "disabled"
+	BindParamsTlsv13Disabled string = "disabled"
+)
+
+// prop value enum
+func (m *BindParams) validateTlsv13Enum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, bindParamsTypeTlsv13PropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *BindParams) validateTlsv13(formats strfmt.Registry) error {
+	if swag.IsZero(m.Tlsv13) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateTlsv13Enum("tlsv13", "body", m.Tlsv13); err != nil {
 		return err
 	}
 

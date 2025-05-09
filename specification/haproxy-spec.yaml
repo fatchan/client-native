@@ -5,7 +5,7 @@ info:
   description: |
     API for editing and managing haproxy instances. Provides process information, configuration management,
     haproxy stats and logs.
-  version: '3.0'
+  version: '3.1'
   contact:
     name: HAProxy Support
     url: https://my.haproxy.com/portal/cust/login
@@ -22,6 +22,8 @@ definitions:
       $ref: "#/definitions/program"
   fcgiApp:
     $ref: "models/configuration/fcgi.yaml#/app"
+  fcgiAppBase:
+    $ref: "models/configuration/fcgi.yaml#/app_base"
   fcgiApps:
     type: array
     items:
@@ -48,10 +50,48 @@ definitions:
     type: array
     items:
       $ref: "#/definitions/site"
+  environment_options:
+    $ref: "models/configuration/global.yaml#/environment_options"
+  performance_options:
+    $ref: "models/configuration/global.yaml#/performance_options"
+  ssl_options:
+    $ref: "models/configuration/global.yaml#/ssl_options"
+  tune_options:
+    $ref: "models/configuration/global.yaml#/tune_options"
+  tune_quic_options:
+    $ref: "models/configuration/global.yaml#/tune_quic_options"
+  tune_vars_options:
+    $ref: "models/configuration/global.yaml#/tune_vars_options"
+  tune_zlib_options:
+    $ref: "models/configuration/global.yaml#/tune_zlib_options"
+  tune_ssl_options:
+    $ref: "models/configuration/global.yaml#/tune_ssl_options"
+  tune_lua_options:
+    $ref: "models/configuration/global.yaml#/tune_lua_options"
+  tune_buffer_options:
+    $ref: "models/configuration/global.yaml#/tune_buffer_options"
+  debug_options:
+    $ref: "models/configuration/global.yaml#/debug_options"
+  http_client_options:
+    $ref: "models/configuration/global.yaml#/http_client_options"
+  ocsp_update_options:
+    $ref: "models/configuration/global.yaml#/ocsp_update_options"
+  lua_options:
+    $ref: "models/configuration/global.yaml#/lua_options"
+  wurfl_options:
+    $ref: "models/configuration/global.yaml#/wurfl_options"
+  device_atlas_options:
+    $ref: "models/configuration/global.yaml#/device_atlas_options"
+  fifty_one_degrees_options:
+    $ref: "models/configuration/global.yaml#/fifty_one_degrees_options"
   global:
     $ref: "models/configuration/global.yaml#/global"
+  global_base:
+    $ref: "models/configuration/global.yaml#/global_base"
   defaults:
     $ref: "models/configuration/defaults.yaml#/defaults"
+  defaults_base:
+    $ref: "models/configuration/defaults.yaml#/defaults_base"
   defaults_sections:
     title: Defaults Sections
     description: HAProxy defaults sections array
@@ -60,6 +100,8 @@ definitions:
       $ref: '#/definitions/defaults'
   frontend:
     $ref: "models/configuration/frontend.yaml#/frontend"
+  frontend_base:
+    $ref: "models/configuration/frontend.yaml#/frontend_base"
   frontends:
     title: Frontends
     description: HAProxy frontends array
@@ -68,6 +110,8 @@ definitions:
       $ref: '#/definitions/frontend'
   backend:
     $ref: "models/configuration/backend.yaml#/backend"
+  backend_base:
+    $ref: "models/configuration/backend.yaml#/backend_base"
   backends:
     title: Backends
     description: HAProxy backends array
@@ -76,6 +120,8 @@ definitions:
       $ref: '#/definitions/backend'
   ring:
     $ref: "models/configuration/ring.yaml#/ring"
+  ring_base:
+    $ref: "models/configuration/ring.yaml#/ring_base"
   rings:
     title: Rings
     description: HAProxy rings array
@@ -92,6 +138,8 @@ definitions:
       $ref: '#/definitions/dgram_bind'
   log_forward:
     $ref: "models/configuration/log_forward.yaml#/log_forward"
+  log_forward_base:
+    $ref: "models/configuration/log_forward.yaml#/log_forward_base"
   log_forwards:
     title: Log Forwards
     description: HAProxy log forwards array
@@ -100,6 +148,8 @@ definitions:
       $ref: '#/definitions/log_forward'
   userlist:
     $ref: "models/configuration/userlist.yaml#/userlist"
+  userlist_base:
+    $ref: "models/configuration/userlist.yaml#/userlist_base"
   userlists:
     title: Userlists
     description: HAProxy userlists array
@@ -124,6 +174,8 @@ definitions:
       $ref: '#/definitions/group'
   mailers_section:
     $ref: "models/configuration/mailers.yaml#/mailers_section"
+  mailers_section_base:
+    $ref: "models/configuration/mailers.yaml#/mailers_section_base"
   mailers_sections:
     title: Mailers Sections
     description: HAProxy mailers_section array
@@ -140,6 +192,8 @@ definitions:
       $ref: "#/definitions/mailer_entry"
   peer_section:
     $ref: "models/configuration/peers.yaml#/peer_section"
+  peer_section_base:
+    $ref: "models/configuration/peers.yaml#/peer_section_base"
   peer_sections:
     title: Peer_Section
     description: HAProxy peer_section array
@@ -250,6 +304,14 @@ definitions:
     type: array
     items:
       $ref: '#/definitions/tcp_check'
+  quic_initial_rule:
+    $ref: "models/configuration/quic/initial.yaml#/quic_initial_rule"
+  quic_initial_rules:
+    title: QUIC Initials Array
+    x-go-name: QUICInitialRules
+    type: array
+    items:
+      $ref: '#/definitions/quic_initial_rule'
   backend_switching_rule:
     $ref: "models/configuration/switching.yaml#/backend_switching_rule"
   backend_switching_rules:
@@ -304,8 +366,6 @@ definitions:
     $ref: "models/stats.yaml#/native"
   native_stat_stats:
     $ref: "models/stats.yaml#/native_stat_stats"
-  native_stats_collection:
-    $ref: "models/stats.yaml#/native_stats_collection"
   stats_options:
     $ref: "models/configuration/misc.yaml#/stats_options"
   stats_http_request:
@@ -322,8 +382,6 @@ definitions:
     type: array
     items:
       $ref: '#/definitions/endpoint'
-  process_infos:
-    $ref: "models/runtime/process_info.yaml#/process_infos"
   process_info:
     $ref: "models/runtime/process_info.yaml#/process_info"
   process_info_item:
@@ -463,6 +521,8 @@ definitions:
       $ref: "#/definitions/capture"
   resolver:
     $ref: "models/configuration/resolver.yaml#/resolver"
+  resolver_base:
+    $ref: "models/configuration/resolver.yaml#/resolver_base"
   resolvers:
     title: Resolvers
     description: HAProxy resolvers array
@@ -575,6 +635,47 @@ definitions:
     type: array
     items:
       $ref: '#/definitions/table'
+  http_codes:
+    $ref: "models/configuration/misc.yaml#/http_codes"
+  crt_store:
+    $ref: "models/configuration/crt_store.yaml#/crt_store"
+  crt_stores:
+    description: List of Certificate Stores
+    type: array
+    items:
+      $ref: "#/definitions/crt_store"
+  crt_load:
+    $ref: "models/configuration/crt_store.yaml#/crt_load"
+  crt_loads:
+    description: List of certificates to load from a Certificate Store
+    type: array
+    items:
+      $ref: "#/definitions/crt_load"
+    x-omitempty: true
+  traces:
+    $ref: "models/configuration/traces.yaml#/traces"
+  trace_entry:
+    $ref: "models/configuration/traces.yaml#/trace_entry"
+  trace_entries:
+    description: list of entries in a traces section
+    type: array
+    items:
+      $ref: "#/definitions/trace_entry"
+  log_profile:
+    $ref: "models/configuration/log_profile.yaml#/log_profile"
+  log_profiles:
+    description: List of Logging Profiles
+    type: array
+    items:
+      $ref: "#/definitions/log_profile"
+  log_profile_step:
+    $ref: "models/configuration/log_profile.yaml#/log_profile_step"
+  log_profile_steps:
+    type: array
+    items:
+      $ref: "#/definitions/log_profile_step"
+    description: List of steps where to override the logging.
+    x-omitempty: true
 responses:
   BadRequest:
     description: Bad request
@@ -642,6 +743,19 @@ parameters:
     name: skip_reload
     in: query
     description: If set, no reload will be initiated after update
+    type: boolean
+    required: false
+    default: false
+  parent_name:
+    name: parent_name
+    in: path
+    description: Parent name
+    required: true
+    type: string
+  full_section:
+    name: full_section
+    in: query
+    description: Indicates if the action affects the specified child resources as well
     type: boolean
     required: false
     default: false
@@ -733,6 +847,10 @@ tags:
   - name: FCGIApp
   - name: ProcessManager
   - name: Table
+  - name: CrtStore
+  - name: CrtLoad
+  - name: Traces
+  - name: LogProfile
 security:
   - basic_auth: []
 paths:
@@ -774,9 +892,9 @@ paths:
     $ref: "paths/general.yaml#/transactions"
   /services/haproxy/transactions/{id}:
     $ref: "paths/general.yaml#/transactions_one"
-  /services/haproxy/spoe_transactions:
+  /services/haproxy/spoe/spoe_files/{parent_name}/transactions:
     $ref: "paths/spoe-transactions.yaml#/transactions"
-  /services/haproxy/spoe_transactions/{id}:
+  /services/haproxy/spoe/spoe_files/{parent_name}/transactions/{id}:
     $ref: "paths/spoe-transactions.yaml#/transactions_one"
   /services/haproxy/reloads:
     $ref: "paths/general.yaml#/reloads"
@@ -838,90 +956,154 @@ paths:
     $ref: "paths/configuration/backend.yaml#/backends"
   /services/haproxy/configuration/backends/{name}:
     $ref: "paths/configuration/backend.yaml#/backends_one"
+  {{ range parents "server" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/servers:
+    $ref: "paths/configuration/server.yaml#/servers"
+  {{ end -}}
+  {{ range parents "server" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/servers/{name}:
+    $ref: "paths/configuration/server.yaml#/servers_one"
+  {{ end -}}
   /services/haproxy/configuration/rings:
     $ref: "paths/configuration/ring.yaml#/rings"
   /services/haproxy/configuration/rings/{name}:
     $ref: "paths/configuration/ring.yaml#/rings_one"
-  /services/haproxy/configuration/binds:
+  {{ range parents "bind" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/binds:
     $ref: "paths/configuration/bind.yaml#/binds"
-  /services/haproxy/configuration/binds/{name}:
+  {{ end -}}
+  {{ range parents "bind" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/binds/{name}:
     $ref: "paths/configuration/bind.yaml#/binds_one"
-  /services/haproxy/configuration/dgram_binds:
+  {{ end -}}
+  /services/haproxy/configuration/log_forwards/{parent_name}/dgram_binds:
     $ref: "paths/configuration/dgram_bind.yaml#/dgram_binds"
-  /services/haproxy/configuration/dgram_binds/{name}:
+  /services/haproxy/configuration/log_forwards/{parent_name}/dgram_binds/{name}:
     $ref: "paths/configuration/dgram_bind.yaml#/dgram_binds_one"
   /services/haproxy/configuration/log_forwards:
     $ref: "paths/configuration/log_forward.yaml#/log_forwards"
   /services/haproxy/configuration/log_forwards/{name}:
     $ref: "paths/configuration/log_forward.yaml#/log_forwards_one"
-  /services/haproxy/configuration/servers:
-    $ref: "paths/configuration/server.yaml#/servers"
-  /services/haproxy/configuration/servers/{name}:
-    $ref: "paths/configuration/server.yaml#/servers_one"
-  /services/haproxy/configuration/server_templates:
-    $ref: "paths/configuration/server.yaml#/server_templates"
-  /services/haproxy/configuration/server_templates/{prefix}:
-    $ref: "paths/configuration/server.yaml#/server_templates_one"
-  /services/haproxy/configuration/http_checks:
+  /services/haproxy/configuration/backends/{parent_name}/server_templates:
+    $ref: "paths/configuration/server_template.yaml#/server_templates"
+  /services/haproxy/configuration/backends/{parent_name}/server_templates/{prefix}:
+    $ref: "paths/configuration/server_template.yaml#/server_templates_one"
+  {{ range parents "http_check" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/http_checks:
     $ref: "paths/configuration/http/check.yaml#/http_checks"
-  /services/haproxy/configuration/http_checks/{index}:
+  {{ end -}}
+  {{ range parents "http_check" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/http_checks/{index}:
     $ref: "paths/configuration/http/check.yaml#/http_checks_one"
-  /services/haproxy/configuration/http_request_rules:
+  {{ end -}}
+  {{ range parents "http_request_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/http_request_rules:
     $ref: "paths/configuration/http/request.yaml#/http_request_rules"
-  /services/haproxy/configuration/http_request_rules/{index}:
+  {{ end -}}
+  {{ range parents "http_request_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/http_request_rules/{index}:
     $ref: "paths/configuration/http/request.yaml#/http_request_rules_one"
-  /services/haproxy/configuration/http_response_rules:
+  {{ end -}}
+  {{ range parents "http_response_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/http_response_rules:
     $ref: "paths/configuration/http/response.yaml#/http_response_rules"
-  /services/haproxy/configuration/http_response_rules/{index}:
+  {{ end -}}
+  {{ range parents "http_response_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/http_response_rules/{index}:
     $ref: "paths/configuration/http/response.yaml#/http_response_rules_one"
-  /services/haproxy/configuration/http_after_response_rules:
+  {{ end -}}
+  {{ range parents "http_after_response_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/http_after_response_rules:
     $ref: "paths/configuration/http/after_response.yaml#/http_after_response_rules"
-  /services/haproxy/configuration/http_after_response_rules/{index}:
+  {{ end -}}
+  {{ range parents "http_after_response_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/http_after_response_rules/{index}:
     $ref: "paths/configuration/http/after_response.yaml#/http_after_response_rules_one"
-  /services/haproxy/configuration/http_error_rules:
+  {{ end -}}
+  {{ range parents "http_error_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/http_error_rules:
     $ref: "paths/configuration/http/error.yaml#/http_error_rules"
-  /services/haproxy/configuration/http_error_rules/{index}:
+  {{ end -}}
+  {{ range parents "http_error_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/http_error_rules/{index}:
     $ref: "paths/configuration/http/error.yaml#/http_error_rules_one"
-  /services/haproxy/configuration/tables:
+  {{ end -}}
+  {{ range parents "quic_initial_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/quic_initial_rules:
+    $ref: "paths/configuration/quic/initial.yaml#/quic_initial_rules"
+  {{ end -}}
+  {{ range parents "quic_initial_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/quic_initial_rules/{index}:
+    $ref: "paths/configuration/quic/initial.yaml#/quic_initial_rules_one"
+  {{ end -}}
+  /services/haproxy/configuration/peers/{parent_name}/tables:
     $ref: "paths/configuration/table.yaml#/tables"
-  /services/haproxy/configuration/tables/{name}:
+  /services/haproxy/configuration/peers/{parent_name}/tables/{name}:
     $ref: "paths/configuration/table.yaml#/table"
-  /services/haproxy/configuration/tcp_checks:
+  {{ range parents "tcp_check" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/tcp_checks:
     $ref: "paths/configuration/tcp/check.yaml#/tcp_checks"
-  /services/haproxy/configuration/tcp_checks/{index}:
+  {{ end -}}
+  {{ range parents "tcp_check" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/tcp_checks/{index}:
     $ref: "paths/configuration/tcp/check.yaml#/tcp_checks_one"
-  /services/haproxy/configuration/tcp_request_rules:
+  {{ end -}}
+  {{ range parents "tcp_request_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/tcp_request_rules:
     $ref: "paths/configuration/tcp/request.yaml#/tcp_request_rules"
-  /services/haproxy/configuration/tcp_request_rules/{index}:
+  {{ end -}}
+  {{ range parents "tcp_request_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/tcp_request_rules/{index}:
     $ref: "paths/configuration/tcp/request.yaml#/tcp_request_rules_one"
-  /services/haproxy/configuration/tcp_response_rules:
+  {{ end -}}
+  {{ range parents "tcp_response_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/tcp_response_rules:
     $ref: "paths/configuration/tcp/response.yaml#/tcp_response_rules"
-  /services/haproxy/configuration/tcp_response_rules/{index}:
+  {{ end -}}
+  {{ range parents "tcp_response_rule" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/tcp_response_rules/{index}:
     $ref: "paths/configuration/tcp/response.yaml#/tcp_response_rules_one"
-  /services/haproxy/configuration/backend_switching_rules:
+  {{ end -}}
+  /services/haproxy/configuration/frontends/{parent_name}/backend_switching_rules:
     $ref: "paths/configuration/switching.yaml#/backend_switching_rules"
-  /services/haproxy/configuration/backend_switching_rules/{index}:
+  /services/haproxy/configuration/frontends/{parent_name}/backend_switching_rules/{index}:
     $ref: "paths/configuration/switching.yaml#/backend_switching_rules_one"
-  /services/haproxy/configuration/server_switching_rules:
+  /services/haproxy/configuration/backends/{parent_name}/server_switching_rules:
     $ref: "paths/configuration/switching.yaml#/server_switching_rules"
-  /services/haproxy/configuration/server_switching_rules/{index}:
+  /services/haproxy/configuration/backends/{parent_name}/server_switching_rules/{index}:
     $ref: "paths/configuration/switching.yaml#/server_switching_rules_one"
-  /services/haproxy/configuration/filters:
+  {{ range parents "filter" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/filters:
     $ref: "paths/configuration/filter.yaml#/filters"
-  /services/haproxy/configuration/filters/{index}:
+  {{ end -}}
+  {{ range parents "filter" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/filters/{index}:
     $ref: "paths/configuration/filter.yaml#/filters_one"
-  /services/haproxy/configuration/stick_rules:
+  {{ end -}}
+  /services/haproxy/configuration/backends/{parent_name}/stick_rules:
     $ref: "paths/configuration/stick.yaml#/stick_rules"
-  /services/haproxy/configuration/stick_rules/{index}:
+  /services/haproxy/configuration/backends/{parent_name}/stick_rules/{index}:
     $ref: "paths/configuration/stick.yaml#/stick_rules_one"
-  /services/haproxy/configuration/log_targets:
+  /services/haproxy/configuration/global/log_targets:
+    $ref: "paths/configuration/log_targets_global.yaml#/log_targets"
+  /services/haproxy/configuration/global/log_targets/{index}:
+    $ref: "paths/configuration/log_targets_global.yaml#/log_targets_one"
+  {{ range parents "log_target" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/log_targets:
     $ref: "paths/configuration/log_targets.yaml#/log_targets"
-  /services/haproxy/configuration/log_targets/{index}:
+  {{ end -}}
+  {{ range parents "log_target" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/log_targets/{index}:
     $ref: "paths/configuration/log_targets.yaml#/log_targets_one"
-  /services/haproxy/configuration/acls:
+  {{ end -}}
+  {{ range parents "acl" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/acls:
     $ref: "paths/configuration/acl.yaml#/acls"
-  /services/haproxy/configuration/acls/{index}:
+  {{ end -}}
+  {{ range parents "acl" -}}
+  /services/haproxy/configuration/{{ .PathParentType }}/{parent_name}/acls/{index}:
     $ref: "paths/configuration/acl.yaml#/acls_one"
+  {{ end -}}
   /services/haproxy/configuration/caches:
     $ref: "paths/configuration/cache.yaml#/caches"
   /services/haproxy/configuration/caches/{name}:
@@ -936,35 +1118,51 @@ paths:
     $ref: "paths/configuration/resolver.yaml#/nameservers_one"
   /services/haproxy/configuration/raw:
     $ref: "paths/configuration/raw.yaml#/configuration"
+  /services/haproxy/configuration/crt_stores:
+    $ref: "paths/configuration/crt_store.yaml#/crt_stores"
+  /services/haproxy/configuration/crt_stores/{name}:
+    $ref: "paths/configuration/crt_store.yaml#/crt_store"
+  /services/haproxy/configuration/crt_loads:
+    $ref: "paths/configuration/crt_store.yaml#/crt_loads"
+  /services/haproxy/configuration/crt_loads/{certificate}:
+    $ref: "paths/configuration/crt_store.yaml#/crt_load"
+  /services/haproxy/configuration/traces:
+    $ref: "paths/configuration/traces.yaml#/traces"
+  /services/haproxy/configuration/traces/entries:
+    $ref: "paths/configuration/traces.yaml#/trace_entries"
+  /services/haproxy/configuration/log_profiles:
+    $ref: "paths/configuration/log_profile.yaml#/log_profiles"
+  /services/haproxy/configuration/log_profiles/{name}:
+    $ref: "paths/configuration/log_profile.yaml#/log_profiles_one"
   /services/haproxy/runtime:
     $ref: "paths/general.yaml#/runtime"
   /services/haproxy/runtime/acls:
     $ref: "paths/runtime/acls.yaml#/acls"
   /services/haproxy/runtime/acls/{id}:
     $ref: "paths/runtime/acls.yaml#/acls_one"
-  /services/haproxy/runtime/acl_file_entries:
+  /services/haproxy/runtime/acls/{parent_name}/entries:
     $ref: "paths/runtime/acls_entries.yaml#/acls_entries"
-  /services/haproxy/runtime/acl_file_entries/{id}:
+  /services/haproxy/runtime/acls/{parent_name}/entries/{id}:
     $ref: "paths/runtime/acls_entries.yaml#/acls_entries_one"
   /services/haproxy/runtime/info:
     $ref: "paths/runtime/process_info.yaml#/process_info"
-  /services/haproxy/runtime/servers:
+  /services/haproxy/runtime/backends/{parent_name}/servers:
     $ref: "paths/runtime/servers.yaml#/servers"
-  /services/haproxy/runtime/servers/{name}:
+  /services/haproxy/runtime/backends/{parent_name}/servers/{name}:
     $ref: "paths/runtime/servers.yaml#/servers_one"
   /services/haproxy/runtime/stick_tables:
     $ref: "paths/runtime/stick_tables.yaml#/stick_tables"
   /services/haproxy/runtime/stick_tables/{name}:
     $ref: "paths/runtime/stick_tables.yaml#/stick_tables_one"
-  /services/haproxy/runtime/stick_table_entries:
+  /services/haproxy/runtime/stick_tables/{parent_name}/entries:
     $ref: "paths/runtime/stick_table_entries.yaml#/stick_table_entries"
   /services/haproxy/runtime/maps:
     $ref: "paths/runtime/maps.yaml#/maps"
   /services/haproxy/runtime/maps/{name}:
     $ref: "paths/runtime/maps.yaml#/maps_one"
-  /services/haproxy/runtime/maps_entries:
+  /services/haproxy/runtime/maps/{parent_name}/entries:
     $ref: "paths/runtime/maps_entries.yaml#/maps_entries"
-  /services/haproxy/runtime/maps_entries/{id}:
+  /services/haproxy/runtime/maps/{parent_name}/entries/{id}:
     $ref: "paths/runtime/maps_entries.yaml#/maps_entries_one"
   /services/haproxy/configuration/version:
     $ref: "paths/configuration/version.yaml#/version"
@@ -988,25 +1186,25 @@ paths:
     $ref: "paths/spoe.yaml#/spoe_files"
   /services/haproxy/spoe/spoe_files/{name}:
     $ref: "paths/spoe.yaml#/spoes_one"
-  /services/haproxy/spoe/spoe_scopes:
+  /services/haproxy/spoe/spoe_files/{parent_name}/scopes:
     $ref: "paths/spoe.yaml#/spoe_scopes"
-  /services/haproxy/spoe/spoe_scopes/{name}:
+  /services/haproxy/spoe/spoe_files/{parent_name}/scopes/{name}:
     $ref: "paths/spoe.yaml#/spoe_scopes_one"
-  /services/haproxy/spoe/spoe_agents:
+  /services/haproxy/spoe/spoe_files/{parent_name}/scopes/{scope_name}/agents:
     $ref: "paths/spoe.yaml#/spoe_agents"
-  /services/haproxy/spoe/spoe_agents/{name}:
+  /services/haproxy/spoe/spoe_files/{parent_name}/scopes/{scope_name}/agents/{name}:
     $ref: "paths/spoe.yaml#/spoe_agents_one"
-  /services/haproxy/spoe/spoe_messages:
+  /services/haproxy/spoe/spoe_files/{parent_name}/scopes/{scope_name}/messages:
     $ref: "paths/spoe.yaml#/spoe_messages"
-  /services/haproxy/spoe/spoe_messages/{name}:
+  /services/haproxy/spoe/spoe_files/{parent_name}/scopes/{scope_name}/messages/{name}:
     $ref: "paths/spoe.yaml#/spoe_messages_one"
-  /services/haproxy/spoe/spoe_groups:
+  /services/haproxy/spoe/spoe_files/{parent_name}/scopes/{scope_name}/groups:
     $ref: "paths/spoe.yaml#/spoe_groups"
-  /services/haproxy/spoe/spoe_groups/{name}:
+  /services/haproxy/spoe/spoe_files/{parent_name}/scopes/{scope_name}/groups/{name}:
     $ref: "paths/spoe.yaml#/spoe_groups_one"
-  /services/haproxy/spoe/version:
+  /services/haproxy/spoe/{parent_name}/version:
     $ref: "paths/spoe.yaml#/version"
-  /services/haproxy/configuration/captures:
+  /services/haproxy/configuration/frontends/{parent_name}/captures:
     $ref: "paths/configuration/capture.yaml#/captures"
-  /services/haproxy/configuration/captures/{index}:
+  /services/haproxy/configuration/frontends/{parent_name}/captures/{index}:
     $ref: "paths/configuration/capture.yaml#/captures_one"

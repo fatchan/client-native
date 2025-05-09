@@ -17,18 +17,18 @@ package configuration
 
 import (
 	goerrors "errors"
-	"fmt"
 	"strconv"
 	"strings"
 
 	strfmt "github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	"github.com/haproxytech/config-parser/v5/common"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/parsers/actions"
-	http_actions "github.com/haproxytech/config-parser/v5/parsers/http/actions"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	"github.com/haproxytech/client-native/v6/config-parser/common"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/parsers/actions"
+	http_actions "github.com/haproxytech/client-native/v6/config-parser/parsers/http/actions"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
+	"github.com/haproxytech/client-native/v6/configuration/options"
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
 )
@@ -37,8 +37,9 @@ type HTTPResponseRule interface {
 	GetHTTPResponseRules(parentType, parentName string, transactionID string) (int64, models.HTTPResponseRules, error)
 	GetHTTPResponseRule(id int64, parentType, parentName string, transactionID string) (int64, *models.HTTPResponseRule, error)
 	DeleteHTTPResponseRule(id int64, parentType string, parentName string, transactionID string, version int64) error
-	CreateHTTPResponseRule(parentType string, parentName string, data *models.HTTPResponseRule, transactionID string, version int64) error
+	CreateHTTPResponseRule(id int64, parentType string, parentName string, data *models.HTTPResponseRule, transactionID string, version int64) error
 	EditHTTPResponseRule(id int64, parentType string, parentName string, data *models.HTTPResponseRule, transactionID string, version int64) error
+	ReplaceHTTPResponseRules(parentType string, parentName string, data models.HTTPResponseRules, transactionID string, version int64) error
 }
 
 // GetHTTPResponseRules returns configuration version and an array of
@@ -75,11 +76,9 @@ func (c *client) GetHTTPResponseRule(id int64, parentType, parentName string, tr
 		return 0, nil, err
 	}
 
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
+	section, parentName, err := getParserFromParent("http-response", parentType, parentName)
+	if err != nil {
+		return v, nil, err
 	}
 
 	data, err := p.GetOne(section, parentName, "http-response", int(id))
@@ -88,7 +87,6 @@ func (c *client) GetHTTPResponseRule(id int64, parentType, parentName string, tr
 	}
 
 	httpRule := ParseHTTPResponseRule(data.(types.Action))
-	httpRule.Index = &id
 
 	return v, httpRule, nil
 }
@@ -101,11 +99,9 @@ func (c *client) DeleteHTTPResponseRule(id int64, parentType string, parentName 
 		return err
 	}
 
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
+	section, parentName, err := getParserFromParent("http-response", parentType, parentName)
+	if err != nil {
+		return err
 	}
 
 	if err := p.Delete(section, parentName, "http-response", int(id)); err != nil {
@@ -117,7 +113,7 @@ func (c *client) DeleteHTTPResponseRule(id int64, parentType string, parentName 
 
 // CreateHTTPResponseRule creates a http response rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) CreateHTTPResponseRule(parentType string, parentName string, data *models.HTTPResponseRule, transactionID string, version int64) error {
+func (c *client) CreateHTTPResponseRule(id int64, parentType string, parentName string, data *models.HTTPResponseRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -129,19 +125,17 @@ func (c *client) CreateHTTPResponseRule(parentType string, parentName string, da
 		return err
 	}
 
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
-	}
-
-	s, err := SerializeHTTPResponseRule(*data)
+	section, parentName, err := getParserFromParent("http-response", parentType, parentName)
 	if err != nil {
 		return err
 	}
-	if err := p.Insert(section, parentName, "http-response", s, int(*data.Index)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
+
+	s, err := SerializeHTTPResponseRule(*data, &c.ConfigurationOptions)
+	if err != nil {
+		return err
+	}
+	if err := p.Insert(section, parentName, "http-response", s, int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	return c.SaveData(p, t, transactionID == "")
@@ -149,8 +143,6 @@ func (c *client) CreateHTTPResponseRule(parentType string, parentName string, da
 
 // EditHTTPResponseRule edits a http response rule in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-//
-//nolint:dupl
 func (c *client) EditHTTPResponseRule(id int64, parentType string, parentName string, data *models.HTTPResponseRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
@@ -164,18 +156,16 @@ func (c *client) EditHTTPResponseRule(id int64, parentType string, parentName st
 		return err
 	}
 
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
+	section, parentName, err := getParserFromParent("http-response", parentType, parentName)
+	if err != nil {
+		return err
 	}
 
 	if _, err = p.GetOne(section, parentName, "http-response", int(id)); err != nil {
 		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
-	s, err := SerializeHTTPResponseRule(*data)
+	s, err := SerializeHTTPResponseRule(*data, &c.ConfigurationOptions)
 	if err != nil {
 		return err
 	}
@@ -187,14 +177,13 @@ func (c *client) EditHTTPResponseRule(id int64, parentType string, parentName st
 }
 
 func ParseHTTPResponseRules(t, pName string, p parser.Parser) (models.HTTPResponseRules, error) {
-	section := parser.Global
-	if t == FrontendParentName {
-		section = parser.Frontends
-	} else if t == BackendParentName {
-		section = parser.Backends
+	section, pName, err := getParserFromParent("http-response", t, pName)
+	if err != nil {
+		return nil, err
 	}
 
-	httpResRules := models.HTTPResponseRules{}
+	var httpResRules models.HTTPResponseRules
+
 	data, err := p.Get(section, pName, "http-response", false)
 	if err != nil {
 		if goerrors.Is(err, parser_errors.ErrFetch) {
@@ -207,15 +196,60 @@ func ParseHTTPResponseRules(t, pName string, p parser.Parser) (models.HTTPRespon
 	if !ok {
 		return nil, misc.CreateTypeAssertError("http-response")
 	}
-	for i, r := range rules {
-		id := int64(i)
+	for _, r := range rules {
 		httpResRule := ParseHTTPResponseRule(r)
 		if httpResRule != nil {
-			httpResRule.Index = &id
 			httpResRules = append(httpResRules, httpResRule)
 		}
 	}
 	return httpResRules, nil
+}
+
+// ReplaceHTTPResponseRules replaces all HTTP Response Rule lines in configuration for a parentType/parentName.
+// One of version or transactionID is mandatory.
+// Returns error on fail, nil on success.
+//
+//nolint:dupl
+func (c *client) ReplaceHTTPResponseRules(parentType string, parentName string, data models.HTTPResponseRules, transactionID string, version int64) error {
+	if c.UseModelsValidation {
+		validationErr := data.Validate(strfmt.Default)
+		if validationErr != nil {
+			return NewConfError(ErrValidationError, validationErr.Error())
+		}
+	}
+	p, t, err := c.loadDataForChange(transactionID, version)
+	if err != nil {
+		return err
+	}
+
+	section, parentName, err := getParserFromParent("http-response", parentType, parentName)
+	if err != nil {
+		return err
+	}
+
+	httpResponseRules, err := ParseHTTPResponseRules(parentType, parentName, p)
+	if err != nil {
+		return c.HandleError("", parentType, parentName, "", false, err)
+	}
+
+	for i := range httpResponseRules {
+		// Always delete index 0
+		if err := p.Delete(section, parentName, "http-response", 0); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	for i, newHTTPResponseRule := range data {
+		s, err := SerializeHTTPResponseRule(*newHTTPResponseRule, &c.ConfigurationOptions)
+		if err != nil {
+			return err
+		}
+		if err := p.Insert(section, parentName, "http-response", s, i); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	return c.SaveData(p, t, transactionID == "")
 }
 
 func ParseHTTPResponseRule(f types.Action) *models.HTTPResponseRule { //nolint:maintidx,cyclop,gocyclo
@@ -508,6 +542,7 @@ func ParseHTTPResponseRule(f types.Action) *models.HTTPResponseRule { //nolint:m
 		}
 	case *actions.SilentDrop:
 		return &models.HTTPResponseRule{
+			RstTTL:   v.RstTTL,
 			Type:     "silent-drop",
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
@@ -565,11 +600,18 @@ func ParseHTTPResponseRule(f types.Action) *models.HTTPResponseRule { //nolint:m
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
 		}
+	case *actions.DoLog:
+		return &models.HTTPResponseRule{
+			Type:     models.HTTPResponseRuleTypeDoDashLog,
+			Cond:     v.Cond,
+			CondTest: v.CondTest,
+		}
 	}
 	return nil
 }
 
-func SerializeHTTPResponseRule(f models.HTTPResponseRule) (rule types.Action, err error) { //nolint:gocyclo,ireturn,cyclop,maintidx,gocognit
+func SerializeHTTPResponseRule(f models.HTTPResponseRule, opt *options.ConfigurationOptions) (types.Action, error) { //nolint:gocyclo,ireturn,cyclop,maintidx,gocognit
+	var rule types.Action
 	switch f.Type {
 	case "add-acl":
 		rule = &http_actions.AddACL{
@@ -831,6 +873,7 @@ func SerializeHTTPResponseRule(f models.HTTPResponseRule) (rule types.Action, er
 		}
 	case "silent-drop":
 		rule = &actions.SilentDrop{
+			RstTTL:   f.RstTTL,
 			Cond:     f.Cond,
 			CondTest: f.CondTest,
 		}
@@ -861,8 +904,8 @@ func SerializeHTTPResponseRule(f models.HTTPResponseRule) (rule types.Action, er
 		}
 	case "wait-for-body":
 		rule = &http_actions.WaitForBody{
-			Time:     fmt.Sprintf("%v", f.WaitTime),
-			AtLeast:  fmt.Sprintf("%v", f.WaitAtLeast),
+			Time:     misc.SerializeTime(*f.WaitTime, opt.PreferredTimeSuffix),
+			AtLeast:  misc.SerializeSize(*f.WaitAtLeast),
 			Cond:     f.Cond,
 			CondTest: f.CondTest,
 		}
@@ -886,6 +929,11 @@ func SerializeHTTPResponseRule(f models.HTTPResponseRule) (rule types.Action, er
 			Cond:     f.Cond,
 			CondTest: f.CondTest,
 		}
+	case "do-log":
+		rule = &actions.DoLog{
+			Cond:     f.Cond,
+			CondTest: f.CondTest,
+		}
 	}
-	return rule, err
+	return rule, nil
 }

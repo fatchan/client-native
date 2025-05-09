@@ -18,13 +18,13 @@ package configuration
 import (
 	"errors"
 	"fmt"
-	"strconv"
 
 	strfmt "github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	parsererrors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parsererrors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
+	"github.com/haproxytech/client-native/v6/configuration/options"
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
 )
@@ -83,7 +83,7 @@ func (c *client) GetRing(name string, transactionID string) (int64, *models.Ring
 		return v, nil, NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("ring %s does not exist", name))
 	}
 
-	ring := &models.Ring{Name: name}
+	ring := &models.Ring{RingBase: models.RingBase{Name: name}}
 	if err = ParseRingSection(p, ring); err != nil {
 		return 0, nil, err
 	}
@@ -208,7 +208,7 @@ func (c *client) CreateRing(data *models.Ring, transactionID string, version int
 		return c.HandleError(data.Name, "", "", t, transactionID == "", err)
 	}
 
-	if err = SerializeRingSection(p, data); err != nil {
+	if err = SerializeRingSection(p, data, &c.ConfigurationOptions); err != nil {
 		return err
 	}
 
@@ -234,16 +234,16 @@ func (c *client) EditRing(name string, data *models.Ring, transactionID string, 
 		return c.HandleError(data.Name, "", "", t, transactionID == "", e)
 	}
 
-	if err = SerializeRingSection(p, data); err != nil {
+	if err = SerializeRingSection(p, data, &c.ConfigurationOptions); err != nil {
 		return err
 	}
 
 	return c.SaveData(p, t, transactionID == "")
 }
 
-func SerializeRingSection(p parser.Parser, data *models.Ring) error { //nolint:gocognit
+func SerializeRingSection(p parser.Parser, data *models.Ring, opt *options.ConfigurationOptions) error { //nolint:gocognit
 	if data == nil {
-		return fmt.Errorf("empty ring")
+		return errors.New("empty ring")
 	}
 
 	var err error
@@ -285,7 +285,7 @@ func SerializeRingSection(p parser.Parser, data *models.Ring) error { //nolint:g
 			return err
 		}
 	} else {
-		d := types.StringC{Value: strconv.FormatInt(*data.Size, 10)}
+		d := types.StringC{Value: misc.SerializeSize(*data.Size)}
 		if err = p.Set(parser.Ring, data.Name, "size", d); err != nil {
 			return err
 		}
@@ -296,7 +296,7 @@ func SerializeRingSection(p parser.Parser, data *models.Ring) error { //nolint:g
 			return err
 		}
 	} else {
-		tc := types.SimpleTimeout{Value: strconv.FormatInt(*data.TimeoutConnect, 10)}
+		tc := types.SimpleTimeout{Value: misc.SerializeTime(*data.TimeoutConnect, opt.PreferredTimeSuffix)}
 		if err = p.Set(parser.Ring, data.Name, "timeout connect", tc); err != nil {
 			return err
 		}
@@ -307,7 +307,7 @@ func SerializeRingSection(p parser.Parser, data *models.Ring) error { //nolint:g
 			return err
 		}
 	} else {
-		ts := types.SimpleTimeout{Value: strconv.FormatInt(*data.TimeoutServer, 10)}
+		ts := types.SimpleTimeout{Value: misc.SerializeTime(*data.TimeoutServer, opt.PreferredTimeSuffix)}
 		if err = p.Set(parser.Ring, data.Name, "timeout server", ts); err != nil {
 			return err
 		}

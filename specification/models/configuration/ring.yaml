@@ -1,6 +1,17 @@
 ---
 ring:
-  title: Ring
+  type: object
+  description: Ring with all it's children resources
+  x-go-name: Ring
+  allOf:
+    - $ref: "#/definitions/ring_base"
+    - type: object
+      properties:
+        servers:
+          additionalProperties:
+            $ref: "#/definitions/server"
+ring_base:
+  title: Ring Base
   description: HAProxy ring configuration
   type: object
   required:
@@ -23,12 +34,20 @@ ring:
       x-display-name: The maximum length of an event message stored into the ring
     size:
       type: integer
+      minimum: 0
       x-nullable: true
       x-display-name: Optional size in bytes for the ring-buffer
+      x-size: true
     timeout_connect:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     timeout_server:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
   additionalProperties: false

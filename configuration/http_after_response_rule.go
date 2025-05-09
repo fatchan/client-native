@@ -21,12 +21,12 @@ import (
 	"strings"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	"github.com/haproxytech/config-parser/v5/common"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/parsers/actions"
-	http_actions "github.com/haproxytech/config-parser/v5/parsers/http/actions"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	"github.com/haproxytech/client-native/v6/config-parser/common"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/parsers/actions"
+	http_actions "github.com/haproxytech/client-native/v6/config-parser/parsers/http/actions"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
@@ -36,8 +36,9 @@ type HTTPAfterResponseRule interface {
 	GetHTTPAfterResponseRules(parentType, parentName string, transactionID string) (int64, models.HTTPAfterResponseRules, error)
 	GetHTTPAfterResponseRule(id int64, parentType, parentName string, transactionID string) (int64, *models.HTTPAfterResponseRule, error)
 	DeleteHTTPAfterResponseRule(id int64, parentType string, parentName string, transactionID string, version int64) error
-	CreateHTTPAfterResponseRule(parentType string, parentName string, data *models.HTTPAfterResponseRule, transactionID string, version int64) error
+	CreateHTTPAfterResponseRule(id int64, parentType string, parentName string, data *models.HTTPAfterResponseRule, transactionID string, version int64) error
 	EditHTTPAfterResponseRule(id int64, parentType string, parentName string, data *models.HTTPAfterResponseRule, transactionID string, version int64) error
+	ReplaceHTTPAfterResponseRules(parentType string, parentName string, data models.HTTPAfterResponseRules, transactionID string, version int64) error
 }
 
 // GetHTTPAfterResponseRules returns configuration version and an array of configured http response rules in the specified parent.
@@ -74,11 +75,9 @@ func (c *client) GetHTTPAfterResponseRule(id int64, parentType, parentName strin
 		return 0, nil, err
 	}
 
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
+	section, parentName, err := getParserFromParent("http-after-response", parentType, parentName)
+	if err != nil {
+		return v, nil, err
 	}
 
 	data, err := p.GetOne(section, parentName, "http-after-response", int(id))
@@ -86,8 +85,10 @@ func (c *client) GetHTTPAfterResponseRule(id int64, parentType, parentName strin
 		return v, nil, c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, "", false, err)
 	}
 
-	httpRule := ParseHTTPAfterRule(data.(types.Action))
-	httpRule.Index = &id
+	httpRule, err := ParseHTTPAfterRule(data.(types.Action))
+	if err != nil {
+		return v, nil, err
+	}
 
 	return v, httpRule, nil
 }
@@ -100,11 +101,9 @@ func (c *client) DeleteHTTPAfterResponseRule(id int64, parentType string, parent
 		return err
 	}
 
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
+	section, parentName, err := getParserFromParent("http-after-response", parentType, parentName)
+	if err != nil {
+		return err
 	}
 
 	if err := p.Delete(section, parentName, "http-after-response", int(id)); err != nil {
@@ -116,7 +115,7 @@ func (c *client) DeleteHTTPAfterResponseRule(id int64, parentType string, parent
 
 // CreateHTTPAfterResponseRule creates a http response rule in configuration. One of version or transactionID is mandatory.
 // Returns error on fail, nil on success.
-func (c *client) CreateHTTPAfterResponseRule(parentType string, parentName string, data *models.HTTPAfterResponseRule, transactionID string, version int64) error {
+func (c *client) CreateHTTPAfterResponseRule(id int64, parentType string, parentName string, data *models.HTTPAfterResponseRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -128,19 +127,17 @@ func (c *client) CreateHTTPAfterResponseRule(parentType string, parentName strin
 		return err
 	}
 
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
+	section, parentName, err := getParserFromParent("http-after-response", parentType, parentName)
+	if err != nil {
+		return err
 	}
 
 	s, err := SerializeHTTPAfterRule(*data)
 	if err != nil {
 		return err
 	}
-	if err := p.Insert(section, parentName, "http-after-response", s, int(*data.Index)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
+	if err := p.Insert(section, parentName, "http-after-response", s, int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	return c.SaveData(p, t, transactionID == "")
@@ -148,8 +145,6 @@ func (c *client) CreateHTTPAfterResponseRule(parentType string, parentName strin
 
 // EditHTTPAfterResponseRule edits a http response rule in configuration. One of version or transactionID is mandatory.
 // Returns error on fail, nil on success.
-//
-//nolint:dupl
 func (c *client) EditHTTPAfterResponseRule(id int64, parentType string, parentName string, data *models.HTTPAfterResponseRule, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
@@ -163,11 +158,9 @@ func (c *client) EditHTTPAfterResponseRule(id int64, parentType string, parentNa
 		return err
 	}
 
-	var section parser.Section
-	if parentType == BackendParentName {
-		section = parser.Backends
-	} else if parentType == FrontendParentName {
-		section = parser.Frontends
+	section, parentName, err := getParserFromParent("http-after-response", parentType, parentName)
+	if err != nil {
+		return err
 	}
 
 	if _, err = p.GetOne(section, parentName, "http-after-response", int(id)); err != nil {
@@ -185,15 +178,60 @@ func (c *client) EditHTTPAfterResponseRule(id int64, parentType string, parentNa
 	return c.SaveData(p, t, transactionID == "")
 }
 
-func ParseHTTPAfterRules(t, pName string, p parser.Parser) (models.HTTPAfterResponseRules, error) {
-	section := parser.Global
-	if t == FrontendParentName {
-		section = parser.Frontends
-	} else if t == BackendParentName {
-		section = parser.Backends
+// ReplaceHTTPAfterResponseRules replaces all HTTP Response Rules lines in configuration for a parentType/parentName.
+// One of version or transactionID is mandatory.
+// Returns error on fail, nil on success.
+//
+//nolint:dupl
+func (c *client) ReplaceHTTPAfterResponseRules(parentType string, parentName string, data models.HTTPAfterResponseRules, transactionID string, version int64) error {
+	if c.UseModelsValidation {
+		validationErr := data.Validate(strfmt.Default)
+		if validationErr != nil {
+			return NewConfError(ErrValidationError, validationErr.Error())
+		}
+	}
+	p, t, err := c.loadDataForChange(transactionID, version)
+	if err != nil {
+		return err
 	}
 
-	httpResRules := models.HTTPAfterResponseRules{}
+	section, parentName, err := getParserFromParent("http-after-response", parentType, parentName)
+	if err != nil {
+		return err
+	}
+
+	harRules, err := ParseHTTPAfterRules(parentType, parentName, p)
+	if err != nil {
+		return c.HandleError("", parentType, parentName, "", false, err)
+	}
+
+	for i := range harRules {
+		// Always delete index 0
+		if err := p.Delete(section, parentName, "http-after-response", 0); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	for i, newHarRule := range data {
+		s, err := SerializeHTTPAfterRule(*newHarRule)
+		if err != nil {
+			return err
+		}
+		if err := p.Insert(section, parentName, "http-after-response", s, i); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	return c.SaveData(p, t, transactionID == "")
+}
+
+func ParseHTTPAfterRules(t, pName string, p parser.Parser) (models.HTTPAfterResponseRules, error) {
+	section, pName, err := getParserFromParent("http-after-response", t, pName)
+	if err != nil {
+		return nil, err
+	}
+
+	var httpResRules models.HTTPAfterResponseRules
 	data, err := p.Get(section, pName, "http-after-response", false)
 	if err != nil {
 		if goerrors.Is(err, parser_errors.ErrFetch) {
@@ -206,18 +244,16 @@ func ParseHTTPAfterRules(t, pName string, p parser.Parser) (models.HTTPAfterResp
 	if !ok {
 		return nil, misc.CreateTypeAssertError("http-after-response")
 	}
-	for i, r := range rules {
-		id := int64(i)
-		httpResRule := ParseHTTPAfterRule(r)
-		if httpResRule != nil {
-			httpResRule.Index = &id
+	for _, r := range rules {
+		httpResRule, err := ParseHTTPAfterRule(r)
+		if err == nil && httpResRule != nil {
 			httpResRules = append(httpResRules, httpResRule)
 		}
 	}
 	return httpResRules, nil
 }
 
-func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint:maintidx
+func ParseHTTPAfterRule(f types.Action) (*models.HTTPAfterResponseRule, error) { //nolint:maintidx,gocognit,gocyclo,cyclop
 	switch v := f.(type) {
 	case *http_actions.AddHeader:
 		return &models.HTTPAfterResponseRule{
@@ -226,13 +262,30 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			HdrFormat: v.Fmt,
 			Cond:      v.Cond,
 			CondTest:  v.CondTest,
-		}
+		}, nil
 	case *http_actions.Allow:
 		return &models.HTTPAfterResponseRule{
 			Type:     "allow",
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
+		}, nil
+	case *http_actions.Capture:
+		if (v.SlotID == nil && v.Len == nil) || (v.SlotID != nil && v.Len != nil) {
+			return nil, NewConfError(ErrValidationError, "capture len can't be zero")
 		}
+		rule := &models.HTTPAfterResponseRule{
+			Type:          "capture",
+			CaptureSample: v.Sample,
+			Cond:          v.Cond,
+			CondTest:      v.CondTest,
+		}
+		if v.SlotID != nil {
+			rule.CaptureID = v.SlotID
+		}
+		if v.Len != nil {
+			rule.CaptureLen = *v.Len
+		}
+		return rule, nil
 	case *http_actions.DelACL:
 		return &models.HTTPAfterResponseRule{
 			Type:      "del-acl",
@@ -240,7 +293,7 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			ACLKeyfmt: v.KeyFmt,
 			Cond:      v.Cond,
 			CondTest:  v.CondTest,
-		}
+		}, nil
 	case *http_actions.DelHeader:
 		return &models.HTTPAfterResponseRule{
 			Type:      "del-header",
@@ -248,7 +301,7 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			Cond:      v.Cond,
 			CondTest:  v.CondTest,
 			HdrMethod: v.Method,
-		}
+		}, nil
 	case *http_actions.DelMap:
 		return &models.HTTPAfterResponseRule{
 			Type:      "del-map",
@@ -256,7 +309,7 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			MapKeyfmt: v.KeyFmt,
 			Cond:      v.Cond,
 			CondTest:  v.CondTest,
-		}
+		}, nil
 	case *http_actions.ReplaceHeader:
 		return &models.HTTPAfterResponseRule{
 			Type:      "replace-header",
@@ -265,7 +318,7 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			HdrMatch:  v.MatchRegex,
 			Cond:      v.Cond,
 			CondTest:  v.CondTest,
-		}
+		}, nil
 	case *http_actions.ReplaceValue:
 		return &models.HTTPAfterResponseRule{
 			Type:      "replace-value",
@@ -274,20 +327,23 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			HdrMatch:  v.MatchRegex,
 			Cond:      v.Cond,
 			CondTest:  v.CondTest,
-		}
+		}, nil
 	case *actions.ScAddGpc:
+		if v.Int == nil && len(v.Expr.Expr) == 0 {
+			return nil, NewConfError(ErrValidationError, "sc-add-gpc int or expr has to be set")
+		}
+		if v.Int != nil && len(v.Expr.Expr) > 0 {
+			return nil, NewConfError(ErrValidationError, "sc-add-gpc int and expr are exclusive")
+		}
 		ID, _ := strconv.ParseInt(v.ID, 10, 64)
 		Idx, _ := strconv.ParseInt(v.Idx, 10, 64)
-		if (v.Int == nil && len(v.Expr.Expr) == 0) || (v.Int != nil && len(v.Expr.Expr) > 0) {
-			return nil
-		}
 		return &models.HTTPAfterResponseRule{
 			Type:     "sc-add-gpc",
 			ScID:     ID,
 			ScIdx:    Idx,
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
-		}
+		}, nil
 	case *actions.ScIncGpc:
 		ID, _ := strconv.ParseInt(v.ID, 10, 64)
 		Idx, _ := strconv.ParseInt(v.Idx, 10, 64)
@@ -297,7 +353,7 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			ScIdx:    Idx,
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
-		}
+		}, nil
 	case *actions.ScIncGpc0:
 		ID, _ := strconv.ParseInt(v.ID, 10, 64)
 		return &models.HTTPAfterResponseRule{
@@ -305,7 +361,7 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			ScID:     ID,
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
-		}
+		}, nil
 	case *actions.ScIncGpc1:
 		ID, _ := strconv.ParseInt(v.ID, 10, 64)
 		return &models.HTTPAfterResponseRule{
@@ -313,14 +369,17 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			ScID:     ID,
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
-		}
+		}, nil
 	case *actions.ScSetGpt:
-		if (v.Int == nil && len(v.Expr.Expr) == 0) || (v.Int != nil && len(v.Expr.Expr) > 0) {
-			return nil
+		if v.Int == nil && len(v.Expr.Expr) == 0 {
+			return nil, NewConfError(ErrValidationError, "sc-set-gpt: int or expr has to be set")
 		}
-		scID, err := strconv.ParseInt(v.ScID, 10, 64)
-		if err != nil {
-			return nil
+		if v.Int != nil && len(v.Expr.Expr) > 0 {
+			return nil, NewConfError(ErrValidationError, "sc-set-gpt: int and expr are exclusive")
+		}
+		scID, errp := strconv.ParseInt(v.ScID, 10, 64)
+		if errp != nil {
+			return nil, NewConfError(ErrValidationError, "sc-set-gpt: failed to parse sc-id an an int")
 		}
 		return &models.HTTPAfterResponseRule{
 			Type:     "sc-set-gpt",
@@ -330,10 +389,13 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			ScInt:    v.Int,
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
-		}
+		}, nil
 	case *actions.ScSetGpt0:
-		if (v.Int == nil && len(v.Expr.Expr) == 0) || (v.Int != nil && len(v.Expr.Expr) > 0) {
-			return nil
+		if v.Int == nil && len(v.Expr.Expr) == 0 {
+			return nil, NewConfError(ErrValidationError, "sc-set-gpt0 int or expr has to be set")
+		}
+		if v.Int != nil && len(v.Expr.Expr) > 0 {
+			return nil, NewConfError(ErrValidationError, "sc-set-gpt0 int and expr are exclusive")
 		}
 		ID, _ := strconv.ParseInt(v.ID, 10, 64)
 		return &models.HTTPAfterResponseRule{
@@ -343,7 +405,7 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			ScInt:    v.Int,
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
-		}
+		}, nil
 	case *http_actions.SetHeader:
 		return &models.HTTPAfterResponseRule{
 			Type:      "set-header",
@@ -351,14 +413,14 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			HdrFormat: v.Fmt,
 			Cond:      v.Cond,
 			CondTest:  v.CondTest,
-		}
+		}, nil
 	case *actions.SetLogLevel:
 		return &models.HTTPAfterResponseRule{
 			Type:     "set-log-level",
 			LogLevel: v.Level,
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
-		}
+		}, nil
 	case *http_actions.SetMap:
 		return &models.HTTPAfterResponseRule{
 			Type:        "set-map",
@@ -367,7 +429,7 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			MapValuefmt: v.ValueFmt,
 			Cond:        v.Cond,
 			CondTest:    v.CondTest,
-		}
+		}, nil
 	case *http_actions.SetStatus:
 		status, _ := strconv.ParseInt(v.Status, 10, 64)
 		r := &models.HTTPAfterResponseRule{
@@ -379,7 +441,7 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 		if status != 0 {
 			r.Status = status
 		}
-		return r
+		return r, nil
 	case *actions.SetVar:
 		return &models.HTTPAfterResponseRule{
 			Type:     "set-var",
@@ -388,14 +450,14 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			VarScope: v.VarScope,
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
-		}
+		}, nil
 	case *http_actions.StrictMode:
 		return &models.HTTPAfterResponseRule{
 			Type:       "strict-mode",
 			StrictMode: v.Mode,
 			Cond:       v.Cond,
 			CondTest:   v.CondTest,
-		}
+		}, nil
 	case *actions.UnsetVar:
 		return &models.HTTPAfterResponseRule{
 			Type:     "unset-var",
@@ -403,12 +465,19 @@ func ParseHTTPAfterRule(f types.Action) *models.HTTPAfterResponseRule { //nolint
 			VarScope: v.Scope,
 			Cond:     v.Cond,
 			CondTest: v.CondTest,
-		}
+		}, nil
+	case *actions.DoLog:
+		return &models.HTTPAfterResponseRule{
+			Type:     "do-log",
+			Cond:     v.Cond,
+			CondTest: v.CondTest,
+		}, nil
 	}
-	return nil
+	return nil, nil //nolint:nilnil
 }
 
-func SerializeHTTPAfterRule(f models.HTTPAfterResponseRule) (rule types.Action, err error) { //nolint:ireturn
+func SerializeHTTPAfterRule(f models.HTTPAfterResponseRule) (types.Action, error) { //nolint:ireturn
+	var rule types.Action
 	switch f.Type {
 	case "add-header":
 		rule = &http_actions.AddHeader{
@@ -563,6 +632,11 @@ func SerializeHTTPAfterRule(f models.HTTPAfterResponseRule) (rule types.Action, 
 			Cond:     f.Cond,
 			CondTest: f.CondTest,
 		}
+	case "do-log":
+		rule = &actions.DoLog{
+			Cond:     f.Cond,
+			CondTest: f.CondTest,
+		}
 	}
-	return rule, err
+	return rule, nil
 }

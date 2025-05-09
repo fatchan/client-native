@@ -15,6 +15,8 @@
 // limitations under the License.
 //
 
+//go:build equal
+
 package models
 
 import (
@@ -22,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/go-faker/faker/v4"
+	"github.com/go-faker/faker/v4/pkg/options"
 
 	jsoniter "github.com/json-iterator/go"
 )
@@ -33,17 +36,17 @@ func TestResolverEqual(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample Resolver
 		var result Resolver
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		byteJSON, err := json.Marshal(sample)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 
 		samples = append(samples, struct {
@@ -57,11 +60,11 @@ func TestResolverEqual(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected Resolver to be equal, but it is not %s %s", a, b)
 		}
@@ -75,25 +78,14 @@ func TestResolverEqualFalse(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample Resolver
 		var result Resolver
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		err = faker.FakeData(&result)
+		err = faker.FakeData(&result, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		result.AcceptedPayloadSize = sample.AcceptedPayloadSize + 1
-		result.HoldNx = Ptr(*sample.HoldNx + 1)
-		result.HoldObsolete = Ptr(*sample.HoldObsolete + 1)
-		result.HoldOther = Ptr(*sample.HoldOther + 1)
-		result.HoldRefused = Ptr(*sample.HoldRefused + 1)
-		result.HoldTimeout = Ptr(*sample.HoldTimeout + 1)
-		result.HoldValid = Ptr(*sample.HoldValid + 1)
-		result.ParseResolvConf = !sample.ParseResolvConf
-		result.ResolveRetries = sample.ResolveRetries + 1
-		result.TimeoutResolve = sample.TimeoutResolve + 1
-		result.TimeoutRetry = sample.TimeoutRetry + 1
 		samples = append(samples, struct {
 			a, b Resolver
 		}{sample, result})
@@ -105,11 +97,11 @@ func TestResolverEqualFalse(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected Resolver to be different, but it is not %s %s", a, b)
 		}
@@ -123,17 +115,17 @@ func TestResolverDiff(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample Resolver
 		var result Resolver
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		byteJSON, err := json.Marshal(sample)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 
 		samples = append(samples, struct {
@@ -147,11 +139,11 @@ func TestResolverDiff(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected Resolver to be equal, but it is not %s %s, %v", a, b, result)
 		}
@@ -165,25 +157,14 @@ func TestResolverDiffFalse(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample Resolver
 		var result Resolver
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		err = faker.FakeData(&result)
+		err = faker.FakeData(&result, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		result.AcceptedPayloadSize = sample.AcceptedPayloadSize + 1
-		result.HoldNx = Ptr(*sample.HoldNx + 1)
-		result.HoldObsolete = Ptr(*sample.HoldObsolete + 1)
-		result.HoldOther = Ptr(*sample.HoldOther + 1)
-		result.HoldRefused = Ptr(*sample.HoldRefused + 1)
-		result.HoldTimeout = Ptr(*sample.HoldTimeout + 1)
-		result.HoldValid = Ptr(*sample.HoldValid + 1)
-		result.ParseResolvConf = !sample.ParseResolvConf
-		result.ResolveRetries = sample.ResolveRetries + 1
-		result.TimeoutResolve = sample.TimeoutResolve + 1
-		result.TimeoutRetry = sample.TimeoutRetry + 1
 		samples = append(samples, struct {
 			a, b Resolver
 		}{sample, result})
@@ -191,17 +172,17 @@ func TestResolverDiffFalse(t *testing.T) {
 
 	for _, sample := range samples {
 		result := sample.a.Diff(sample.b)
-		if len(result) != 12 {
+		if len(result) != 2 {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
-			t.Errorf("Expected Resolver to be different in 12 cases, but it is not (%d) %s %s", len(result), a, b)
+			t.Errorf("Expected Resolver to be different in 2 cases, but it is not (%d) %s %s", len(result), a, b)
 		}
 	}
 }

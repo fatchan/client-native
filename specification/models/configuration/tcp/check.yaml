@@ -3,12 +3,8 @@ tcp_check:
   title: TCP Check
   type: object
   required:
-    - index
     - action
   properties:
-    index:
-      type: integer
-      x-nullable: true
     action:
       type: string
       enum:
@@ -23,12 +19,6 @@ tcp_check:
         - set-var-fmt
         - unset-var
       x-nullable: false
-    log_message:
-      type: string
-      x-dependency:
-        action:
-          value: comment
-          required: true
     check_comment:
       type: string
       x-nullable: false

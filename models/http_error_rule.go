@@ -42,16 +42,11 @@ type HTTPErrorRule struct {
 	// return headers
 	ReturnHeaders []*ReturnHeader `json:"return_hdrs,omitempty"`
 
-	// index
-	// Required: true
-	// +kubebuilder:validation:Optional
-	Index *int64 `json:"index"`
-
 	// return content
 	ReturnContent string `json:"return_content,omitempty"`
 
 	// return content format
-	// Enum: [default-errorfiles errorfile errorfiles file lf-file string lf-string]
+	// Enum: ["default-errorfiles","errorfile","errorfiles","file","lf-file","string","lf-string"]
 	// +kubebuilder:validation:Enum=default-errorfiles;errorfile;errorfiles;file;lf-file;string;lf-string;
 	ReturnContentFormat string `json:"return_content_format,omitempty"`
 
@@ -60,13 +55,13 @@ type HTTPErrorRule struct {
 
 	// status
 	// Required: true
-	// Enum: [200 400 401 403 404 405 407 408 410 413 425 429 500 501 502 503 504]
+	// Enum: [200,400,401,403,404,405,407,408,410,413,425,429,500,501,502,503,504]
 	// +kubebuilder:validation:Enum=200;400;401;403;404;405;407;408;410;413;425;429;500;501;502;503;504;
 	Status int64 `json:"status"`
 
 	// type
 	// Required: true
-	// Enum: [status]
+	// Enum: ["status"]
 	// +kubebuilder:validation:Enum=status;
 	Type string `json:"type"`
 }
@@ -76,10 +71,6 @@ func (m *HTTPErrorRule) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateReturnHeaders(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateIndex(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -122,15 +113,6 @@ func (m *HTTPErrorRule) validateReturnHeaders(formats strfmt.Registry) error {
 			}
 		}
 
-	}
-
-	return nil
-}
-
-func (m *HTTPErrorRule) validateIndex(formats strfmt.Registry) error {
-
-	if err := validate.Required("index", "body", m.Index); err != nil {
-		return err
 	}
 
 	return nil
@@ -286,6 +268,11 @@ func (m *HTTPErrorRule) contextValidateReturnHeaders(ctx context.Context, format
 	for i := 0; i < len(m.ReturnHeaders); i++ {
 
 		if m.ReturnHeaders[i] != nil {
+
+			if swag.IsZero(m.ReturnHeaders[i]) { // not required
+				return nil
+			}
+
 			if err := m.ReturnHeaders[i].ContextValidate(ctx, formats); err != nil {
 				if ve, ok := err.(*errors.Validation); ok {
 					return ve.ValidateName("return_hdrs" + "." + strconv.Itoa(i))

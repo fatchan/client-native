@@ -38,8 +38,8 @@ import (
 // swagger:model tcp_request_rule
 type TCPRequestRule struct {
 	// action
-	// Enum: [accept attach-srv capture do-resolve expect-netscaler-cip expect-proxy lua reject sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt sc-set-gpt0 send-spoe-group set-bandwidth-limit set-bc-mark set-bc-tos set-dst-port set-dst set-fc-mark set-fc-tos set-log-level set-mark set-nice set-priority-class set-priority-offset set-src set-src-port set-tos set-var set-var-fmt silent-drop switch-mode track-sc0 track-sc1 track-sc2 track-sc unset-var use-service]
-	// +kubebuilder:validation:Enum=accept;attach-srv;capture;do-resolve;expect-netscaler-cip;expect-proxy;lua;reject;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt;sc-set-gpt0;send-spoe-group;set-bandwidth-limit;set-bc-mark;set-bc-tos;set-dst-port;set-dst;set-fc-mark;set-fc-tos;set-log-level;set-mark;set-nice;set-priority-class;set-priority-offset;set-src;set-src-port;set-tos;set-var;set-var-fmt;silent-drop;switch-mode;track-sc0;track-sc1;track-sc2;track-sc;unset-var;use-service;
+	// Enum: ["accept","attach-srv","capture","do-resolve","expect-netscaler-cip","expect-proxy","lua","reject","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","send-spoe-group","set-bandwidth-limit","set-bc-mark","set-bc-tos","set-dst-port","set-dst","set-fc-mark","set-fc-tos","set-log-level","set-mark","set-nice","set-priority-class","set-priority-offset","set-src","set-src-port","set-tos","set-var","set-var-fmt","silent-drop","switch-mode","track-sc","unset-var","use-service","set-retries","do-log"]
+	// +kubebuilder:validation:Enum=accept;attach-srv;capture;do-resolve;expect-netscaler-cip;expect-proxy;lua;reject;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt;sc-set-gpt0;send-spoe-group;set-bandwidth-limit;set-bc-mark;set-bc-tos;set-dst-port;set-dst;set-fc-mark;set-fc-tos;set-log-level;set-mark;set-nice;set-priority-class;set-priority-offset;set-src;set-src-port;set-tos;set-var;set-var-fmt;silent-drop;switch-mode;track-sc;unset-var;use-service;set-retries;do-log;
 	Action string `json:"action,omitempty"`
 
 	// bandwidth limit limit
@@ -55,12 +55,12 @@ type TCPRequestRule struct {
 	CaptureLen int64 `json:"capture_len,omitempty"`
 
 	// capture sample
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
+	// Pattern: ^(?:[A-Za-z]+\("([A-Za-z\s]+)"\)|[A-Za-z]+)
+	// +kubebuilder:validation:Pattern=`^(?:[A-Za-z]+\("([A-Za-z\s]+)"\)|[A-Za-z]+)`
 	CaptureSample string `json:"capture_sample,omitempty"`
 
 	// cond
-	// Enum: [if unless]
+	// Enum: ["if","unless"]
 	// +kubebuilder:validation:Enum=if;unless;
 	Cond string `json:"cond,omitempty"`
 
@@ -73,13 +73,8 @@ type TCPRequestRule struct {
 	// gpt value
 	GptValue string `json:"gpt_value,omitempty"`
 
-	// index
-	// Required: true
-	// +kubebuilder:validation:Optional
-	Index *int64 `json:"index"`
-
 	// log level
-	// Enum: [emerg alert crit err warning notice info debug silent]
+	// Enum: ["emerg","alert","crit","err","warning","notice","info","debug","silent"]
 	// +kubebuilder:validation:Enum=emerg;alert;crit;err;warning;notice;info;debug;silent;
 	LogLevel string `json:"log_level,omitempty"`
 
@@ -104,7 +99,7 @@ type TCPRequestRule struct {
 	NiceValue int64 `json:"nice_value,omitempty"`
 
 	// resolve protocol
-	// Enum: [ipv4 ipv6]
+	// Enum: ["ipv4","ipv6"]
 	// +kubebuilder:validation:Enum=ipv4;ipv6;
 	ResolveProtocol string `json:"resolve_protocol,omitempty"`
 
@@ -113,6 +108,9 @@ type TCPRequestRule struct {
 
 	// resolve var
 	ResolveVar string `json:"resolve_var,omitempty"`
+
+	// rst ttl
+	RstTTL int64 `json:"rst_ttl,omitempty"`
 
 	// sc idx
 	ScIdx string `json:"sc_idx,omitempty"`
@@ -157,7 +155,7 @@ type TCPRequestRule struct {
 
 	// type
 	// Required: true
-	// Enum: [connection content inspect-delay session]
+	// Enum: ["connection","content","inspect-delay","session"]
 	// +kubebuilder:validation:Enum=connection;content;inspect-delay;session;
 	Type string `json:"type"`
 
@@ -188,10 +186,6 @@ func (m *TCPRequestRule) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateCond(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateIndex(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -241,7 +235,7 @@ var tcpRequestRuleTypeActionPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["accept","attach-srv","capture","do-resolve","expect-netscaler-cip","expect-proxy","lua","reject","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","send-spoe-group","set-bandwidth-limit","set-bc-mark","set-bc-tos","set-dst-port","set-dst","set-fc-mark","set-fc-tos","set-log-level","set-mark","set-nice","set-priority-class","set-priority-offset","set-src","set-src-port","set-tos","set-var","set-var-fmt","silent-drop","switch-mode","track-sc0","track-sc1","track-sc2","track-sc","unset-var","use-service"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["accept","attach-srv","capture","do-resolve","expect-netscaler-cip","expect-proxy","lua","reject","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","send-spoe-group","set-bandwidth-limit","set-bc-mark","set-bc-tos","set-dst-port","set-dst","set-fc-mark","set-fc-tos","set-log-level","set-mark","set-nice","set-priority-class","set-priority-offset","set-src","set-src-port","set-tos","set-var","set-var-fmt","silent-drop","switch-mode","track-sc","unset-var","use-service","set-retries","do-log"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -353,15 +347,6 @@ const (
 	// TCPRequestRuleActionSwitchDashMode captures enum value "switch-mode"
 	TCPRequestRuleActionSwitchDashMode string = "switch-mode"
 
-	// TCPRequestRuleActionTrackDashSc0 captures enum value "track-sc0"
-	TCPRequestRuleActionTrackDashSc0 string = "track-sc0"
-
-	// TCPRequestRuleActionTrackDashSc1 captures enum value "track-sc1"
-	TCPRequestRuleActionTrackDashSc1 string = "track-sc1"
-
-	// TCPRequestRuleActionTrackDashSc2 captures enum value "track-sc2"
-	TCPRequestRuleActionTrackDashSc2 string = "track-sc2"
-
 	// TCPRequestRuleActionTrackDashSc captures enum value "track-sc"
 	TCPRequestRuleActionTrackDashSc string = "track-sc"
 
@@ -370,6 +355,12 @@ const (
 
 	// TCPRequestRuleActionUseDashService captures enum value "use-service"
 	TCPRequestRuleActionUseDashService string = "use-service"
+
+	// TCPRequestRuleActionSetDashRetries captures enum value "set-retries"
+	TCPRequestRuleActionSetDashRetries string = "set-retries"
+
+	// TCPRequestRuleActionDoDashLog captures enum value "do-log"
+	TCPRequestRuleActionDoDashLog string = "do-log"
 )
 
 // prop value enum
@@ -398,7 +389,7 @@ func (m *TCPRequestRule) validateCaptureSample(formats strfmt.Registry) error {
 		return nil
 	}
 
-	if err := validate.Pattern("capture_sample", "body", m.CaptureSample, `^[^\s]+$`); err != nil {
+	if err := validate.Pattern("capture_sample", "body", m.CaptureSample, `^(?:[A-Za-z]+\("([A-Za-z\s]+)"\)|[A-Za-z]+)`); err != nil {
 		return err
 	}
 
@@ -441,15 +432,6 @@ func (m *TCPRequestRule) validateCond(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateCondEnum("cond", "body", m.Cond); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *TCPRequestRule) validateIndex(formats strfmt.Registry) error {
-
-	if err := validate.Required("index", "body", m.Index); err != nil {
 		return err
 	}
 

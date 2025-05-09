@@ -148,7 +148,6 @@ func (s *Service) Update(servers []ServiceServer) (bool, error) {
 	}
 	reload = reload || r
 	r, err = s.removeExcessNodes(len(servers))
-
 	if err != nil {
 		return false, err
 	}
@@ -215,7 +214,7 @@ func (s *Service) handleNode(server ServiceServer) error {
 }
 
 func (s *Service) createNewNodes(nodeCount int) error {
-	for i := 0; i < nodeCount; i++ {
+	for range nodeCount {
 		if err := s.addNode(); err != nil {
 			return err
 		}
@@ -278,8 +277,10 @@ func (s *Service) createBackend(from string) (bool, error) {
 	_, _, err := s.client.GetBackend(s.name, s.transactionID)
 	if err != nil {
 		err := s.client.CreateBackend(&models.Backend{
-			From: from,
-			Name: s.name,
+			BackendBase: models.BackendBase{
+				From: from,
+				Name: s.name,
+			},
 		}, s.transactionID, 0)
 		if err != nil {
 			return false, err
@@ -400,16 +401,16 @@ func (s *Service) addNode() error {
 }
 
 func (s *Service) getNodeName() string {
-	name := fmt.Sprintf("SRV_%s", misc.RandomString(5))
+	name := "SRV_" + misc.RandomString(5)
 	for _, ok := s.usedNames[name]; ok; {
-		name = fmt.Sprintf("SRV_%s", misc.RandomString(5))
+		name = "SRV_" + misc.RandomString(5)
 	}
 	s.usedNames[name] = struct{}{}
 	return name
 }
 
 func (s *Service) reorderNodes(count int) {
-	for i := 0; i < count; i++ {
+	for i := range count {
 		if s.nodes[i].disabled {
 			s.swapDisabledNode(i)
 		}

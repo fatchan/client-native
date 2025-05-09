@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/haproxytech/client-native/v6/configuration"
+	"github.com/haproxytech/client-native/v6/configuration/options"
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
 	"github.com/stretchr/testify/require"
@@ -33,8 +34,8 @@ func hTTPRequestRuleExpectation() map[string]models.HTTPRequestRules {
 	res := StructuredToHTTPRequestRuleMap()
 	// Add individual entries
 	for k, vs := range res {
-		for _, v := range vs {
-			key := fmt.Sprintf("%s/%d", k, *v.Index)
+		for i, v := range vs {
+			key := fmt.Sprintf("%s/%d", k, i)
 			res[key] = models.HTTPRequestRules{v}
 		}
 	}
@@ -74,13 +75,10 @@ func checkHTTPRequestRules(t *testing.T, got map[string]models.HTTPRequestRules)
 		want, ok := exp[k]
 		require.True(t, ok, "k=%s", k)
 		require.Equal(t, len(want), len(v), "k=%s", k)
-		for _, g := range v {
-			for _, w := range want {
-				if *g.Index == *w.Index {
-					require.True(t, g.Equal(*w), "k=%s - diff %v", k, cmp.Diff(*g, *w))
-					break
-				}
-			}
+		i := 0
+		for _, w := range want {
+			require.True(t, v[i].Equal(*w), "k=%s - diff %v", k, cmp.Diff(*v[i], *w))
+			i++
 		}
 	}
 }
@@ -119,6 +117,9 @@ func TestGetHTTPRequestRule(t *testing.T) {
 	}
 	m["frontend/test_2/1"] = models.HTTPRequestRules{r}
 
+	_, r, err = clientTest.GetHTTPRequestRule(0, configuration.DefaultsParentName, "test_defaults", "")
+	m["defaults/test_defaults/0"] = models.HTTPRequestRules{r}
+
 	checkHTTPRequestRules(t, m)
 }
 
@@ -128,14 +129,13 @@ func TestCreateEditDeleteHTTPRequestRule(t *testing.T) {
 	// TestCreateHTTPRequestRule
 	var redirCode int64 = 301
 	r := &models.HTTPRequestRule{
-		Index:      &id,
 		Type:       "redirect",
 		RedirCode:  &redirCode,
 		RedirValue: "http://www.%[hdr(host)]%[capture.req.uri]",
 		RedirType:  "location",
 	}
 
-	err := clientTest.CreateHTTPRequestRule(configuration.FrontendParentName, "test", r, "", version)
+	err := clientTest.CreateHTTPRequestRule(id, configuration.FrontendParentName, "test", r, "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
@@ -159,7 +159,6 @@ func TestCreateEditDeleteHTTPRequestRule(t *testing.T) {
 
 	// TestEditHTTPRequestRule
 	r = &models.HTTPRequestRule{
-		Index:      &id,
 		Type:       "redirect",
 		RedirCode:  &redirCode,
 		RedirValue: "http://www1.%[hdr(host)]%[capture.req.uri]",
@@ -233,11 +232,22 @@ func TestSerializeHTTPRequestRule(t *testing.T) {
 			},
 			expectedResult: "track-sc3 src table tr0 if TRUE",
 		},
+		{
+			input: models.HTTPRequestRule{
+				Type:     "set-uri",
+				Cond:     "if",
+				CondTest: "{ path_beg /metrics }",
+				URIFmt:   "%[url,regsub(^/metrics/,/,)]",
+			},
+			expectedResult: "set-uri %[url,regsub(^/metrics/,/,)] if { path_beg /metrics }",
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.expectedResult, func(t *testing.T) {
-			tcpType, err := configuration.SerializeHTTPRequestRule(testCase.input)
+			opt := new(options.ConfigurationOptions)
+			opt.PreferredTimeSuffix = "d"
+			tcpType, err := configuration.SerializeHTTPRequestRule(testCase.input, opt)
 			if err != nil {
 				t.Error(err.Error())
 			}

@@ -36,7 +36,7 @@ import (
 type MonitorFail struct {
 	// cond
 	// Required: true
-	// Enum: [if unless]
+	// Enum: ["if","unless"]
 	// +kubebuilder:validation:Enum=if;unless;
 	Cond *string `json:"cond"`
 

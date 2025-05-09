@@ -1,4 +1,3 @@
-
 {{ range .TestType}}
 func Test{{$.Name}}{{.}}(t *testing.T) {
 	samples := []struct {
@@ -7,17 +6,17 @@ func Test{{$.Name}}{{.}}(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample {{$.Name}}
 		var result {{$.Name}}
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		byteJSON, err := json.Marshal(sample)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 
 		samples = append(samples, struct {
@@ -36,11 +35,11 @@ func Test{{$.Name}}{{.}}(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			{{- if eq . "Equal" }}
 				t.Errorf("Expected {{$.Name}} to be equal, but it is not %s %s", a, b)
@@ -62,13 +61,13 @@ func Test{{$.Name}}{{.}}False(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample {{$.Name}}
 		var result {{$.Name}}
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		err = faker.FakeData(&result)
+		err = faker.FakeData(&result, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		{{- range $.Fields}}
 			{{- if (eq .Type "bool") }}
@@ -123,11 +122,11 @@ func Test{{$.Name}}{{.}}False(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			{{- if eq . "Equal" }}
 				t.Errorf("Expected {{$.Name}} to be different, but it is not %s %s", a, b)

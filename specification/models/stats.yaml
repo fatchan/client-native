@@ -2,14 +2,8 @@
 native_stats:
   title: Stats Array
   description: HAProxy stats array
-  type: array
-  x-omitempty: true
-  items:
-    $ref: "#/definitions/native_stats_collection"
-native_stats_collection:
   type: object
-  title: Stats collection
-  description: Stats from one runtime API
+  x-omitempty: true
   properties:
     runtimeAPI:
       type: string
@@ -407,6 +401,11 @@ native_stat_stats:
       x-dependency:
         type: frontend
     last_chk:
+      type: string
+      x-nullable: true
+      x-dependency:
+        type: server
+    last_agt:
       type: string
       x-nullable: true
       x-dependency:

@@ -112,7 +112,7 @@ func generate(fileName string, args Args) (string, error) { //nolint:gocognit,ma
 
 	err = tmpl.Execute(file, map[string]interface{}{
 		"Package": node.Name.String(),
-		"Licence": args.Licence,
+		"License": args.License,
 	})
 	if err != nil {
 		return packageName, err
@@ -127,8 +127,12 @@ func generate(fileName string, args Args) (string, error) { //nolint:gocognit,ma
 
 	err = tmpl2.Execute(fileTest, map[string]interface{}{
 		"Package": node.Name.String(),
-		"Licence": args.Licence,
+		"License": args.License,
 	})
+	if err != nil {
+		return packageName, err
+	}
+	_, err = fileTest.WriteString("//go:build equal\n")
 	if err != nil {
 		return packageName, err
 	}
@@ -162,9 +166,7 @@ func generate(fileName string, args Args) (string, error) { //nolint:gocognit,ma
 			switch currType := currSpecType.Type.(type) {
 			case *ast.StructType:
 				var fields []Field
-				needsOptions := false
-				needsOptionsIndex := false
-				fields, needsOptions, needsOptionsIndex = getFields(fields, currType, imports)
+				fields, needsOptions, needsOptionsIndex := getFields(fields, currType, imports)
 				for _, f := range fields {
 					if strings.HasPrefix(f.Type, "*") && (f.HasEqualOpt || f.HasEqual) {
 						needsOptions = true
@@ -271,7 +273,9 @@ func generate(fileName string, args Args) (string, error) { //nolint:gocognit,ma
 	return packageName, nil
 }
 
-func getFields(fields []Field, node *ast.StructType, imports map[string]string) (fieldsResult []Field, needsOptions, needsOptionsIndex bool) { //nolint:gocognit
+func getFields(fields []Field, node *ast.StructType, imports map[string]string) ([]Field, bool, bool) { //nolint:gocognit
+	var needsOptions bool
+	var needsOptionsIndex bool
 	for _, field := range node.Fields.List {
 		if len(field.Names) > 0 {
 			res := getTypeString(field.Type, imports)

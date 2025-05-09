@@ -78,12 +78,12 @@ type HTTPRequestRule struct {
 	CaptureLen int64 `json:"capture_len,omitempty"`
 
 	// capture sample
-	// Pattern: ^[^\s]+$
-	// +kubebuilder:validation:Pattern=`^[^\s]+$`
+	// Pattern: ^(?:[A-Za-z]+\("([A-Za-z\s]+)"\)|[A-Za-z]+)
+	// +kubebuilder:validation:Pattern=`^(?:[A-Za-z]+\("([A-Za-z\s]+)"\)|[A-Za-z]+)`
 	CaptureSample string `json:"capture_sample,omitempty"`
 
 	// cond
-	// Enum: [if unless]
+	// Enum: ["if","unless"]
 	// +kubebuilder:validation:Enum=if;unless;
 	Cond string `json:"cond,omitempty"`
 
@@ -122,13 +122,8 @@ type HTTPRequestRule struct {
 	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	HintName string `json:"hint_name,omitempty"`
 
-	// index
-	// Required: true
-	// +kubebuilder:validation:Optional
-	Index *int64 `json:"index"`
-
 	// log level
-	// Enum: [emerg alert crit err warning notice info debug silent]
+	// Enum: ["emerg","alert","crit","err","warning","notice","info","debug","silent"]
 	// +kubebuilder:validation:Enum=emerg;alert;crit;err;warning;notice;info;debug;silent;
 	LogLevel string `json:"log_level,omitempty"`
 
@@ -173,7 +168,7 @@ type HTTPRequestRule struct {
 	NiceValue int64 `json:"nice_value,omitempty"`
 
 	// normalizer
-	// Enum: [fragment-encode fragment-strip path-merge-slashes path-strip-dot path-strip-dotdot percent-decode-unreserved percent-to-uppercase query-sort-by-name]
+	// Enum: ["fragment-encode","fragment-strip","path-merge-slashes","path-strip-dot","path-strip-dotdot","percent-decode-unreserved","percent-to-uppercase","query-sort-by-name"]
 	// +kubebuilder:validation:Enum=fragment-encode;fragment-strip;path-merge-slashes;path-strip-dot;path-strip-dotdot;percent-decode-unreserved;percent-to-uppercase;query-sort-by-name;
 	Normalizer string `json:"normalizer,omitempty"`
 
@@ -194,7 +189,7 @@ type HTTPRequestRule struct {
 	PathMatch string `json:"path_match,omitempty"`
 
 	// protocol
-	// Enum: [ipv4 ipv6]
+	// Enum: ["ipv4","ipv6"]
 	// +kubebuilder:validation:Enum=ipv4;ipv6;
 	Protocol string `json:"protocol,omitempty"`
 
@@ -202,7 +197,7 @@ type HTTPRequestRule struct {
 	QueryFmt string `json:"query-fmt,omitempty"`
 
 	// redir code
-	// Enum: [301 302 303 307 308]
+	// Enum: [301,302,303,307,308]
 	// +kubebuilder:validation:Enum=301;302;303;307;308;
 	RedirCode *int64 `json:"redir_code,omitempty"`
 
@@ -210,7 +205,7 @@ type HTTPRequestRule struct {
 	RedirOption string `json:"redir_option,omitempty"`
 
 	// redir type
-	// Enum: [location prefix scheme]
+	// Enum: ["location","prefix","scheme"]
 	// +kubebuilder:validation:Enum=location;prefix;scheme;
 	RedirType string `json:"redir_type,omitempty"`
 
@@ -226,7 +221,7 @@ type HTTPRequestRule struct {
 	ReturnContent string `json:"return_content,omitempty"`
 
 	// return content format
-	// Enum: [default-errorfiles errorfile errorfiles file lf-file string lf-string]
+	// Enum: ["default-errorfiles","errorfile","errorfiles","file","lf-file","string","lf-string"]
 	// +kubebuilder:validation:Enum=default-errorfiles;errorfile;errorfiles;file;lf-file;string;lf-string;
 	ReturnContentFormat string `json:"return_content_format,omitempty"`
 
@@ -239,6 +234,9 @@ type HTTPRequestRule struct {
 	// +kubebuilder:validation:Maximum=599
 	// +kubebuilder:validation:Minimum=200
 	ReturnStatusCode *int64 `json:"return_status_code,omitempty"`
+
+	// rst ttl
+	RstTTL int64 `json:"rst_ttl,omitempty"`
 
 	// sc expr
 	ScExpr string `json:"sc_expr,omitempty"`
@@ -266,7 +264,7 @@ type HTTPRequestRule struct {
 	SpoeGroup string `json:"spoe_group,omitempty"`
 
 	// strict mode
-	// Enum: [on off]
+	// Enum: ["on","off"]
 	// +kubebuilder:validation:Enum=on;off;
 	StrictMode string `json:"strict_mode,omitempty"`
 
@@ -274,7 +272,7 @@ type HTTPRequestRule struct {
 	Timeout string `json:"timeout,omitempty"`
 
 	// timeout type
-	// Enum: [server tunnel client]
+	// Enum: ["server","tunnel","client"]
 	// +kubebuilder:validation:Enum=server;tunnel;client;
 	TimeoutType string `json:"timeout_type,omitempty"`
 
@@ -298,8 +296,8 @@ type HTTPRequestRule struct {
 
 	// type
 	// Required: true
-	// Enum: [add-acl add-header allow auth cache-use capture del-acl del-header del-map deny disable-l7-retry do-resolve early-hint lua normalize-uri redirect reject replace-header replace-path replace-pathq replace-uri replace-value return sc-add-gpc sc-inc-gpc sc-inc-gpc0 sc-inc-gpc1 sc-set-gpt sc-set-gpt0 send-spoe-group set-bc-mark set-bc-tos set-dst set-dst-port set-fc-mark set-fc-tos set-header set-log-level set-map set-mark set-method set-nice set-path set-pathq set-priority-class set-priority-offset set-query set-src set-src-port set-timeout set-tos set-uri set-var silent-drop strict-mode tarpit track-sc0 track-sc1 track-sc2 track-sc unset-var use-service wait-for-body wait-for-handshake set-bandwidth-limit]
-	// +kubebuilder:validation:Enum=add-acl;add-header;allow;auth;cache-use;capture;del-acl;del-header;del-map;deny;disable-l7-retry;do-resolve;early-hint;lua;normalize-uri;redirect;reject;replace-header;replace-path;replace-pathq;replace-uri;replace-value;return;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt;sc-set-gpt0;send-spoe-group;set-bc-mark;set-bc-tos;set-dst;set-dst-port;set-fc-mark;set-fc-tos;set-header;set-log-level;set-map;set-mark;set-method;set-nice;set-path;set-pathq;set-priority-class;set-priority-offset;set-query;set-src;set-src-port;set-timeout;set-tos;set-uri;set-var;silent-drop;strict-mode;tarpit;track-sc0;track-sc1;track-sc2;track-sc;unset-var;use-service;wait-for-body;wait-for-handshake;set-bandwidth-limit;
+	// Enum: ["add-acl","add-header","allow","auth","cache-use","capture","del-acl","del-header","del-map","deny","disable-l7-retry","do-resolve","early-hint","lua","normalize-uri","redirect","reject","replace-header","replace-path","replace-pathq","replace-uri","replace-value","return","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","send-spoe-group","set-bc-mark","set-bc-tos","set-dst","set-dst-port","set-fc-mark","set-fc-tos","set-header","set-log-level","set-map","set-mark","set-method","set-nice","set-path","set-pathq","set-priority-class","set-priority-offset","set-query","set-src","set-src-port","set-timeout","set-tos","set-uri","set-var","set-var-fmt","silent-drop","strict-mode","tarpit","track-sc","unset-var","use-service","wait-for-body","wait-for-handshake","set-bandwidth-limit","set-retries","do-log"]
+	// +kubebuilder:validation:Enum=add-acl;add-header;allow;auth;cache-use;capture;del-acl;del-header;del-map;deny;disable-l7-retry;do-resolve;early-hint;lua;normalize-uri;redirect;reject;replace-header;replace-path;replace-pathq;replace-uri;replace-value;return;sc-add-gpc;sc-inc-gpc;sc-inc-gpc0;sc-inc-gpc1;sc-set-gpt;sc-set-gpt0;send-spoe-group;set-bc-mark;set-bc-tos;set-dst;set-dst-port;set-fc-mark;set-fc-tos;set-header;set-log-level;set-map;set-mark;set-method;set-nice;set-path;set-pathq;set-priority-class;set-priority-offset;set-query;set-src;set-src-port;set-timeout;set-tos;set-uri;set-var;set-var-fmt;silent-drop;strict-mode;tarpit;track-sc;unset-var;use-service;wait-for-body;wait-for-handshake;set-bandwidth-limit;set-retries;do-log;
 	Type string `json:"type"`
 
 	// uri fmt
@@ -328,6 +326,8 @@ type HTTPRequestRule struct {
 	WaitAtLeast *int64 `json:"wait_at_least,omitempty"`
 
 	// wait time
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	WaitTime *int64 `json:"wait_time,omitempty"`
 }
 
@@ -372,10 +372,6 @@ func (m *HTTPRequestRule) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateHintName(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateIndex(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -487,6 +483,10 @@ func (m *HTTPRequestRule) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateWaitTime(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
@@ -572,7 +572,7 @@ func (m *HTTPRequestRule) validateCaptureSample(formats strfmt.Registry) error {
 		return nil
 	}
 
-	if err := validate.Pattern("capture_sample", "body", m.CaptureSample, `^[^\s]+$`); err != nil {
+	if err := validate.Pattern("capture_sample", "body", m.CaptureSample, `^(?:[A-Za-z]+\("([A-Za-z\s]+)"\)|[A-Za-z]+)`); err != nil {
 		return err
 	}
 
@@ -655,15 +655,6 @@ func (m *HTTPRequestRule) validateHintName(formats strfmt.Registry) error {
 	}
 
 	if err := validate.Pattern("hint_name", "body", m.HintName, `^[^\s]+$`); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *HTTPRequestRule) validateIndex(formats strfmt.Registry) error {
-
-	if err := validate.Required("index", "body", m.Index); err != nil {
 		return err
 	}
 
@@ -1261,7 +1252,7 @@ var httpRequestRuleTypeTypePropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["add-acl","add-header","allow","auth","cache-use","capture","del-acl","del-header","del-map","deny","disable-l7-retry","do-resolve","early-hint","lua","normalize-uri","redirect","reject","replace-header","replace-path","replace-pathq","replace-uri","replace-value","return","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","send-spoe-group","set-bc-mark","set-bc-tos","set-dst","set-dst-port","set-fc-mark","set-fc-tos","set-header","set-log-level","set-map","set-mark","set-method","set-nice","set-path","set-pathq","set-priority-class","set-priority-offset","set-query","set-src","set-src-port","set-timeout","set-tos","set-uri","set-var","silent-drop","strict-mode","tarpit","track-sc0","track-sc1","track-sc2","track-sc","unset-var","use-service","wait-for-body","wait-for-handshake","set-bandwidth-limit"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["add-acl","add-header","allow","auth","cache-use","capture","del-acl","del-header","del-map","deny","disable-l7-retry","do-resolve","early-hint","lua","normalize-uri","redirect","reject","replace-header","replace-path","replace-pathq","replace-uri","replace-value","return","sc-add-gpc","sc-inc-gpc","sc-inc-gpc0","sc-inc-gpc1","sc-set-gpt","sc-set-gpt0","send-spoe-group","set-bc-mark","set-bc-tos","set-dst","set-dst-port","set-fc-mark","set-fc-tos","set-header","set-log-level","set-map","set-mark","set-method","set-nice","set-path","set-pathq","set-priority-class","set-priority-offset","set-query","set-src","set-src-port","set-timeout","set-tos","set-uri","set-var","set-var-fmt","silent-drop","strict-mode","tarpit","track-sc","unset-var","use-service","wait-for-body","wait-for-handshake","set-bandwidth-limit","set-retries","do-log"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -1430,6 +1421,9 @@ const (
 	// HTTPRequestRuleTypeSetDashVar captures enum value "set-var"
 	HTTPRequestRuleTypeSetDashVar string = "set-var"
 
+	// HTTPRequestRuleTypeSetDashVarDashFmt captures enum value "set-var-fmt"
+	HTTPRequestRuleTypeSetDashVarDashFmt string = "set-var-fmt"
+
 	// HTTPRequestRuleTypeSilentDashDrop captures enum value "silent-drop"
 	HTTPRequestRuleTypeSilentDashDrop string = "silent-drop"
 
@@ -1438,15 +1432,6 @@ const (
 
 	// HTTPRequestRuleTypeTarpit captures enum value "tarpit"
 	HTTPRequestRuleTypeTarpit string = "tarpit"
-
-	// HTTPRequestRuleTypeTrackDashSc0 captures enum value "track-sc0"
-	HTTPRequestRuleTypeTrackDashSc0 string = "track-sc0"
-
-	// HTTPRequestRuleTypeTrackDashSc1 captures enum value "track-sc1"
-	HTTPRequestRuleTypeTrackDashSc1 string = "track-sc1"
-
-	// HTTPRequestRuleTypeTrackDashSc2 captures enum value "track-sc2"
-	HTTPRequestRuleTypeTrackDashSc2 string = "track-sc2"
 
 	// HTTPRequestRuleTypeTrackDashSc captures enum value "track-sc"
 	HTTPRequestRuleTypeTrackDashSc string = "track-sc"
@@ -1465,6 +1450,12 @@ const (
 
 	// HTTPRequestRuleTypeSetDashBandwidthDashLimit captures enum value "set-bandwidth-limit"
 	HTTPRequestRuleTypeSetDashBandwidthDashLimit string = "set-bandwidth-limit"
+
+	// HTTPRequestRuleTypeSetDashRetries captures enum value "set-retries"
+	HTTPRequestRuleTypeSetDashRetries string = "set-retries"
+
+	// HTTPRequestRuleTypeDoDashLog captures enum value "do-log"
+	HTTPRequestRuleTypeDoDashLog string = "do-log"
 )
 
 // prop value enum
@@ -1513,6 +1504,18 @@ func (m *HTTPRequestRule) validateVarScope(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *HTTPRequestRule) validateWaitTime(formats strfmt.Registry) error {
+	if swag.IsZero(m.WaitTime) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("wait_time", "body", *m.WaitTime, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ContextValidate validate this http request rule based on the context it is used
 func (m *HTTPRequestRule) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	var res []error
@@ -1532,6 +1535,11 @@ func (m *HTTPRequestRule) contextValidateReturnHeaders(ctx context.Context, form
 	for i := 0; i < len(m.ReturnHeaders); i++ {
 
 		if m.ReturnHeaders[i] != nil {
+
+			if swag.IsZero(m.ReturnHeaders[i]) { // not required
+				return nil
+			}
+
 			if err := m.ReturnHeaders[i].ContextValidate(ctx, formats); err != nil {
 				if ve, ok := err.(*errors.Validation); ok {
 					return ve.ValidateName("return_hdrs" + "." + strconv.Itoa(i))

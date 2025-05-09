@@ -34,8 +34,12 @@ import (
 //
 // swagger:model httpchk_params
 type HttpchkParams struct {
+
+	// host
+	Host string `json:"host,omitempty"`
+
 	// method
-	// Enum: [HEAD PUT POST GET TRACE PATCH DELETE CONNECT OPTIONS]
+	// Enum: ["HEAD","PUT","POST","GET","TRACE","PATCH","DELETE","CONNECT","OPTIONS"]
 	// +kubebuilder:validation:Enum=HEAD;PUT;POST;GET;TRACE;PATCH;DELETE;CONNECT;OPTIONS;
 	Method string `json:"method,omitempty"`
 

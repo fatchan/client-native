@@ -20,9 +20,9 @@ import (
 	"strconv"
 
 	strfmt "github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
@@ -32,8 +32,9 @@ type LogTarget interface {
 	GetLogTargets(parentType, parentName string, transactionID string) (int64, models.LogTargets, error)
 	GetLogTarget(id int64, parentType, parentName string, transactionID string) (int64, *models.LogTarget, error)
 	DeleteLogTarget(id int64, parentType string, parentName string, transactionID string, version int64) error
-	CreateLogTarget(parentType string, parentName string, data *models.LogTarget, transactionID string, version int64) error
+	CreateLogTarget(id int64, parentType string, parentName string, data *models.LogTarget, transactionID string, version int64) error
 	EditLogTarget(id int64, parentType string, parentName string, data *models.LogTarget, transactionID string, version int64) error
+	ReplaceLogTargets(parentType string, parentName string, data models.LogTargets, transactionID string, version int64) error
 }
 
 // GetLogTargets returns configuration version and an array of
@@ -79,7 +80,6 @@ func (c *client) GetLogTarget(id int64, parentType, parentName string, transacti
 	}
 
 	logTarget := ParseLogTarget(data.(types.Log))
-	logTarget.Index = &id
 
 	return v, logTarget, nil
 }
@@ -104,7 +104,7 @@ func (c *client) DeleteLogTarget(id int64, parentType string, parentName string,
 
 // CreateLogTarget creates a log target in configuration. One of version or transactionID is
 // mandatory. Returns error on fail, nil on success.
-func (c *client) CreateLogTarget(parentType string, parentName string, data *models.LogTarget, transactionID string, version int64) error {
+func (c *client) CreateLogTarget(id int64, parentType string, parentName string, data *models.LogTarget, transactionID string, version int64) error {
 	if c.UseModelsValidation {
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
@@ -128,8 +128,8 @@ func (c *client) CreateLogTarget(parentType string, parentName string, data *mod
 	var section parser.Section
 	section, parentName = logTargetSectionType(parentType, parentName)
 
-	if err := p.Insert(section, parentName, "log", SerializeLogTarget(*data), int(*data.Index)); err != nil {
-		return c.HandleError(strconv.FormatInt(*data.Index, 10), parentType, parentName, t, transactionID == "", err)
+	if err := p.Insert(section, parentName, "log", SerializeLogTarget(*data), int(id)); err != nil {
+		return c.HandleError(strconv.FormatInt(id, 10), parentType, parentName, t, transactionID == "", err)
 	}
 
 	return c.SaveData(p, t, transactionID == "")
@@ -171,11 +171,49 @@ func (c *client) EditLogTarget(id int64, parentType string, parentName string, d
 	return c.SaveData(p, t, transactionID == "")
 }
 
+// ReplaceLogTargets replaces all Log Target lines in configuration for a parentType/parentName.
+// One of version or transactionID is mandatory.
+// Returns error on fail, nil on success.
+func (c *client) ReplaceLogTargets(parentType string, parentName string, data models.LogTargets, transactionID string, version int64) error {
+	if c.UseModelsValidation {
+		validationErr := data.Validate(strfmt.Default)
+		if validationErr != nil {
+			return NewConfError(ErrValidationError, validationErr.Error())
+		}
+	}
+	p, t, err := c.loadDataForChange(transactionID, version)
+	if err != nil {
+		return err
+	}
+
+	section, parentName := logTargetSectionType(parentType, parentName)
+
+	logTargets, err := ParseLogTargets(parentType, parentName, p)
+	if err != nil {
+		return c.HandleError("", parentType, parentName, "", false, err)
+	}
+
+	for i := range logTargets {
+		// Always delete index 0
+		if err := p.Delete(section, parentName, "log", 0); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	for i, newFilter := range data {
+		if err := p.Insert(section, parentName, "log", SerializeLogTarget(*newFilter), i); err != nil {
+			return c.HandleError(strconv.FormatInt(int64(i), 10), parentType, parentName, t, transactionID == "", err)
+		}
+	}
+
+	return c.SaveData(p, t, transactionID == "")
+}
+
 func ParseLogTargets(t, pName string, p parser.Parser) (models.LogTargets, error) {
 	var section parser.Section
 	section, pName = logTargetSectionType(t, pName)
 
-	logTargets := models.LogTargets{}
+	var logTargets models.LogTargets
 	data, err := p.Get(section, pName, "log", false)
 	if err != nil {
 		if errors.Is(err, parser_errors.ErrFetch) {
@@ -188,11 +226,9 @@ func ParseLogTargets(t, pName string, p parser.Parser) (models.LogTargets, error
 	if !ok {
 		return nil, misc.CreateTypeAssertError("log targets")
 	}
-	for i, l := range targets {
-		id := int64(i)
+	for _, l := range targets {
 		logTarget := ParseLogTarget(l)
 		if logTarget != nil {
-			logTarget.Index = &id
 			logTargets = append(logTargets, logTarget)
 		}
 	}
@@ -209,6 +245,7 @@ func ParseLogTarget(l types.Log) *models.LogTarget {
 		Level:       l.Level,
 		Minlevel:    l.MinLevel,
 		Nolog:       l.NoLog,
+		Profile:     l.Profile,
 		SampleRange: l.SampleRange,
 		SampleSize:  l.SampleSize,
 	}
@@ -224,6 +261,7 @@ func SerializeLogTarget(l models.LogTarget) types.Log {
 		Level:       l.Level,
 		MinLevel:    l.Minlevel,
 		NoLog:       l.Nolog,
+		Profile:     l.Profile,
 		SampleRange: l.SampleRange,
 		SampleSize:  l.SampleSize,
 	}

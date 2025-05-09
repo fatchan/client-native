@@ -1,6 +1,59 @@
 ---
 backend:
-  title: Backend
+  type: object
+  description: Backend with all it's children resources
+  x-go-name: Backend
+  allOf:
+    - $ref: "#/definitions/backend_base"
+    - type: object
+      properties:
+        servers:
+          additionalProperties:
+            $ref: "#/definitions/server"
+        server_switching_rule_list:
+          $ref: "#/definitions/server_switching_rules"
+          x-go-name: ServerSwitchingRuleList
+        acl_list:
+          $ref: "#/definitions/acls"
+          x-go-name: AclList
+        filter_list:
+          $ref: "#/definitions/filters"
+          x-go-name: FilterList
+        log_target_list:
+          $ref: "#/definitions/log_targets"
+          x-go-name: LogTargetList
+        http_after_response_rule_list:
+          $ref: "#/definitions/http_after_response_rules"
+          x-go-name: HTTPAfterResponseRuleList
+        http_check_list:
+          $ref: "#/definitions/http_checks"
+          x-go-name: HTTPCheckList
+        http_request_rule_list:
+          $ref: "#/definitions/http_request_rules"
+          x-go-name: HTTPRequestRuleList
+        http_response_rule_list:
+          $ref: "#/definitions/http_response_rules"
+          x-go-name: HTTPResponseRuleList
+        http_error_rule_list:
+          $ref: "#/definitions/http_error_rules"
+          x-go-name: HTTPErrorRuleList
+        tcp_check_rule_list:
+          $ref: "#/definitions/tcp_checks"
+          x-go-name: TCPCheckRuleList
+        tcp_request_rule_list:
+          $ref: "#/definitions/tcp_request_rules"
+          x-go-name: TCPRequestRuleList
+        tcp_response_rule_list:
+          $ref: "#/definitions/tcp_response_rules"
+          x-go-name: TCPResponseRuleList
+        stick_rule_list:
+          $ref: "#/definitions/stick_rules"
+          x-go-name: StickRuleList
+        server_templates:
+          additionalProperties:
+            $ref: "#/definitions/server_template"
+backend_base:
+  title: Backend Base
   description: HAProxy backend configuration
   type: object
   required:
@@ -22,9 +75,6 @@ backend:
     hash_balance_factor:
       type: integer
       x-nullable: true
-    bind_process:
-      type: string
-      pattern: '^[^\s]+$'
     mode:
       type: string
       enum: [http, tcp, log]
@@ -107,14 +157,15 @@ backend:
       type: string
       pattern: '^[^\s]+$'
       x-dependency:
-        cookie:
-          dynamic:
-            value: true
+        cookie.dynamic:
+          value: true
     default_server:
       $ref: "#/definitions/default_server"
     check_timeout:
       type: integer
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     adv_check:
       type: string
       x-display-name: Advanced Check
@@ -156,25 +207,40 @@ backend:
       x-display-name: External Check Command
     queue_timeout:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     connect_timeout:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     http_request_timeout:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
       x-dependency:
         mode:
           value: http
     http_keep_alive_timeout:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
       x-dependency:
         mode:
           value: http
     tarpit_timeout:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     retries:
       type: integer
       x-nullable: true
@@ -182,13 +248,22 @@ backend:
       $ref: "#/definitions/redispatch"
     server_timeout:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     server_fin_timeout:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     tunnel_timeout:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     httpchk_params:
       $ref: "#/definitions/httpchk_params"
       x-dependency:
@@ -215,6 +290,10 @@ backend:
       type: string
       enum: [enabled, disabled]
       x-display-name: Accept Invalid HTTP Response
+    accept_unsafe_violations_in_http_response:
+      type: string
+      enum: [enabled, disabled]
+      x-display-name: Accept Unsafe Violations in HTTP Response
     h1_case_adjust_bogus_server:
       type: string
       enum: [enabled, disabled]
@@ -280,10 +359,14 @@ backend:
       type: integer
       x-nullable: true
       x-display-name: Srvtcpka Idle
+      x-duration: true
+      x-default-unit: s
     srvtcpka_intvl:
       type: integer
       x-nullable: true
       x-display-name: Srvtcpka Intvl
+      x-duration: true
+      x-default-unit: s
     email_alert:
       $ref: "#/definitions/email_alert"
     load_server_state_from_file:
@@ -326,6 +409,7 @@ backend:
       x-nullable: true
     force_persist:
       type: object
+      x-go-name: BackendForcePersist
       description: This field is deprecated in favor of force_persist_list, and will be removed in a future release
       x-deprecated: true
       required:
@@ -365,6 +449,7 @@ backend:
                 required: true
     ignore_persist:
       type: object
+      x-go-name: BackendIgnorePersist
       description: This field is deprecated in favor of ignore_persist_list, and will be removed in a future release
       x-deprecated: true
       required:
@@ -402,6 +487,9 @@ backend:
             x-dependency:
               cond:
                 required: true
+    guid:
+      type: string
+      pattern: '^[A-Za-z0-9-_.:]+$'
     http_send_name_header:
       type: string
       x-nullable: true

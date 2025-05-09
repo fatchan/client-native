@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/haproxytech/client-native/v6/configuration"
+	"github.com/haproxytech/client-native/v6/configuration/options"
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
 	"github.com/stretchr/testify/require"
@@ -33,8 +34,8 @@ func hTTPResponseRuleExpectation() map[string]models.HTTPResponseRules {
 	res := StructuredToHTTPResponseRuleMap()
 	// Add individual entries
 	for k, vs := range res {
-		for _, v := range vs {
-			key := fmt.Sprintf("%s/%d", k, *v.Index)
+		for i, v := range vs {
+			key := fmt.Sprintf("%s/%d", k, i)
 			res[key] = models.HTTPResponseRules{v}
 		}
 	}
@@ -59,6 +60,12 @@ func TestGetHTTPResponseRules(t *testing.T) { //nolint:gocognit,gocyclo
 	}
 	mrules["backend/test_2"] = hRules
 
+	_, hRules, err = clientTest.GetHTTPResponseRules(configuration.DefaultsParentName, "test_defaults", "")
+	if err != nil {
+		t.Error(err.Error())
+	}
+	mrules["defaults/test_defaults"] = hRules
+
 	checkHTTPResponseRules(t, mrules)
 }
 
@@ -68,13 +75,10 @@ func checkHTTPResponseRules(t *testing.T, got map[string]models.HTTPResponseRule
 		want, ok := exp[k]
 		require.True(t, ok, "k=%s", k)
 		require.Equal(t, len(want), len(v), "k=%s", k)
-		for _, g := range v {
-			for _, w := range want {
-				if *g.Index == *w.Index {
-					require.True(t, g.Equal(*w), "k=%s - diff %v", k, cmp.Diff(*g, *w))
-					break
-				}
-			}
+		i := 0
+		for _, w := range want {
+			require.True(t, v[i].Equal(*w), "k=%s - diff %v", k, cmp.Diff(*v[i], *w))
+			i++
 		}
 	}
 }
@@ -114,12 +118,11 @@ func TestCreateEditDeleteHTTPResponseRule(t *testing.T) {
 	id := int64(1)
 	// TestCreateHTTPResponseRule
 	r := &models.HTTPResponseRule{
-		Index:    &id,
 		Type:     "set-log-level",
 		LogLevel: "alert",
 	}
 
-	err := clientTest.CreateHTTPResponseRule(configuration.FrontendParentName, "test", r, "", version)
+	err := clientTest.CreateHTTPResponseRule(id, configuration.FrontendParentName, "test", r, "", version)
 	if err != nil {
 		t.Error(err.Error())
 	} else {
@@ -143,7 +146,6 @@ func TestCreateEditDeleteHTTPResponseRule(t *testing.T) {
 
 	// TestEditHTTPResponseRule
 	r = &models.HTTPResponseRule{
-		Index:    &id,
 		Type:     "set-log-level",
 		LogLevel: "warning",
 	}
@@ -219,7 +221,9 @@ func TestSerializeHTTPResponseRule(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.expectedResult, func(t *testing.T) {
-			tcpType, err := configuration.SerializeHTTPResponseRule(testCase.input)
+			opt := new(options.ConfigurationOptions)
+			opt.PreferredTimeSuffix = "d"
+			tcpType, err := configuration.SerializeHTTPResponseRule(testCase.input, opt)
 			if err != nil {
 				t.Error(err.Error())
 			}

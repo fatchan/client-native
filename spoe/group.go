@@ -16,12 +16,13 @@
 package spoe
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	"github.com/haproxytech/config-parser/v5/spoe"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	"github.com/haproxytech/client-native/v6/config-parser/spoe"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	conf "github.com/haproxytech/client-native/v6/configuration"
 	"github.com/haproxytech/client-native/v6/models"
@@ -153,7 +154,7 @@ func (c *SingleSpoe) EditGroup(scope string, data *models.SpoeGroup, name, trans
 
 func (c *SingleSpoe) createEditGroup(scope string, data *models.SpoeGroup, t string, transactionID string, p *spoe.Parser) error {
 	if data == nil {
-		return fmt.Errorf("spoe group not initialized")
+		return errors.New("spoe group not initialized")
 	}
 	name := *data.Name
 

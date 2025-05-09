@@ -15,6 +15,8 @@
 // limitations under the License.
 //
 
+//go:build equal
+
 package models
 
 import (
@@ -22,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/go-faker/faker/v4"
+	"github.com/go-faker/faker/v4/pkg/options"
 
 	jsoniter "github.com/json-iterator/go"
 )
@@ -33,17 +36,17 @@ func TestStickTableEntryEqual(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample StickTableEntry
 		var result StickTableEntry
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		byteJSON, err := json.Marshal(sample)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 
 		samples = append(samples, struct {
@@ -57,11 +60,11 @@ func TestStickTableEntryEqual(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected StickTableEntry to be equal, but it is not %s %s", a, b)
 		}
@@ -75,13 +78,13 @@ func TestStickTableEntryEqualFalse(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample StickTableEntry
 		var result StickTableEntry
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		err = faker.FakeData(&result)
+		err = faker.FakeData(&result, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		result.BytesInCnt = Ptr(*sample.BytesInCnt + 1)
 		result.BytesInRate = Ptr(*sample.BytesInRate + 1)
@@ -91,6 +94,8 @@ func TestStickTableEntryEqualFalse(t *testing.T) {
 		result.ConnCur = Ptr(*sample.ConnCur + 1)
 		result.ConnRate = Ptr(*sample.ConnRate + 1)
 		result.Exp = Ptr(*sample.Exp + 1)
+		result.GlitchCnt = Ptr(*sample.GlitchCnt + 1)
+		result.GlitchRate = Ptr(*sample.GlitchRate + 1)
 		result.Gpc0 = Ptr(*sample.Gpc0 + 1)
 		result.Gpc0Rate = Ptr(*sample.Gpc0Rate + 1)
 		result.Gpc1 = Ptr(*sample.Gpc1 + 1)
@@ -115,11 +120,11 @@ func TestStickTableEntryEqualFalse(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected StickTableEntry to be different, but it is not %s %s", a, b)
 		}
@@ -133,17 +138,17 @@ func TestStickTableEntryDiff(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample StickTableEntry
 		var result StickTableEntry
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		byteJSON, err := json.Marshal(sample)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 
 		samples = append(samples, struct {
@@ -157,11 +162,11 @@ func TestStickTableEntryDiff(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected StickTableEntry to be equal, but it is not %s %s, %v", a, b, result)
 		}
@@ -175,13 +180,13 @@ func TestStickTableEntryDiffFalse(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample StickTableEntry
 		var result StickTableEntry
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		err = faker.FakeData(&result)
+		err = faker.FakeData(&result, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		result.BytesInCnt = Ptr(*sample.BytesInCnt + 1)
 		result.BytesInRate = Ptr(*sample.BytesInRate + 1)
@@ -191,6 +196,8 @@ func TestStickTableEntryDiffFalse(t *testing.T) {
 		result.ConnCur = Ptr(*sample.ConnCur + 1)
 		result.ConnRate = Ptr(*sample.ConnRate + 1)
 		result.Exp = Ptr(*sample.Exp + 1)
+		result.GlitchCnt = Ptr(*sample.GlitchCnt + 1)
+		result.GlitchRate = Ptr(*sample.GlitchRate + 1)
 		result.Gpc0 = Ptr(*sample.Gpc0 + 1)
 		result.Gpc0Rate = Ptr(*sample.Gpc0Rate + 1)
 		result.Gpc1 = Ptr(*sample.Gpc1 + 1)
@@ -211,17 +218,17 @@ func TestStickTableEntryDiffFalse(t *testing.T) {
 
 	for _, sample := range samples {
 		result := sample.a.Diff(sample.b)
-		if len(result) != 23 {
+		if len(result) != 25 {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
-			t.Errorf("Expected StickTableEntry to be different in 23 cases, but it is not (%d) %s %s", len(result), a, b)
+			t.Errorf("Expected StickTableEntry to be different in 25 cases, but it is not (%d) %s %s", len(result), a, b)
 		}
 	}
 }

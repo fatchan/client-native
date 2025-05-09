@@ -4,12 +4,8 @@ tcp_request_rule:
   description: HAProxy TCP Request Rule configuration (corresponds to tcp-request)
   type: object
   required:
-    - index
     - type
   properties:
-    index:
-      type: integer
-      x-nullable: true
     type:
       type: string
       enum: [connection, content, inspect-delay, session]
@@ -51,19 +47,18 @@ tcp_request_rule:
         - set-var-fmt
         - silent-drop
         - switch-mode
-        - track-sc0
-        - track-sc1
-        - track-sc2
         - track-sc
         - unset-var
         - use-service
+        - set-retries
+        - do-log
       x-nullable: false
       x-dependency:
         type:
           value: [connection, content, session]
           required: true
     capture_sample:
-      pattern: '^[^\s]+$'
+      pattern: '^(?:[A-Za-z]+\("([A-Za-z\s]+)"\)|[A-Za-z]+)'
       x-display-name: Capture Sample
       type: string
       x-dependency:
@@ -129,7 +124,15 @@ tcp_request_rule:
       x-display-name: Sticky counter ID
       x-dependency:
         action:
-          value: [sc-add-gpc, sc-inc-gpc, sc-inc-gpc0, sc-inc-gpc1, sc-set-gpt, sc-set-gpt0]
+          value:
+            [
+              sc-add-gpc,
+              sc-inc-gpc,
+              sc-inc-gpc0,
+              sc-inc-gpc1,
+              sc-set-gpt,
+              sc-set-gpt0,
+            ]
           required: true
         type:
           value: [connection, content, session]
@@ -200,13 +203,13 @@ tcp_request_rule:
           value: set-var-fmt
           required: true
         type:
-          value: [connection, content]
+          value: [session, connection, content]
     track_key:
       type: string
       x-display-name: Sample expression rule
       x-dependency:
         action:
-          value: [track-sc0, track-sc1, track-sc2, track-sc]
+          value: [track-sc]
           required: true
         type:
           value: [session, connection, content]
@@ -215,7 +218,7 @@ tcp_request_rule:
       x-display-name: Optional table name
       x-dependency:
         action:
-          value: [track-sc0, track-sc1, track-sc2, track-sc]
+          value: [track-sc]
           required: false
         type:
           value: [session, connection, content]
@@ -225,7 +228,7 @@ tcp_request_rule:
       x-nullable: true
       x-dependency:
         action:
-          value: [track-sc0, track-sc1, track-sc2, track-sc]
+          value: [track-sc]
           required: false
         type:
           value: [session, connection, content]
@@ -250,6 +253,8 @@ tcp_request_rule:
     timeout:
       type: integer
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
       x-dependency:
         type:
           value: inspect-delay
@@ -272,6 +277,7 @@ tcp_request_rule:
             - set-src
             - set-src-port
             - set-var
+            - set-retries
           required: true
         type:
           value: [session, connection, content]
@@ -326,6 +332,13 @@ tcp_request_rule:
           required: true
         type:
           value: content
+    rst_ttl:
+      type: integer
+      x-display-name: RST TTL
+      x-dependency:
+        type:
+          value: [silent-drop]
+          required: true
     mark_value:
       type: string
       pattern: "^(0x[0-9A-Fa-f]+|[0-9]+)$"

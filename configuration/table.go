@@ -20,9 +20,9 @@ import (
 	"fmt"
 
 	strfmt "github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
@@ -154,7 +154,7 @@ func (c *client) EditTable(name string, peerSection string, data *models.Table, 
 }
 
 func ParseTables(peerSection string, p parser.Parser) (models.Tables, error) {
-	tables := models.Tables{}
+	var tables models.Tables
 
 	data, err := p.Get(parser.Peers, peerSection, "table", false)
 	if err != nil {

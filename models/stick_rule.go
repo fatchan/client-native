@@ -33,22 +33,17 @@ import (
 // StickRule Stick Rule
 //
 // Define a pattern used to create an entry in a stickiness table or matching condition or associate a user to a server.
-// Example: {"index":0,"pattern":"src","type":"match"}
+// Example: {"pattern":"src","type":"match"}
 //
 // swagger:model stick_rule
 type StickRule struct {
 	// cond
-	// Enum: [if unless]
+	// Enum: ["if","unless"]
 	// +kubebuilder:validation:Enum=if;unless;
 	Cond string `json:"cond,omitempty"`
 
 	// cond test
 	CondTest string `json:"cond_test,omitempty"`
-
-	// index
-	// Required: true
-	// +kubebuilder:validation:Optional
-	Index *int64 `json:"index"`
 
 	// pattern
 	// Required: true
@@ -63,7 +58,7 @@ type StickRule struct {
 
 	// type
 	// Required: true
-	// Enum: [match on store-request store-response]
+	// Enum: ["match","on","store-request","store-response"]
 	// +kubebuilder:validation:Enum=match;on;store-request;store-response;
 	Type string `json:"type"`
 }
@@ -73,10 +68,6 @@ func (m *StickRule) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCond(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateIndex(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -134,15 +125,6 @@ func (m *StickRule) validateCond(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateCondEnum("cond", "body", m.Cond); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *StickRule) validateIndex(formats strfmt.Registry) error {
-
-	if err := validate.Required("index", "body", m.Index); err != nil {
 		return err
 	}
 

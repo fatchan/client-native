@@ -21,9 +21,9 @@ import (
 	"strings"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
@@ -66,7 +66,7 @@ func (c *client) GetUser(username string, userlist string, transactionID string)
 	if err != nil {
 		return 0, nil, err
 	}
-	user, _ := GetUserByUsername(username, userlist, p)
+	user, _, err := GetUserByUsername(username, userlist, p)
 	if err != nil {
 		return v, nil, c.HandleError(username, "userlist", userlist, "", false, err)
 	}
@@ -80,12 +80,12 @@ func (c *client) DeleteUser(username string, userlist string, transactionID stri
 	if err != nil {
 		return err
 	}
-	if _, _, err := c.GetUserList(userlist, transactionID); err != nil {
+	if _, _, err = c.GetUserList(userlist, transactionID); err != nil {
 		return err
 	}
-	user, i := GetUserByUsername(username, userlist, p)
-	if user == nil {
-		return NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("user %s does not exist", username))
+	_, i, err := GetUserByUsername(username, userlist, p)
+	if err != nil {
+		return err
 	}
 	if err := p.Delete("userlist", userlist, "user", i); err != nil {
 		return c.HandleError(username, "userlist", userlist, t, transactionID == "", err)
@@ -107,11 +107,11 @@ func (c *client) CreateUser(userlist string, data *models.User, transactionID st
 		return err
 	}
 
-	if _, _, err := c.GetUserList(userlist, transactionID); err != nil {
+	if _, _, err = c.GetUserList(userlist, transactionID); err != nil {
 		return err
 	}
-	user, _ := GetUserByUsername(data.Username, userlist, p)
-	if user != nil {
+	_, _, err = GetUserByUsername(data.Username, userlist, p)
+	if err == nil {
 		return NewConfError(ErrObjectAlreadyExists, fmt.Sprintf("user %s already exists", data.Username))
 	}
 	if err := p.Insert("userlist", userlist, "user", SerializeUser(*data), -1); err != nil {
@@ -133,12 +133,12 @@ func (c *client) EditUser(username string, userlist string, data *models.User, t
 	if err != nil {
 		return err
 	}
-	if _, _, err := c.GetUserList(userlist, transactionID); err != nil {
+	if _, _, err = c.GetUserList(userlist, transactionID); err != nil {
 		return err
 	}
-	user, i := GetUserByUsername(data.Username, userlist, p)
-	if user == nil {
-		return NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("user %s does not exist", data.Username))
+	_, i, err := GetUserByUsername(data.Username, userlist, p)
+	if err != nil {
+		return err
 	}
 	if err := p.Set(parser.UserList, userlist, "user", SerializeUser(*data), i); err != nil {
 		return c.HandleError(data.Username, "userlist", userlist, t, transactionID == "", err)
@@ -147,7 +147,7 @@ func (c *client) EditUser(username string, userlist string, data *models.User, t
 }
 
 func ParseUsers(userlist string, p parser.Parser) (models.Users, error) {
-	users := models.Users{}
+	var users models.Users
 	data, err := p.Get("userlist", userlist, "user", false)
 	if err != nil {
 		if errors.Is(err, parser_errors.ErrFetch) {
@@ -191,15 +191,15 @@ func SerializeUser(u models.User) types.User {
 	}
 }
 
-func GetUserByUsername(username string, userlist string, p parser.Parser) (*models.User, int) {
+func GetUserByUsername(username string, userlist string, p parser.Parser) (*models.User, int, error) {
 	users, err := ParseUsers(userlist, p)
 	if err != nil {
-		return nil, 0
+		return nil, 0, err
 	}
 	for i, user := range users {
 		if user.Username == username {
-			return user, i
+			return user, i, nil
 		}
 	}
-	return nil, 0
+	return nil, 0, NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("user %s does not exist", username))
 }

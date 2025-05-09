@@ -22,10 +22,10 @@ import (
 	"strings"
 
 	strfmt "github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/params"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/params"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
@@ -166,7 +166,7 @@ func (c *client) EditBind(name string, parentType string, parentName string, dat
 }
 
 func ParseBinds(parentType string, parentName string, p parser.Parser) (models.Binds, error) {
-	binds := models.Binds{}
+	var binds models.Binds
 
 	data, err := p.Get(bindSectionType(parentType), parentName, "bind", false)
 	if err != nil {
@@ -219,7 +219,8 @@ func ParseBind(ondiskBind types.Bind) *models.Bind {
 	return b
 }
 
-func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //nolint:gocyclo,cyclop,maintidx,gocognit
+func parseBindParams(bindOptions []params.BindOption) models.BindParams { //nolint:gocyclo,cyclop,maintidx,gocognit
+	var b models.BindParams
 	for _, p := range bindOptions {
 		switch v := p.(type) {
 		case *params.BindOptionDoubleWord:
@@ -241,31 +242,41 @@ func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //
 			case "defer-accept":
 				b.DeferAccept = true
 			case "force-sslv3":
+				b.Sslv3 = "enabled"
 				b.ForceSslv3 = true
+			case "no-sslv3":
+				b.Sslv3 = "disabled"
+				b.NoSslv3 = true
 			case "force-tlsv10":
+				b.Tlsv10 = "enabled"
 				b.ForceTlsv10 = true
+			case "no-tlsv10":
+				b.Tlsv10 = "disabled"
+				b.NoTlsv10 = true
 			case "force-tlsv11":
+				b.Tlsv11 = "enabled"
 				b.ForceTlsv11 = true
+			case "no-tlsv11":
+				b.Tlsv11 = "disabled"
+				b.NoTlsv11 = true
 			case "force-tlsv12":
+				b.Tlsv12 = "enabled"
 				b.ForceTlsv12 = true
+			case "no-tlsv12":
+				b.Tlsv12 = "disabled"
+				b.NoTlsv12 = true
 			case "force-tlsv13":
+				b.Tlsv13 = "enabled"
 				b.ForceTlsv13 = true
+			case "no-tlsv13":
+				b.Tlsv13 = "disabled"
+				b.NoTlsv13 = true
 			case "generate-certificates":
 				b.GenerateCertificates = true
 			case "no-ca-names":
 				b.NoCaNames = true
-			case "no-sslv3":
-				b.NoSslv3 = true
 			case "no-tls-tickets":
 				b.NoTLSTickets = true
-			case "no-tlsv10":
-				b.NoTlsv10 = true
-			case "no-tlsv11":
-				b.NoTlsv11 = true
-			case "no-tlsv12":
-				b.NoTlsv12 = true
-			case "no-tlsv13":
-				b.NoTlsv13 = true
 			case "prefer-client-ciphers":
 				b.PreferClientCiphers = true
 			case "strict-sni":
@@ -283,8 +294,6 @@ func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //
 			switch v.Name {
 			case "name":
 				b.Name = v.Value
-			case "process":
-				b.Process = v.Value
 			case "tcp-ut":
 				b.TCPUserTimeout = misc.ParseTimeout(v.Value)
 			case "crt":
@@ -326,6 +335,11 @@ func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //
 				b.CrtIgnoreErr = v.Value
 			case "crt-list":
 				b.CrtList = v.Value
+			case "default-crt":
+				if b.DefaultCrtList == nil {
+					b.DefaultCrtList = []string{}
+				}
+				b.DefaultCrtList = append(b.DefaultCrtList, v.Value)
 			case "gid":
 				gid, err := strconv.ParseInt(v.Value, 10, 64)
 				if err == nil {
@@ -335,6 +349,8 @@ func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //
 				b.Group = v.Value
 			case "id":
 				b.ID = v.Value
+			case "guid-prefix":
+				b.GUIDPrefix = v.Value
 			case "interface":
 				b.Interface = v.Value
 			case "level":
@@ -380,10 +396,24 @@ func parseBindParams(bindOptions []params.BindOption) (b models.BindParams) { //
 				b.UID = v.Value
 			case "user":
 				b.User = v.Value
-			case "quic-cc-algo":
-				b.QuicCcAlgo = v.Value
 			case "quic-socket":
 				b.QuicSocket = v.Value
+			}
+		case *params.BindOptionParams:
+			if v.Name == "quic-cc-algo" {
+				b.QuicCcAlgo = v.Value
+				switch len(v.Params) {
+				case 1:
+					b.QuicCcAlgoMaxWindow = misc.Ptr(*misc.ParseSize(v.Params[0]) / 1024)
+				case 2:
+					if len(v.Params[0]) > 0 {
+						b.QuicCcAlgoMaxWindow = misc.Ptr(*misc.ParseSize(v.Params[0]) / 1024)
+					}
+					n, err := strconv.ParseInt(v.Params[1], 10, 64)
+					if err == nil {
+						b.QuicCcAlgoBurstSize = &n
+					}
+				}
 			}
 		}
 	}
@@ -407,14 +437,12 @@ func SerializeBind(b models.Bind) types.Bind {
 	return bind
 }
 
-func serializeBindParams(b models.BindParams, path string) (options []params.BindOption) { //nolint:gocognit,gocyclo,cyclop,maintidx
+func serializeBindParams(b models.BindParams, path string) []params.BindOption { //nolint:gocognit,gocyclo,cyclop,maintidx
+	var options []params.BindOption
 	if b.Name != "" {
 		options = append(options, &params.BindOptionValue{Name: "name", Value: b.Name})
 	} else if path != "" {
 		options = append(options, &params.BindOptionValue{Name: "name", Value: path})
-	}
-	if b.Process != "" {
-		options = append(options, &params.BindOptionValue{Name: "process", Value: b.Process})
 	}
 	if b.SslCertificate != "" {
 		options = append(options, &params.BindOptionValue{Name: "crt", Value: b.SslCertificate})
@@ -488,35 +516,68 @@ func serializeBindParams(b models.BindParams, path string) (options []params.Bin
 	if b.CrtList != "" {
 		options = append(options, &params.BindOptionValue{Name: "crt-list", Value: b.CrtList})
 	}
+	if b.DefaultCrtList != nil {
+		for _, dc := range b.DefaultCrtList {
+			options = append(options, &params.BindOptionValue{Name: "default-crt", Value: dc})
+		}
+	}
 	if b.DeferAccept {
 		options = append(options, &params.BindOptionWord{Name: "defer-accept"})
 	}
 	if b.ExposeFdListeners {
-		options = append(options, &params.ServerOptionDoubleWord{Name: "expose-fd", Value: "listeners"})
+		options = append(options, &params.BindOptionDoubleWord{Name: "expose-fd", Value: "listeners"})
 	}
-	if b.ForceSslv3 {
-		options = append(options, &params.ServerOptionWord{Name: "force-sslv3"})
+	if b.Sslv3 == "enabled" ||
+		b.ForceSslv3 {
+		options = append(options, &params.BindOptionWord{Name: "force-sslv3"})
 	}
-	if b.ForceTlsv10 {
-		options = append(options, &params.ServerOptionWord{Name: "force-tlsv10"})
+	if b.Sslv3 == "disabled" ||
+		b.NoSslv3 {
+		options = append(options, &params.BindOptionWord{Name: "no-sslv3"})
 	}
-	if b.ForceTlsv11 {
-		options = append(options, &params.ServerOptionWord{Name: "force-tlsv11"})
+	if b.Tlsv10 == "enabled" ||
+		b.ForceTlsv10 {
+		options = append(options, &params.BindOptionWord{Name: "force-tlsv10"})
 	}
-	if b.ForceTlsv12 {
-		options = append(options, &params.ServerOptionWord{Name: "force-tlsv12"})
+	if b.Tlsv10 == "disabled" ||
+		b.NoTlsv10 {
+		options = append(options, &params.BindOptionWord{Name: "no-tlsv10"})
 	}
-	if b.ForceTlsv13 {
-		options = append(options, &params.ServerOptionWord{Name: "force-tlsv13"})
+	if b.Tlsv11 == "enabled" ||
+		b.ForceTlsv11 {
+		options = append(options, &params.BindOptionWord{Name: "force-tlsv11"})
+	}
+	if b.Tlsv11 == "disabled" ||
+		b.NoTlsv11 {
+		options = append(options, &params.BindOptionWord{Name: "no-tlsv11"})
+	}
+	if b.Tlsv12 == "enabled" ||
+		b.ForceTlsv12 {
+		options = append(options, &params.BindOptionWord{Name: "force-tlsv12"})
+	}
+	if b.Tlsv12 == "disabled" ||
+		b.NoTlsv12 {
+		options = append(options, &params.BindOptionWord{Name: "no-tlsv12"})
+	}
+	if b.Tlsv13 == "enabled" ||
+		b.ForceTlsv13 {
+		options = append(options, &params.BindOptionWord{Name: "force-tlsv13"})
+	}
+	if b.Tlsv13 == "disabled" ||
+		b.NoTlsv13 {
+		options = append(options, &params.BindOptionWord{Name: "no-tlsv13"})
 	}
 	if b.GenerateCertificates {
-		options = append(options, &params.ServerOptionWord{Name: "generate-certificates"})
+		options = append(options, &params.BindOptionWord{Name: "generate-certificates"})
 	}
 	if b.Gid != 0 {
 		options = append(options, &params.BindOptionValue{Name: "gid", Value: strconv.FormatInt(b.Gid, 10)})
 	}
 	if b.Group != "" {
 		options = append(options, &params.BindOptionValue{Name: "group", Value: b.Group})
+	}
+	if b.GUIDPrefix != "" {
+		options = append(options, &params.BindOptionValue{Name: "guid-prefix", Value: b.GUIDPrefix})
 	}
 	if b.ID != "" {
 		options = append(options, &params.BindOptionValue{Name: "id", Value: b.ID})
@@ -546,31 +607,16 @@ func serializeBindParams(b models.BindParams, path string) (options []params.Bin
 		options = append(options, &params.BindOptionValue{Name: "nbconn", Value: strconv.FormatInt(b.Nbconn, 10)})
 	}
 	if b.NoCaNames {
-		options = append(options, &params.ServerOptionWord{Name: "no-ca-names"})
-	}
-	if b.NoSslv3 {
-		options = append(options, &params.ServerOptionWord{Name: "no-sslv3"})
+		options = append(options, &params.BindOptionWord{Name: "no-ca-names"})
 	}
 	if b.NoTLSTickets {
-		options = append(options, &params.ServerOptionWord{Name: "no-tls-tickets"})
-	}
-	if b.NoTlsv10 {
-		options = append(options, &params.ServerOptionWord{Name: "no-tlsv10"})
-	}
-	if b.NoTlsv11 {
-		options = append(options, &params.ServerOptionWord{Name: "no-tlsv11"})
-	}
-	if b.NoTlsv12 {
-		options = append(options, &params.ServerOptionWord{Name: "no-tlsv12"})
-	}
-	if b.NoTlsv13 {
-		options = append(options, &params.ServerOptionWord{Name: "no-tlsv13"})
+		options = append(options, &params.BindOptionWord{Name: "no-tls-tickets"})
 	}
 	if b.Npn != "" {
 		options = append(options, &params.BindOptionValue{Name: "npn", Value: b.Npn})
 	}
 	if b.PreferClientCiphers {
-		options = append(options, &params.ServerOptionWord{Name: "prefer-client-ciphers"})
+		options = append(options, &params.BindOptionWord{Name: "prefer-client-ciphers"})
 	}
 	if b.Proto != "" {
 		options = append(options, &params.BindOptionValue{Name: "proto", Value: b.Proto})
@@ -585,10 +631,10 @@ func serializeBindParams(b models.BindParams, path string) (options []params.Bin
 		options = append(options, &params.BindOptionValue{Name: "ssl-min-ver", Value: b.SslMinVer})
 	}
 	if b.StrictSni {
-		options = append(options, &params.ServerOptionWord{Name: "strict-sni"})
+		options = append(options, &params.BindOptionWord{Name: "strict-sni"})
 	}
 	if b.Tfo {
-		options = append(options, &params.ServerOptionWord{Name: "tfo"})
+		options = append(options, &params.BindOptionWord{Name: "tfo"})
 	}
 	if b.Thread != "" {
 		options = append(options, &params.BindOptionValue{Name: "thread", Value: b.Thread})
@@ -606,7 +652,18 @@ func serializeBindParams(b models.BindParams, path string) (options []params.Bin
 		options = append(options, &params.BindOptionValue{Name: "user", Value: b.User})
 	}
 	if b.QuicCcAlgo != "" {
-		options = append(options, &params.BindOptionValue{Name: "quic-cc-algo", Value: b.QuicCcAlgo})
+		var p []string
+		if b.QuicCcAlgoMaxWindow != nil {
+			p = append(p, misc.SerializeSize(*b.QuicCcAlgoMaxWindow*1024))
+		}
+		if b.QuicCcAlgoBurstSize != nil {
+			if len(p) == 0 {
+				p = append(p, "")
+			}
+			p = append(p, strconv.FormatInt(*b.QuicCcAlgoBurstSize, 10))
+		}
+
+		options = append(options, &params.BindOptionParams{Name: "quic-cc-algo", Value: b.QuicCcAlgo, Params: p})
 	}
 	if b.QuicForceRetry {
 		options = append(options, &params.BindOptionWord{Name: "quic-force-retry"})

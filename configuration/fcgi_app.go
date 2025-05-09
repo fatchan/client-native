@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	parsererrors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parsererrors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
@@ -158,7 +158,7 @@ func passHeader(p parser.Parser, name string) ([]*models.FCGIPassHeader, error) 
 
 func ParseFCGIApp(p parser.Parser, name string) (*models.FCGIApp, error) {
 	app := &models.FCGIApp{
-		Name: name,
+		FCGIAppBase: models.FCGIAppBase{Name: name},
 	}
 
 	docRoot, err := genericString(p, name, "docroot")
@@ -333,82 +333,82 @@ func (c *client) CreateFCGIApplication(data *models.FCGIApp, transactionID strin
 }
 
 //nolint:gocognit
-func SerializeFCGIAppSection(p parser.Parser, data *models.FCGIApp) (err error) {
+func SerializeFCGIAppSection(p parser.Parser, data *models.FCGIApp) error {
 	if data == nil {
-		return fmt.Errorf("empty FCGI app")
+		return errors.New("empty FCGI app")
 	}
 
 	if data.Docroot == nil && len(*data.Docroot) == 0 {
-		return fmt.Errorf("missing required docroot")
-	} else if err = p.Set(parser.FCGIApp, data.Name, "docroot", types.StringC{Value: *data.Docroot}); err != nil {
+		return errors.New("missing required docroot")
+	} else if err := p.Set(parser.FCGIApp, data.Name, "docroot", types.StringC{Value: *data.Docroot}); err != nil {
 		return err
 	}
 
-	if err = p.Set(parser.FCGIApp, data.Name, "option get-values", serializeSimpleOption(data.GetValues)); err != nil {
+	if err := p.Set(parser.FCGIApp, data.Name, "option get-values", serializeSimpleOption(data.GetValues)); err != nil {
 		return err
 	}
 
 	if len(data.Index) > 0 {
-		if err = p.Set(parser.FCGIApp, data.Name, "index", types.StringC{Value: data.Index}); err != nil {
+		if err := p.Set(parser.FCGIApp, data.Name, "index", types.StringC{Value: data.Index}); err != nil {
 			return err
 		}
 	} else {
-		if err = p.Set(parser.FCGIApp, data.Name, "index", nil); err != nil {
+		if err := p.Set(parser.FCGIApp, data.Name, "index", nil); err != nil {
 			return err
 		}
 	}
 
-	if err = p.Set(parser.FCGIApp, data.Name, "option keep-conn", serializeSimpleOption(data.KeepConn)); err != nil {
+	if err := p.Set(parser.FCGIApp, data.Name, "option keep-conn", serializeSimpleOption(data.KeepConn)); err != nil {
 		return err
 	}
 
-	if err = p.Set(parser.FCGIApp, data.Name, "log-stderr", nil); err != nil {
+	if err := p.Set(parser.FCGIApp, data.Name, "log-stderr", nil); err != nil {
 		return err
 	}
 	for _, i := range serializeLogStderr(data.LogStderrs) {
-		if err = p.Set(parser.FCGIApp, data.Name, "log-stderr", i); err != nil {
+		if err := p.Set(parser.FCGIApp, data.Name, "log-stderr", i); err != nil {
 			return err
 		}
 	}
 
 	if data.MaxReqs > 0 {
-		if err = p.Set(parser.FCGIApp, data.Name, "option max-reqs", types.OptionMaxReqs{Reqs: data.MaxReqs}); err != nil {
+		if err := p.Set(parser.FCGIApp, data.Name, "option max-reqs", types.OptionMaxReqs{Reqs: data.MaxReqs}); err != nil {
 			return err
 		}
 	} else {
-		if err = p.Set(parser.FCGIApp, data.Name, "option max-reqs", nil); err != nil {
+		if err := p.Set(parser.FCGIApp, data.Name, "option max-reqs", nil); err != nil {
 			return err
 		}
 	}
 
-	if err = p.Set(parser.FCGIApp, data.Name, "option mpxs-conns", serializeSimpleOption(data.GetValues)); err != nil {
+	if err := p.Set(parser.FCGIApp, data.Name, "option mpxs-conns", serializeSimpleOption(data.GetValues)); err != nil {
 		return err
 	}
 
-	if err = p.Set(parser.FCGIApp, data.Name, "pass-header", nil); err != nil {
+	if err := p.Set(parser.FCGIApp, data.Name, "pass-header", nil); err != nil {
 		return err
 	}
 	for _, i := range serializePassHeader(data.PassHeaders) {
-		if err = p.Set(parser.FCGIApp, data.Name, "pass-header", i); err != nil {
+		if err := p.Set(parser.FCGIApp, data.Name, "pass-header", i); err != nil {
 			return err
 		}
 	}
 
 	if len(data.PathInfo) > 0 {
-		if err = p.Set(parser.FCGIApp, data.Name, "path-info", types.StringC{Value: data.PathInfo}); err != nil {
+		if err := p.Set(parser.FCGIApp, data.Name, "path-info", types.StringC{Value: data.PathInfo}); err != nil {
 			return err
 		}
 	} else {
-		if err = p.Set(parser.FCGIApp, data.Name, "path-info", nil); err != nil {
+		if err := p.Set(parser.FCGIApp, data.Name, "path-info", nil); err != nil {
 			return err
 		}
 	}
 
-	if err = p.Set(parser.FCGIApp, data.Name, "set-param", nil); err != nil {
+	if err := p.Set(parser.FCGIApp, data.Name, "set-param", nil); err != nil {
 		return err
 	}
 	for _, i := range serializeSetParam(data.SetParams) {
-		if err = p.Set(parser.FCGIApp, data.Name, "set-param", i); err != nil {
+		if err := p.Set(parser.FCGIApp, data.Name, "set-param", i); err != nil {
 			return err
 		}
 	}

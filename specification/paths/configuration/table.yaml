@@ -7,11 +7,7 @@ tables:
     tags:
       - Table
     parameters:
-      - name: peer_section
-        in: query
-        description: Parent peer section name
-        required: true
-        type: string
+      - $ref: "#/parameters/parent_name"
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -31,11 +27,7 @@ tables:
     tags:
       - Table
     parameters:
-      - name: peer_section
-        in: query
-        description: Parent peer section name
-        required: true
-        type: string
+      - $ref: "#/parameters/parent_name"
       - name: data
         in: body
         required: true
@@ -76,11 +68,7 @@ table:
         description: Table name
         required: true
         type: string
-      - name: peer_section
-        in: query
-        description: Parent peers name
-        required: true
-        type: string
+      - $ref: "#/parameters/parent_name"
       - $ref: "#/parameters/transaction_id"
     responses:
       '200':
@@ -107,11 +95,7 @@ table:
         description: Table name
         required: true
         type: string
-      - name: peer_section
-        in: query
-        description: Parent peers name
-        required: true
-        type: string
+      - $ref: "#/parameters/parent_name"
       - name: data
         in: body
         required: true
@@ -151,11 +135,7 @@ table:
         description: Table name
         required: true
         type: string
-      - name: peer_section
-        in: query
-        description: Parent peers name
-        required: true
-        type: string
+      - $ref: "#/parameters/parent_name"
       - $ref: "#/parameters/transaction_id"
       - $ref: "#/parameters/version"
       - $ref: "#/parameters/force_reload"

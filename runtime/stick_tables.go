@@ -64,7 +64,7 @@ func (s *SingleRuntime) ShowTable(name string) (*models.StickTable, error) {
 
 // GetTableEntries returns Stick Tables entries
 func (s *SingleRuntime) GetTableEntries(name string, filter []string, key string) (models.StickTableEntries, error) {
-	cmd := fmt.Sprintf("show table %s", name)
+	cmd := "show table " + name
 
 	// use only first filter here
 	if len(filter) > 0 {
@@ -117,8 +117,7 @@ func (s *SingleRuntime) parseStickTable(output string) *models.StickTable {
 	if !strings.HasPrefix(output, "# table:") {
 		return nil
 	}
-	proc := int64(s.process)
-	stkTable := &models.StickTable{Process: &proc}
+	stkTable := &models.StickTable{}
 
 	stkStrings := strings.Split(output, ",")
 
@@ -238,6 +237,16 @@ func parseStickTableEntry(output string) *models.StickTableEntry { //nolint:goco
 			bytesOutRate, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
 			if err == nil {
 				entry.BytesOutRate = &bytesOutRate
+			}
+		case key == "glitch_cnt":
+			glitchCnt, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
+			if err == nil {
+				entry.GlitchCnt = &glitchCnt
+			}
+		case strings.HasPrefix(key, "glitch_rate("):
+			glitchRate, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
+			if err == nil {
+				entry.GlitchRate = &glitchRate
 			}
 		case key == "use":
 			entry.Use = strings.TrimSpace(v) == "1"

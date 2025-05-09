@@ -15,6 +15,8 @@
 // limitations under the License.
 //
 
+//go:build equal
+
 package models
 
 import (
@@ -22,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/go-faker/faker/v4"
+	"github.com/go-faker/faker/v4/pkg/options"
 
 	jsoniter "github.com/json-iterator/go"
 )
@@ -33,17 +36,17 @@ func TestBindParamsEqual(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample BindParams
 		var result BindParams
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		byteJSON, err := json.Marshal(sample)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 
 		samples = append(samples, struct {
@@ -57,11 +60,11 @@ func TestBindParamsEqual(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected BindParams to be equal, but it is not %s %s", a, b)
 		}
@@ -75,13 +78,13 @@ func TestBindParamsEqualFalse(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample BindParams
 		var result BindParams
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		err = faker.FakeData(&result)
+		err = faker.FakeData(&result, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		result.AcceptNetscalerCip = sample.AcceptNetscalerCip + 1
 		result.AcceptProxy = !sample.AcceptProxy
@@ -108,6 +111,8 @@ func TestBindParamsEqualFalse(t *testing.T) {
 		result.NoTlsv13 = !sample.NoTlsv13
 		result.PreferClientCiphers = !sample.PreferClientCiphers
 		result.QuicForceRetry = !sample.QuicForceRetry
+		result.QuicCcAlgoBurstSize = Ptr(*sample.QuicCcAlgoBurstSize + 1)
+		result.QuicCcAlgoMaxWindow = Ptr(*sample.QuicCcAlgoMaxWindow + 1)
 		result.Ssl = !sample.Ssl
 		result.StrictSni = !sample.StrictSni
 		result.TCPUserTimeout = Ptr(*sample.TCPUserTimeout + 1)
@@ -126,11 +131,11 @@ func TestBindParamsEqualFalse(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected BindParams to be different, but it is not %s %s", a, b)
 		}
@@ -144,17 +149,17 @@ func TestBindParamsDiff(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample BindParams
 		var result BindParams
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		byteJSON, err := json.Marshal(sample)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		err = json.Unmarshal(byteJSON, &result)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 
 		samples = append(samples, struct {
@@ -168,11 +173,11 @@ func TestBindParamsDiff(t *testing.T) {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			t.Errorf("Expected BindParams to be equal, but it is not %s %s, %v", a, b, result)
 		}
@@ -186,13 +191,13 @@ func TestBindParamsDiffFalse(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		var sample BindParams
 		var result BindParams
-		err := faker.FakeData(&sample)
+		err := faker.FakeData(&sample, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
-		err = faker.FakeData(&result)
+		err = faker.FakeData(&result, options.WithIgnoreInterface(true))
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err)
 		}
 		result.AcceptNetscalerCip = sample.AcceptNetscalerCip + 1
 		result.AcceptProxy = !sample.AcceptProxy
@@ -219,6 +224,8 @@ func TestBindParamsDiffFalse(t *testing.T) {
 		result.NoTlsv13 = !sample.NoTlsv13
 		result.PreferClientCiphers = !sample.PreferClientCiphers
 		result.QuicForceRetry = !sample.QuicForceRetry
+		result.QuicCcAlgoBurstSize = Ptr(*sample.QuicCcAlgoBurstSize + 1)
+		result.QuicCcAlgoMaxWindow = Ptr(*sample.QuicCcAlgoMaxWindow + 1)
 		result.Ssl = !sample.Ssl
 		result.StrictSni = !sample.StrictSni
 		result.TCPUserTimeout = Ptr(*sample.TCPUserTimeout + 1)
@@ -233,17 +240,17 @@ func TestBindParamsDiffFalse(t *testing.T) {
 
 	for _, sample := range samples {
 		result := sample.a.Diff(sample.b)
-		if len(result) != 70 {
+		if len(result) != 78 {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
 			b, err := json.Marshal(&sample.b)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Error(err)
 			}
-			t.Errorf("Expected BindParams to be different in 70 cases, but it is not (%d) %s %s", len(result), a, b)
+			t.Errorf("Expected BindParams to be different in 78 cases, but it is not (%d) %s %s", len(result), a, b)
 		}
 	}
 }

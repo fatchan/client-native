@@ -139,6 +139,8 @@ httpchk_params:
       pattern: '^[^ ]*$'
     version:
       type: string
+    host:
+      type: string
 redispatch:
   type: object
   required:
@@ -245,7 +247,10 @@ stats_options:
       minimum: 1
     stats_refresh_delay:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: s
     stats_show_desc:
       type: string
       x-nullable: true
@@ -390,3 +395,13 @@ originalto:
     header:
       type: string
       pattern: '^[^\s]+$'
+http_codes:
+  type: object
+  x-go-name: HTTPCodes
+  required:
+    - value
+  properties:
+    value:
+      type: string
+      x-display-name: Value
+      pattern: '^[a-zA-Z0-9 +\-,]+$'

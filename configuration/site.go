@@ -21,7 +21,7 @@ import (
 	"strconv"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
 
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
@@ -352,8 +352,8 @@ func (c *client) EditSite(name string, data *models.Site, transactionID string, 
 			if err != nil {
 				res = append(res, err)
 			}
-			frontend := &models.Frontend{Name: name}
-			if err := ParseSection(frontend, parser.Frontends, name, p); err != nil {
+			frontend := &models.Frontend{FrontendBase: models.FrontendBase{Name: name}}
+			if err := ParseSection(&frontend.FrontendBase, parser.Frontends, name, p); err != nil {
 				res = append(res, err)
 			}
 			if frontend.DefaultBackend != "" {
@@ -466,8 +466,8 @@ func (c *client) parseSites(p parser.Parser) (models.Sites, error) {
 }
 
 func (c *client) parseSite(s string, p parser.Parser) *models.Site {
-	frontend := &models.Frontend{Name: s}
-	if err := ParseSection(frontend, parser.Frontends, s, p); err != nil {
+	frontend := &models.Frontend{FrontendBase: models.FrontendBase{Name: s}}
+	if err := ParseSection(&frontend.FrontendBase, parser.Frontends, s, p); err != nil {
 		return nil
 	}
 
@@ -504,9 +504,9 @@ func (c *client) parseSite(s string, p parser.Parser) *models.Site {
 }
 
 func (c *client) parseFarm(name string, useAs string, cond string, condTest string, p parser.Parser) *models.SiteFarm {
-	backend := &models.Backend{Name: name}
+	backend := &models.Backend{BackendBase: models.BackendBase{Name: name}}
 	if c.checkSectionExists(parser.Backends, name, p) {
-		if err := ParseSection(backend, parser.Backends, name, p); err == nil {
+		if err := ParseSection(&backend.BackendBase, parser.Backends, name, p); err == nil {
 			srvs, err := ParseServers(BackendParentName, name, p)
 			if err != nil {
 				srvs = models.Servers{}
@@ -528,22 +528,23 @@ func (c *client) parseFarm(name string, useAs string, cond string, condTest stri
 }
 
 func SerializeServiceToFrontend(service *models.SiteService, name string) *models.Frontend {
-	fr := &models.Frontend{Name: name}
+	fr := &models.Frontend{FrontendBase: models.FrontendBase{Name: name}}
 	if service != nil {
 		fr.Mode = service.Mode
 		fr.Maxconn = service.Maxconn
 		fr.HTTPConnectionMode = service.HTTPConnectionMode
-
 	}
 	return fr
 }
 
 func SerializeFarmToBackend(farm *models.SiteFarm) *models.Backend {
 	return &models.Backend{
-		Name:       farm.Name,
-		Mode:       farm.Mode,
-		Forwardfor: farm.Forwardfor,
-		Balance:    farm.Balance,
+		BackendBase: models.BackendBase{
+			Name:       farm.Name,
+			Mode:       farm.Mode,
+			Forwardfor: farm.Forwardfor,
+			Balance:    farm.Balance,
+		},
 	}
 }
 
@@ -581,12 +582,11 @@ func (c *client) createBckFrontendRels(name string, b *models.SiteFarm, edit boo
 		} else {
 			i := int64(0)
 			uf := &models.BackendSwitchingRule{
-				Index:    &i,
 				Name:     b.Name,
 				Cond:     b.Cond,
 				CondTest: b.CondTest,
 			}
-			err = c.CreateBackendSwitchingRule(name, uf, t, 0)
+			err = c.CreateBackendSwitchingRule(i, name, uf, t, 0)
 			if err != nil {
 				res = append(res, err)
 			}
@@ -599,9 +599,9 @@ func (c *client) createBckFrontendRels(name string, b *models.SiteFarm, edit boo
 }
 
 func (c *client) addDefaultBckToFrontend(fName string, bName string, t string, p parser.Parser) error {
-	frontend := &models.Frontend{Name: fName}
+	frontend := &models.Frontend{FrontendBase: models.FrontendBase{Name: fName}}
 
-	if err := ParseSection(frontend, parser.Frontends, fName, p); err != nil {
+	if err := ParseSection(&frontend.FrontendBase, parser.Frontends, fName, p); err != nil {
 		return err
 	}
 	frontend.DefaultBackend = bName
@@ -609,8 +609,8 @@ func (c *client) addDefaultBckToFrontend(fName string, bName string, t string, p
 }
 
 func (c *client) removeDefaultBckToFrontend(fName string, t string, p parser.Parser) error {
-	frontend := &models.Frontend{Name: fName}
-	if err := ParseSection(frontend, parser.Frontends, fName, p); err != nil {
+	frontend := &models.Frontend{FrontendBase: models.FrontendBase{Name: fName}}
+	if err := ParseSection(&frontend.FrontendBase, parser.Frontends, fName, p); err != nil {
 		return err
 	}
 	frontend.DefaultBackend = ""
@@ -618,8 +618,8 @@ func (c *client) removeDefaultBckToFrontend(fName string, t string, p parser.Par
 }
 
 func (c *client) editService(name string, service *models.SiteService, t string, p parser.Parser) error {
-	frontend := &models.Frontend{Name: name}
-	if err := ParseSection(frontend, parser.Frontends, name, p); err != nil {
+	frontend := &models.Frontend{FrontendBase: models.FrontendBase{Name: name}}
+	if err := ParseSection(&frontend.FrontendBase, parser.Frontends, name, p); err != nil {
 		return err
 	}
 
@@ -631,8 +631,8 @@ func (c *client) editService(name string, service *models.SiteService, t string,
 }
 
 func (c *client) editFarm(name string, farm *models.SiteFarm, t string, p parser.Parser) error {
-	backend := &models.Backend{Name: name}
-	if err := ParseSection(backend, parser.Backends, name, p); err != nil {
+	backend := &models.Backend{BackendBase: models.BackendBase{Name: name}}
+	if err := ParseSection(&backend.BackendBase, parser.Backends, name, p); err != nil {
 		return err
 	}
 

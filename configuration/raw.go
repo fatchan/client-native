@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -62,13 +61,26 @@ func (c *client) getRawConfiguration(transactionID string, version int64) (int64
 			return 0, 0, "", "", err
 		}
 	}
-	file, err := os.Open(config)
+	ondiskV, ondiskClusterV, ondiskMD5Hash, metaErr := c.getConfigurationMetaData(config)
+	if metaErr != nil {
+		return 0, 0, "", "", metaErr
+	}
+
+	data, err := os.ReadFile(config)
 	if err != nil {
 		return 0, 0, "", "", NewConfError(ErrCannotReadConfFile, err.Error())
 	}
+
+	return ondiskV, ondiskClusterV, ondiskMD5Hash, string(data), nil
+}
+
+func (c *client) getConfigurationMetaData(config string) (int64, int64, string, error) {
+	file, err := os.Open(config)
+	if err != nil {
+		return 0, 0, "", NewConfError(ErrCannotReadConfFile, err.Error())
+	}
 	defer file.Close()
 
-	dataStr := ""
 	ondiskV := int64(0)
 	ondiskClusterV := int64(0)
 	ondiskMD5Hash := ""
@@ -84,13 +96,11 @@ func (c *client) getRawConfiguration(transactionID string, version int64) (int64
 					ondiskV = int64(0)
 				}
 			}
-			dataStr += line + "\n"
 		case strings.HasPrefix(line, "# _md5hash="):
 			w := strings.Split(line, "=")
 			if len(w) == 2 {
 				ondiskMD5Hash = strings.TrimSpace(w[1])
 			}
-			dataStr += line + "\n"
 		case strings.HasPrefix(line, "# _cluster_version="):
 			w := strings.Split(line, "=")
 			if len(w) == 2 {
@@ -99,16 +109,16 @@ func (c *client) getRawConfiguration(transactionID string, version int64) (int64
 					ondiskClusterV = int64(0)
 				}
 			}
-			dataStr += line + "\n"
-		default:
-			dataStr += line + "\n"
+		}
+		if ondiskV != 0 && ondiskMD5Hash != "" && ondiskClusterV != 0 {
+			break
 		}
 	}
 	if err = scanner.Err(); err != nil {
-		return ondiskV, 0, "", "", NewConfError(ErrCannotReadConfFile, err.Error())
+		return ondiskV, 0, "", NewConfError(ErrCannotReadConfFile, err.Error())
 	}
 
-	return ondiskV, ondiskClusterV, ondiskMD5Hash, dataStr, nil
+	return ondiskV, ondiskClusterV, ondiskMD5Hash, nil
 }
 
 // PostRawConfiguration pushes given string to the config file if the version
@@ -128,13 +138,9 @@ func (c *client) PostRawConfiguration(config *string, version int64, skipVersion
 		if err != nil {
 			return NewConfError(ErrGeneralError, err.Error())
 		}
-		err = c.validateConfigFile(f.Name())
-		if err != nil {
-			return err
-		}
-		return nil
+		return checkHaproxyConfiguration(c.ConfigurationOptions, f.Name())
 	}
-	t := ""
+	var t string
 	if skipVersionCheck {
 		// Create impicit transaction
 		transaction, err := c.startTransaction(version, skipVersionCheck)
@@ -169,7 +175,7 @@ func (c *client) PostRawConfiguration(config *string, version int64, skipVersion
 
 	w := bufio.NewWriter(tmp)
 	if !skipVersionCheck {
-		_, _ = w.WriteString(fmt.Sprintf("# _version=%v\n%v", version, *config))
+		_, _ = w.WriteString(fmt.Sprintf("# _version=%d\n%s", version, c.dropVersionFromRaw(*config)))
 	} else {
 		_, _ = w.WriteString(*config)
 	}
@@ -182,7 +188,7 @@ func (c *client) PostRawConfiguration(config *string, version int64, skipVersion
 	}
 
 	if err := p.LoadData(tFile); err != nil {
-		return NewConfError(ErrCannotReadConfFile, fmt.Sprintf("Cannot read %s", tFile))
+		return NewConfError(ErrCannotReadConfFile, "Cannot read "+tFile)
 	}
 
 	// Do a regular commit of the transaction
@@ -193,26 +199,23 @@ func (c *client) PostRawConfiguration(config *string, version int64, skipVersion
 	return nil
 }
 
-func (c *client) validateConfigFile(confFile string) error {
-	// #nosec G204
-	cmd := exec.Command(c.Haproxy)
-	cmd.Args = append(cmd.Args, "-c")
+// dropVersionFromRaw is used when force pushing a raw configuration with version check:
+// if the provided user input has already a version metadata it must be withdrawn.
+func (c *client) dropVersionFromRaw(input string) string {
+	scanner := bufio.NewScanner(strings.NewReader(input))
 
-	if confFile != "" {
-		cmd.Args = append(cmd.Args, "-f")
-		cmd.Args = append(cmd.Args, confFile)
-	} else {
-		cmd.Args = append(cmd.Args, "-f")
-		cmd.Args = append(cmd.Args, c.ConfigurationFile)
+	var sanitized strings.Builder
+
+	for scanner.Scan() {
+		t := scanner.Bytes()
+
+		if bytes.HasPrefix(t, []byte("# _version=")) {
+			continue
+		}
+
+		sanitized.Write(t)
+		sanitized.WriteByte('\n')
 	}
 
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	if err != nil {
-		return NewConfError(ErrValidationError, err.Error())
-	}
-	return nil
+	return sanitized.String()
 }

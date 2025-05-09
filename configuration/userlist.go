@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	strfmt "github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
 
 	"github.com/haproxytech/client-native/v6/models"
 )
@@ -48,7 +48,7 @@ func (c *client) GetUserLists(transactionID string) (int64, models.Userlists, er
 	}
 	userlists := []*models.Userlist{}
 	for _, name := range names {
-		userlists = append(userlists, &models.Userlist{Name: name})
+		userlists = append(userlists, &models.Userlist{UserlistBase: models.UserlistBase{Name: name}})
 	}
 	return v, userlists, nil
 }
@@ -67,7 +67,7 @@ func (c *client) GetUserList(name string, transactionID string) (int64, *models.
 	if !c.checkSectionExists(parser.UserList, name, p) {
 		return v, nil, NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("userlist %s does not exist", name))
 	}
-	return v, &models.Userlist{Name: name}, nil
+	return v, &models.Userlist{UserlistBase: models.UserlistBase{Name: name}}, nil
 }
 
 // DeleteUserList deletes a userlist in configuration. One of version or transactionID is mandatory.
@@ -85,5 +85,5 @@ func (c *client) CreateUserList(data *models.Userlist, transactionID string, ver
 			return NewConfError(ErrValidationError, validationErr.Error())
 		}
 	}
-	return c.createSection(parser.UserList, data.Name, data, transactionID, version)
+	return c.createSection(parser.UserList, data.Name, &data.UserlistBase, transactionID, version)
 }

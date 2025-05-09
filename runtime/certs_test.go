@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -16,9 +15,8 @@ func TestSingleRuntime_ShowCerts(t *testing.T) {
 	defer haProxy.Stop()
 
 	type fields struct {
-		socketPath string
-		worker     int
-		process    int
+		socketPath       string
+		masterWorkerMode bool
 	}
 	tests := []struct {
 		name           string
@@ -57,9 +55,7 @@ func TestSingleRuntime_ShowCerts(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			haProxy.SetResponses(&tt.socketResponse)
 			s := &SingleRuntime{}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second))
-			defer cancel()
-			err := s.Init(ctx, tt.fields.socketPath, tt.fields.process, tt.fields.worker)
+			err := s.Init(tt.fields.socketPath, tt.fields.masterWorkerMode)
 			if err != nil {
 				t.Errorf("SingleRuntime.Init() error = %v", err)
 				return
@@ -84,9 +80,8 @@ func TestSingleRuntime_GetCert(t *testing.T) {
 	defer haProxy.Stop()
 
 	type fields struct {
-		socketPath string
-		worker     int
-		process    int
+		socketPath       string
+		masterWorkerMode bool
 	}
 	type args struct {
 		storageName string
@@ -148,9 +143,7 @@ func TestSingleRuntime_GetCert(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			haProxy.SetResponses(&tt.socketResponse)
 			s := &SingleRuntime{}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second))
-			defer cancel()
-			err := s.Init(ctx, tt.fields.socketPath, tt.fields.process, tt.fields.worker)
+			err := s.Init(tt.fields.socketPath, tt.fields.masterWorkerMode)
 			if err != nil {
 				t.Errorf("SingleRuntime.Init() error = %v", err)
 				return
@@ -175,9 +168,8 @@ func TestSingleRuntime_ShowCertEntry(t *testing.T) {
 	notBefore, _ := time.Parse("Jan 2 15:04:05 2006 MST", "Sep  9 00:00:00 2020 GMT")
 	notAfter, _ := time.Parse("Jan 2 15:04:05 2006 MST", "Sep 14 12:00:00 2021 GMT")
 	type fields struct {
-		socketPath string
-		worker     int
-		process    int
+		socketPath       string
+		masterWorkerMode bool
 	}
 	type args struct {
 		storageName string
@@ -234,9 +226,7 @@ func TestSingleRuntime_ShowCertEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			haProxy.SetResponses(&tt.socketResponse)
 			s := &SingleRuntime{}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second))
-			defer cancel()
-			err := s.Init(ctx, tt.fields.socketPath, tt.fields.process, tt.fields.worker)
+			err := s.Init(tt.fields.socketPath, tt.fields.masterWorkerMode)
 			if err != nil {
 				t.Errorf("SingleRuntime.Init() error = %v", err)
 				return
@@ -259,10 +249,8 @@ func TestSingleRuntime_NewCertEntry(t *testing.T) {
 	defer haProxy.Stop()
 
 	type fields struct {
-		jobs       chan Task
-		socketPath string
-		worker     int
-		process    int
+		socketPath       string
+		masterWorkerMode bool
 	}
 	type args struct {
 		storageName string
@@ -312,9 +300,7 @@ func TestSingleRuntime_NewCertEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			haProxy.SetResponses(&tt.socketResponse)
 			s := &SingleRuntime{}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second))
-			defer cancel()
-			err := s.Init(ctx, tt.fields.socketPath, tt.fields.process, tt.fields.worker)
+			err := s.Init(tt.fields.socketPath, tt.fields.masterWorkerMode)
 			if err != nil {
 				t.Errorf("SingleRuntime.Init() error = %v", err)
 				return
@@ -332,10 +318,8 @@ func TestSingleRuntime_SetCertEntry(t *testing.T) {
 	defer haProxy.Stop()
 
 	type fields struct {
-		jobs       chan Task
-		socketPath string
-		worker     int
-		process    int
+		socketPath       string
+		masterWorkerMode bool
 	}
 	type args struct {
 		storageName string
@@ -401,9 +385,7 @@ func TestSingleRuntime_SetCertEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			haProxy.SetResponses(&tt.socketResponse)
 			s := &SingleRuntime{}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second))
-			defer cancel()
-			err := s.Init(ctx, tt.fields.socketPath, tt.fields.process, tt.fields.worker)
+			err := s.Init(tt.fields.socketPath, tt.fields.masterWorkerMode)
 			if err != nil {
 				t.Errorf("SingleRuntime.Init() error = %v", err)
 				return
@@ -421,10 +403,8 @@ func TestSingleRuntime_CommitCertEntry(t *testing.T) {
 	defer haProxy.Stop()
 
 	type fields struct {
-		jobs       chan Task
-		socketPath string
-		worker     int
-		process    int
+		socketPath       string
+		masterWorkerMode bool
 	}
 	type args struct {
 		storageName string
@@ -476,9 +456,7 @@ func TestSingleRuntime_CommitCertEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			haProxy.SetResponses(&tt.socketResponse)
 			s := &SingleRuntime{}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second))
-			defer cancel()
-			err := s.Init(ctx, tt.fields.socketPath, tt.fields.process, tt.fields.worker)
+			err := s.Init(tt.fields.socketPath, tt.fields.masterWorkerMode)
 			if err != nil {
 				t.Errorf("SingleRuntime.Init() error = %v", err)
 				return
@@ -496,10 +474,8 @@ func TestSingleRuntime_AbortCertEntry(t *testing.T) {
 	defer haProxy.Stop()
 
 	type fields struct {
-		jobs       chan Task
-		socketPath string
-		worker     int
-		process    int
+		socketPath       string
+		masterWorkerMode bool
 	}
 	type args struct {
 		storageName string
@@ -549,9 +525,7 @@ func TestSingleRuntime_AbortCertEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			haProxy.SetResponses(&tt.socketResponse)
 			s := &SingleRuntime{}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second))
-			defer cancel()
-			err := s.Init(ctx, tt.fields.socketPath, tt.fields.process, tt.fields.worker)
+			err := s.Init(tt.fields.socketPath, tt.fields.masterWorkerMode)
 			if err != nil {
 				t.Errorf("SingleRuntime.Init() error = %v", err)
 				return
@@ -569,10 +543,8 @@ func TestSingleRuntime_DeleteCertEntry(t *testing.T) {
 	defer haProxy.Stop()
 
 	type fields struct {
-		jobs       chan Task
-		socketPath string
-		worker     int
-		process    int
+		socketPath       string
+		masterWorkerMode bool
 	}
 	type args struct {
 		storageName string
@@ -622,9 +594,7 @@ func TestSingleRuntime_DeleteCertEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			haProxy.SetResponses(&tt.socketResponse)
 			s := &SingleRuntime{}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second))
-			defer cancel()
-			err := s.Init(ctx, tt.fields.socketPath, tt.fields.process, tt.fields.worker)
+			err := s.Init(tt.fields.socketPath, tt.fields.masterWorkerMode)
 			if err != nil {
 				t.Errorf("SingleRuntime.Init() error = %v", err)
 				return

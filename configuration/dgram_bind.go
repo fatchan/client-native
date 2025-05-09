@@ -22,10 +22,10 @@ import (
 	"strings"
 
 	strfmt "github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/params"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/params"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	"github.com/haproxytech/client-native/v6/models"
 )
@@ -165,7 +165,7 @@ func (c *client) EditDgramBind(name string, logForward string, data *models.Dgra
 }
 
 func ParseDgramBinds(logForward string, p parser.Parser) (models.DgramBinds, error) {
-	dBinds := models.DgramBinds{}
+	var dBinds models.DgramBinds
 
 	data, err := p.Get(parser.LogForward, logForward, "dgram-bind", false)
 	if err != nil {
@@ -223,7 +223,6 @@ func ParseDgramBind(ondiskDgramBind types.DgramBind) *models.DgramBind {
 			}
 		case n > 0:
 			b.Address = addSlice[0]
-
 		}
 	}
 	for _, p := range ondiskDgramBind.Params {

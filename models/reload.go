@@ -49,7 +49,7 @@ type Reload struct {
 	Response string `json:"response,omitempty"`
 
 	// status
-	// Enum: [failed in_progress succeeded]
+	// Enum: ["failed","in_progress","succeeded"]
 	// +kubebuilder:validation:Enum=failed;in_progress;succeeded;
 	Status string `json:"status,omitempty"`
 }

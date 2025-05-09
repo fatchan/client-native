@@ -16,13 +16,14 @@
 package spoe
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	"github.com/haproxytech/config-parser/v5/spoe"
-	spoe_types "github.com/haproxytech/config-parser/v5/spoe/types"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	"github.com/haproxytech/client-native/v6/config-parser/spoe"
+	spoe_types "github.com/haproxytech/client-native/v6/config-parser/spoe/types"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
 	conf "github.com/haproxytech/client-native/v6/configuration"
 	"github.com/haproxytech/client-native/v6/models"
@@ -79,13 +80,11 @@ func (c *SingleSpoe) GetMessage(scope, name, transactionID string) (int64, *mode
 		return v, nil, err
 	}
 	if acls, ok := data.([]types.ACL); ok {
-		for i, a := range acls {
-			indx := int64(i)
+		for _, a := range acls {
 			acl := &models.ACL{
 				ACLName:   a.Name,
 				Value:     a.Value,
 				Criterion: a.Criterion,
-				Index:     &indx,
 			}
 			message.ACL = append(message.ACL, acl)
 		}
@@ -184,7 +183,7 @@ func (c *SingleSpoe) EditMessage(scope string, data *models.SpoeMessage, name, t
 
 func (c *SingleSpoe) createEditMessage(scope string, data *models.SpoeMessage, t string, transactionID string, p *spoe.Parser) error {
 	if data == nil {
-		return fmt.Errorf("spoe message not initialized")
+		return errors.New("spoe message not initialized")
 	}
 	name := *data.Name
 

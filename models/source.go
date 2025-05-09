@@ -66,7 +66,7 @@ type Source struct {
 	PortSecond int64 `json:"port_second,omitempty"`
 
 	// usesrc
-	// Enum: [address client clientip hdr_ip]
+	// Enum: ["address","client","clientip","hdr_ip"]
 	// +kubebuilder:validation:Enum=address;client;clientip;hdr_ip;
 	Usesrc string `json:"usesrc,omitempty"`
 }

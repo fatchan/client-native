@@ -29,7 +29,10 @@ server_params:
       type: string
     agent-inter:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     agent-addr:
       type: string
       pattern: '^[^\s]+$'
@@ -112,34 +115,102 @@ server_params:
       type: integer
       x-display-name: Nr. of consecutive failed checks
       x-nullable: true
+    sslv3:
+      type: string
+      enum: [enabled, disabled]
     force_sslv3:
+      description: This field is deprecated in favor of sslv3, and will be removed in a future release
+      type: string
+      enum: [enabled, disabled]
+      x-deprecated: true
+    no_sslv3:
+      description: This field is deprecated in favor of sslv3, and will be removed in a future release
+      type: string
+      enum: [enabled, disabled]
+      x-deprecated: true
+    tlsv10:
       type: string
       enum: [enabled, disabled]
     force_tlsv10:
+      description: This field is deprecated in favor of tlsv10, and will be removed in a future release
+      type: string
+      enum: [enabled, disabled]
+      x-deprecated: true
+    no_tlsv10:
+      description: This field is deprecated in favor of tlsv10, and will be removed in a future release
+      type: string
+      enum: [enabled, disabled]
+      x-deprecated: true
+    tlsv11:
       type: string
       enum: [enabled, disabled]
     force_tlsv11:
+      description: This field is deprecated in favor of tlsv11, and will be removed in a future release
+      type: string
+      enum: [enabled, disabled]
+      x-deprecated: true
+    no_tlsv11:
+      description: This field is deprecated in favor of tlsv11, and will be removed in a future release
+      type: string
+      enum: [enabled, disabled]
+      x-deprecated: true
+    tlsv12:
       type: string
       enum: [enabled, disabled]
     force_tlsv12:
+      description: This field is deprecated in favor of tlsv12, and will be removed in a future release
+      type: string
+      enum: [enabled, disabled]
+      x-deprecated: true
+    no_tlsv12:
+      description: This field is deprecated in favor of tlsv12, and will be removed in a future release
+      type: string
+      enum: [enabled, disabled]
+      x-deprecated: true
+    tlsv13:
       type: string
       enum: [enabled, disabled]
     force_tlsv13:
+      description: This field is deprecated in favor of tlsv13, and will be removed in a future release
       type: string
       enum: [enabled, disabled]
+      x-deprecated: true
+    no_tlsv13:
+      description: This field is deprecated in favor of force_tlsv13, and will be removed in a future release
+      type: string
+      enum: [enabled, disabled]
+      x-deprecated: true
+    guid:
+      type: string
+      pattern: '^[A-Za-z0-9-_.:]+$'
+    hash_key:
+      type: string
+      pattern: '^[^\s]+$'
     init-addr:
       pattern: ^[^\s]+$
       type: string
       x-nullable: true
+    init-state:
+      type: string
+      enum: [fully-up, up, down, fully-down]
     inter:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     fastinter:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     downinter:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     log_proto:
       type: string
       enum: [legacy, octet-count]
@@ -162,24 +233,6 @@ server_params:
       x-nullable: true
     namespace:
       type: string
-    no_sslv3:
-      type: string
-      enum: [enabled, disabled]
-    no_tlsv10:
-      type: string
-      enum: [enabled, disabled]
-    no_tlsv11:
-      type: string
-      enum: [enabled, disabled]
-    no_tlsv12:
-      type: string
-      enum: [enabled, disabled]
-    no_tlsv13:
-      type: string
-      enum: [enabled, disabled]
-    no_verifyhost:
-      type: string
-      enum: [enabled, disabled]
     npn:
       type: string
       x-dependency:
@@ -200,6 +253,9 @@ server_params:
     on-marked-up:
       type: string
       enum: [shutdown-backup-sessions]
+    pool_conn_name:
+      type: string
+      pattern: '^[^\s]+$'
     pool_low_conn:
       type: integer
       x-nullable: true
@@ -208,7 +264,10 @@ server_params:
       x-nullable: true
     pool_purge_delay:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     proto:
       type: string
       pattern: '^[^\s]+$'
@@ -278,7 +337,10 @@ server_params:
           value: true
     slowstart:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     sni:
       type: string
       pattern: '^[^\s]+$'
@@ -307,7 +369,10 @@ server_params:
           required: true
     tcp_ut:
       type: integer
+      minimum: 0
       x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     tfo:
       type: string
       enum: [enabled, disabled]
@@ -332,6 +397,9 @@ server_params:
           value: enabled
         verify:
           value: required
+    no_verifyhost:
+      type: string
+      enum: [enabled, disabled]
     weight:
       type: integer
       x-nullable: true

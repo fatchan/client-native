@@ -20,11 +20,12 @@ import (
 	"fmt"
 
 	"github.com/go-openapi/strfmt"
-	parser "github.com/haproxytech/config-parser/v5"
-	parser_errors "github.com/haproxytech/config-parser/v5/errors"
-	"github.com/haproxytech/config-parser/v5/params"
-	"github.com/haproxytech/config-parser/v5/types"
+	parser "github.com/haproxytech/client-native/v6/config-parser"
+	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
+	"github.com/haproxytech/client-native/v6/config-parser/params"
+	"github.com/haproxytech/client-native/v6/config-parser/types"
 
+	"github.com/haproxytech/client-native/v6/configuration/options"
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
 )
@@ -120,7 +121,7 @@ func (c *client) CreateServerTemplate(backend string, data *models.ServerTemplat
 		return c.HandleError(data.Prefix, BackendParentName, backend, t, transactionID == "", e)
 	}
 
-	if err := p.Insert(parser.Backends, backend, "server-template", SerializeServerTemplate(*data), -1); err != nil {
+	if err := p.Insert(parser.Backends, backend, "server-template", SerializeServerTemplate(*data, &c.ConfigurationOptions), -1); err != nil {
 		return c.HandleError(data.Prefix, BackendParentName, backend, t, transactionID == "", err)
 	}
 
@@ -147,7 +148,7 @@ func (c *client) EditServerTemplate(prefix string, backend string, data *models.
 		return c.HandleError(data.Prefix, BackendParentName, backend, t, transactionID == "", e)
 	}
 
-	if err := p.Set(parser.Backends, backend, "server-template", SerializeServerTemplate(*data), i); err != nil {
+	if err := p.Set(parser.Backends, backend, "server-template", SerializeServerTemplate(*data, &c.ConfigurationOptions), i); err != nil {
 		return c.HandleError(data.Prefix, BackendParentName, backend, t, transactionID == "", err)
 	}
 
@@ -155,7 +156,7 @@ func (c *client) EditServerTemplate(prefix string, backend string, data *models.
 }
 
 func ParseServerTemplates(backend string, p parser.Parser) (models.ServerTemplates, error) {
-	templates := models.ServerTemplates{}
+	var templates models.ServerTemplates
 
 	data, err := p.Get(parser.Backends, backend, "server-template", false)
 	if err != nil {
@@ -189,7 +190,7 @@ func ParseServerTemplate(ondiskServerTemplate types.ServerTemplate) *models.Serv
 	return template
 }
 
-func SerializeServerTemplate(s models.ServerTemplate) types.ServerTemplate {
+func SerializeServerTemplate(s models.ServerTemplate, opt *options.ConfigurationOptions) types.ServerTemplate {
 	template := types.ServerTemplate{
 		Prefix:     s.Prefix,
 		NumOrRange: s.NumOrRange,
@@ -199,7 +200,7 @@ func SerializeServerTemplate(s models.ServerTemplate) types.ServerTemplate {
 	if s.Port != nil {
 		template.Port = *s.Port
 	}
-	template.Params = serializeServerParams(s.ServerParams)
+	template.Params = SerializeServerParams(s.ServerParams, opt)
 	return template
 }
 

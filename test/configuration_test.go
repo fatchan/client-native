@@ -31,7 +31,6 @@ const testConf = `
 global
 	daemon
 	default-path origin /some/path
-	nbproc 4
 	maxconn 2000
 	external-check
   ca-base /etc/ssl/certs
@@ -48,12 +47,14 @@ global
   limited-quic
   uid 1
   gid 1
-  profiling.memory on
   ssl-mode-async
+  tune.applet.zero-copy-forwarding off
   tune.buffers.limit 11
   tune.buffers.reserve 12
   tune.bufsize 13
+  tune.bufsize.small 8k
   tune.comp.maxlevel 14
+  tune.disable-fast-forward
   tune.disable-zero-copy-forwarding
   tune.events.max-events-at-once 10
   tune.fail-alloc
@@ -75,7 +76,7 @@ global
   tune.lua.forced-yield 23
   tune.lua.log.loggers on
   tune.lua.log.stderr auto
-  tune.lua.maxmem
+  tune.lua.maxmem 65536
   tune.lua.session-timeout 25
   tune.lua.task-timeout 26
   tune.lua.service-timeout 27
@@ -93,6 +94,7 @@ global
   tune.rcvbuf.frontend 2048
   tune.rcvbuf.server 36
   tune.recv_enough 37
+  tune.ring.queues 8
   tune.runqueue-depth 38
   tune.sched.low-latency on
   tune.sndbuf.backend 1024
@@ -119,11 +121,15 @@ global
   tune.quic.frontend.max-idle-timeout 10000
   tune.quic.frontend.max-streams-bidi 100
   tune.quic.max-frame-loss 5
+  tune.quic.reorder-ratio 75
   tune.quic.retry-threshold 5
   tune.quic.socket-owner connection
-  tune.zlib.memlevel 54
-  tune.zlib.windowsize 55
+  tune.quic.zero-copy-fwd-send on
+  tune.zlib.memlevel 8
+  tune.zlib.windowsize 10
   tune.memory.hot-size 56
+  tune.renice.runtime -10
+  tune.renice.startup 5
   busy-polling
   max-spread-checks 1ms
   close-spread-time 1s
@@ -155,11 +161,15 @@ global
   ssl-skip-self-issued-ca
   node node
   description description
+  expose-deprecated-directives
   expose-experimental-directives
+  force-cfg-parser-pause 1s
   insecure-fork-wanted
   insecure-setuid-wanted
   issuers-chain-path issuers-chain-path
   h2-workaround-bogus-websocket-clients
+  h1-accept-payload-with-any-method
+  h1-do-not-close-on-insecure-transfer-encoding
   lua-load-per-thread file.ext
   mworker-max-reloads 5
   numa-cpu-mapping
@@ -182,6 +192,7 @@ global
   ssl-default-server-options ssl-min-ver TLSv1.1 no-tls-tickets
   thread-groups 1
   thread-group first 1-16
+  stats-file /var/haproxy/my-stats
   stats maxconn 20
   ssl-load-extra-files bundle
   deviceatlas-json-file atlas.json
@@ -220,10 +231,15 @@ global
   unsetenv third fourth
   anonkey 25
   tune.peers.max-updates-at-once 200
+  tune.h2.be.glitches-threshold 16
   tune.h2.be.initial-window-size 201
   tune.h2.be.max-concurrent-streams 202
+  tune.h2.be.rxbuf 16k
+  tune.h2.fe.glitches-threshold 8
   tune.h2.fe.initial-window-size 203
   tune.h2.fe.max-concurrent-streams 204
+  tune.h2.fe.max-total-streams 8192
+  tune.h2.fe.rxbuf 8k
   tune.lua.burst-timeout 205
   ssl-default-bind-sigalgs RSA+SHA256
   ssl-default-bind-client-sigalgs ECDSA+SHA256:RSA+SHA256
@@ -247,24 +263,56 @@ global
   fingerprint_ssl_bufsize 56
   log 127.0.0.1:10001 sample 1:4 local0
   log 127.0.0.1:10002 sample 2:4 local0
+  harden.reject-privileged-ports.tcp on
+  profiling.tasks enabled
+  thread-hard-limit 77
+  ssl-security-level 3
+  http-err-codes 400,402-444,446-480,490 -450 +500
+  http-err-codes +501,505
+  http-fail-codes 400,402-444,446-480,490 -450 +500
+  http-fail-codes +501,505
+  ocsp-update.disable off
+  ocsp-update.httpproxy 127.0.0.1:123
+  ocsp-update.maxdelay 10
+  ocsp-update.mindelay 7
+  ocsp-update.mode on
+  warn-blocked-traffic-after 50ms
 
 defaults test_defaults
+  acl invalid_src  src          0.0.0.0/7 224.0.0.0/3
+  acl invalid_src  src_port     0:1023
+  acl local_dst    hdr(host) -i localhost
+  http-request allow if src 192.168.0.0/16
+  tcp-request connection accept if TRUE
+  tcp-request connection reject if FALSE
+  http-response allow if src 192.168.0.0/16
+  http-response set-header X-SSL %[ssl_fc]
+  http-after-response set-map(map.lst) %[src] %[res.hdr(X-Value)]
+  http-after-response del-map(map.lst) %[src] if FALSE
+  http-after-response del-acl(map.lst) %[src] if FALSE
+  quic-initial reject
+  quic-initial reject if TRUE
+  quic-initial accept
+  quic-initial accept if TRUE
+  quic-initial send-retry
+  quic-initial send-retry if TRUE
+  quic-initial dgram-drop
+  quic-initial dgram-drop if TRUE
   maxconn 2000
   backlog 1024
   mode http
-  bind-process 1-4
   balance roundrobin
   hash-balance-factor 150
 
 defaults test_defaults_2 from test_defaults
   option srvtcpka
   option clitcpka
+  log-steps request,response
 
-defaults
+defaults unnamed_defaults_1
   maxconn 2000
   backlog 1024
   mode http
-  bind-process 1-4
   balance roundrobin
   option tcpka
   option srvtcpka
@@ -321,6 +369,8 @@ defaults
   http-error status 429 content-type application/json file /test/429
   option accept-invalid-http-request
   option accept-invalid-http-response
+  option accept-unsafe-violations-in-http-request
+  option accept-unsafe-violations-in-http-response
   option h1-case-adjust-bogus-client
   option h1-case-adjust-bogus-server
   compression offload
@@ -351,13 +401,15 @@ defaults
 frontend test
   mode http
   backlog 2048
-  bind 192.168.1.1:80 name webserv thread all sigalgs RSA+SHA256 client-sigalgs ECDSA+SHA256:RSA+SHA256 ca-verify-file ca.pem nice 789
-  bind 192.168.1.1:8080 name webserv2 thread 1/all
-  bind 192.168.1.2:8080 name webserv3 thread 1/1
-  bind [2a01:c9c0:a3:8::3]:80 name ipv6 thread 1/1-1
+  bind 192.168.1.1:80 name webserv thread all sigalgs RSA+SHA256 client-sigalgs ECDSA+SHA256:RSA+SHA256 ca-verify-file ca.pem nice 789 guid-prefix guid-example default-crt foobar.pem.rsa default-crt foobar.pem.ecdsa
+  bind 192.168.1.1:8080 name webserv2 thread 1/all force-tlsv10
+  bind 192.168.1.2:8080 name webserv3 thread 1/1 no-tlsv10
+  bind [2a01:c9c0:a3:8::3]:80 name ipv6 thread 1/1-1 force-sslv3
   bind 192.168.1.1:80 name test-quic quic-socket connection thread 1/1
   bind 192.168.1.1:80 name testnbcon thread 1/all nbconn 6
-  bind-process odd
+  bind 192.168.1.1:80 name test-quic-algo thread 1/1 quic-cc-algo newreno
+  bind 192.168.1.1:80 name test-quic-algo2 thread 1/1 quic-cc-algo bbr(480k)
+  bind 192.168.1.1:80 name test-quic-algo3 thread 1/1 quic-cc-algo nocc(,12)
   option httplog
   option dontlognull
   option contstats
@@ -392,6 +444,7 @@ frontend test
   http-request allow if src 192.168.0.0/16
   http-request set-header X-SSL %[ssl_fc]
   http-request set-var(req.my_var) req.fhdr(user-agent),lower
+  http-request set-var-fmt(txn.from) %[src]:%[src_port]
   http-request set-map(map.lst) %[src] %[req.hdr(X-Value)]
   http-request del-map(map.lst) %[src] if FALSE
   http-request del-acl(map.lst) %[src] if FALSE
@@ -441,6 +494,10 @@ frontend test
   http-request set-fc-mark hdr(port)
   http-request set-fc-tos 255 if FALSE
   http-request sc-set-gpt(1,2) hdr(Host),lower if FALSE
+  http-request set-retries 3
+  http-request set-retries var(txn.retries) if TRUE
+  http-request do-log
+  http-request do-log if FALSE
   http-response allow if src 192.168.0.0/16
   http-response set-header X-SSL %[ssl_fc]
   http-response set-var(req.my_var) req.fhdr(user-agent),lower
@@ -477,6 +534,8 @@ frontend test
   http-response set-timeout tunnel 20
   http-response set-timeout client 20
   http-response sc-set-gpt(1,2) 1234 if FALSE
+  http-response do-log
+  http-response do-log if FALSE
   http-after-response set-map(map.lst) %[src] %[res.hdr(X-Value)]
   http-after-response del-map(map.lst) %[src] if FALSE
   http-after-response del-acl(map.lst) %[src] if FALSE
@@ -494,6 +553,8 @@ frontend test
   http-after-response set-var(sess.last_redir) res.hdr(location)
   http-after-response unset-var(sess.last_redir)
   http-after-response sc-set-gpt(1,2) hdr(port) if FALSE
+  http-after-response do-log
+  http-after-response do-log if FALSE
   http-error status 400 content-type application/json lf-file /var/errors.file
   tcp-request connection accept if TRUE
   tcp-request connection reject if FALSE
@@ -540,10 +601,27 @@ frontend test
   tcp-request connection sc-set-gpt(1,2) 1234 if FALSE
   tcp-request content sc-set-gpt(1,2) hdr(port) if FALSE
   tcp-request session sc-set-gpt(1,2) 1234
+  tcp-request content set-retries 3
+  tcp-request content set-retries var(txn.retries) if TRUE
+  tcp-request connection do-log
+  tcp-request connection do-log if FALSE
+  tcp-request session do-log
+  tcp-request session do-log if FALSE
+  tcp-request content do-log
+  tcp-request content do-log if FALSE
+  quic-initial reject
+  quic-initial reject if TRUE
+  quic-initial accept
+  quic-initial accept if TRUE
+  quic-initial send-retry
+  quic-initial send-retry if TRUE
+  quic-initial dgram-drop
+  quic-initial dgram-drop if TRUE
   log global
   no log
   log 127.0.0.1:514 local0 notice notice
   log-tag bla
+  log-steps any
   option httpclose
   timeout http-request 2s
   timeout http-keep-alive 3s
@@ -559,6 +637,7 @@ frontend test
   unique-id-format %{+X}o%ci:%cp_%fi:%fp_%Ts_%rt:%pid
   unique-id-header X-Unique-ID
   no option accept-invalid-http-request
+  no option accept-unsafe-violations-in-http-request
   no option h1-case-adjust-bogus-client
   compression algo identity gzip
   compression type text/plain
@@ -588,10 +667,11 @@ frontend test
   errorloc302 404 http://www.myawesomesite.com/not_found
   errorloc303 404 http://www.myawesomesite.com/not_found
   error-log-format %T\ %t\ Some\ Text
+  guid guid-example
+  declare capture request len 1
 
 frontend test_2 from test_defaults
   mode http
-  bind-process even
   option httplog
   option dontlognull
   option contstats
@@ -636,13 +716,12 @@ frontend test_2 from test_defaults
 backend test
   mode http
   balance roundrobin
-  bind-process all
   hash-type consistent sdbm avalanche
   hash-balance-factor 150
   log-tag bla
   option http-keep-alive
   option forwardfor header X-Forwarded-For
-  option httpchk HEAD /
+  option httpchk HEAD / HTTP/1.1 www
   option tcpka
   option srvtcpka
   option checkcache
@@ -658,7 +737,7 @@ backend test
   option splice-request
   option splice-response
   option http-restrict-req-hdr-names preserve
-  default-server fall 2s rise 4s inter 5s port 8888 ws auto pool-low-conn 128 log-bufsize 6
+  default-server fall 2s rise 4s inter 5s port 8888 ws auto pool-low-conn 128 log-bufsize 6 force-sslv3
   stick store-request src table test
   stick match src table test
   stick on src table test
@@ -686,6 +765,8 @@ backend test
   tcp-response content set-fc-mark 7676 if TRUE
   tcp-response content set-fc-tos 0xab if FALSE
   tcp-response content sc-set-gpt(1,2) 1234
+  tcp-response content do-log
+  tcp-response content do-log if FALSE
   option contstats
   timeout check 2s
   timeout tunnel 5s
@@ -697,10 +778,11 @@ backend test
   external-check command /bin/false
   use-server webserv if TRUE
   use-server webserv2 unless TRUE
-  server webserv 192.168.1.1:9200 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128 id 1234 pool-purge-delay 10s tcp-ut 2s curves secp384r1 client-sigalgs ECDSA+SHA256:RSA+SHA256 sigalgs ECDSA+SHA256 log-bufsize 10 set-proxy-v2-tlv-fmt(0x20) %[fc_pp_tlv(0x20)]
-  server webserv2 192.168.1.1:9300 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128
+  server webserv 192.168.1.1:9200 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128 id 1234 pool-purge-delay 10s tcp-ut 2s curves secp384r1 client-sigalgs ECDSA+SHA256:RSA+SHA256 sigalgs ECDSA+SHA256 log-bufsize 10 set-proxy-v2-tlv-fmt(0x20) %[fc_pp_tlv(0x20)] init-state fully-up # my comment
+  server webserv2 192.168.1.1:9300 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128 hash-key akey pool-conn-name apoolconnname # {"comment": "my structured comment", "id": "my_random_id_for_server"}
   http-request set-dst hdr(x-dst)
   http-request set-dst-port int(4000)
+  http-request set-uri %[url,regsub(^/metrics/,/,)] if { path_beg /metrics }
   http-check connect
   http-check send meth GET uri / ver HTTP/1.1 hdr host haproxy.1wt.eu
   http-check expect status 200-399
@@ -720,6 +802,7 @@ backend test
   server-template website 10-100 google.com:443 check no-backup
   server-template test 5 test.com check backup
   no option accept-invalid-http-response
+  no option accept-unsafe-violations-in-http-response
   no option h1-case-adjust-bogus-server
   compression type application/json text/plain
   compression direction both
@@ -768,6 +851,7 @@ backend test
   source 192.168.1.222 usesrc hdr_ip(hdr,occ)
   http-response set-fc-mark 123
   http-response set-fc-tos 1 if TRUE
+  guid guid-example
 
 peers mycluster
   enabled
@@ -877,10 +961,24 @@ log-forward sylog-loadb
   log 127.0.0.1:10003 sample 3:4 local0
   log 127.0.0.1:10004 sample 4:4 local0
 
+log-profile logp1
+  log-tag tag1
+  on connect drop
+  on error format "%ci: error" sd "%a %b sd"
+  on any sd "custom sd"
+
 mailers localmailer1
   mailer smtp1 10.0.10.1:514
   mailer smtp2 10.0.10.2:514
   timeout mail 15s
+
+crt-store cert-bunker1
+  crt-base /secure/certs
+  key-base /secure/keys
+
+traces
+  trace h1 sink buf1 level developer verbosity complete start now
+  trace h2 sink buf2 level developer verbosity complete start now
 
 http-errors website-1
   errorfile 400 /etc/haproxy/errorfiles/site1/400.http
@@ -895,7 +993,6 @@ http-errors website-2
 backend test_2 from test_defaults_2
   mode http
   balance roundrobin
-  bind-process all
   hash-type consistent sdbm avalanche
   log-tag bla
   option http-keep-alive
@@ -915,7 +1012,7 @@ backend test_2 from test_defaults_2
   no option splice-auto
   no option splice-request
   no option splice-response
-  default-server fall 2s rise 4s inter 5s port 8888 slowstart 6000
+  default-server fall 2s rise 4s inter 5s port 8888 slowstart 6000 no-tlsv10
   option contstats
   timeout check 2s
   timeout tunnel 5s
@@ -1036,9 +1133,25 @@ func prepareClient(path string) (c configuration.Configuration, err error) {
 		options.UseModelsValidation,
 		options.UsePersistentTransactions,
 		options.TransactionsDir("/tmp/haproxy-test"),
+		options.PreferredTimeSuffix("nearest"),
 	)
 	if err != nil {
 		return nil, err
 	}
 	return c, nil
+}
+
+func getTestClient() (configuration.Configuration, string, error) {
+	f, err := os.CreateTemp("/tmp", "haproxy-test*.txt")
+	if err != nil {
+		return nil, "", err
+	}
+	if err = prepareTestFile(testConf, f.Name()); err != nil {
+		return nil, "", err
+	}
+	c, err := prepareClient(f.Name())
+	if err != nil {
+		return nil, "", err
+	}
+	return c, f.Name(), nil
 }

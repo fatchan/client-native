@@ -41,11 +41,13 @@ type ServerParams struct {
 	AgentAddr string `json:"agent-addr,omitempty"`
 
 	// agent check
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	AgentCheck string `json:"agent-check,omitempty"`
 
 	// agent inter
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	AgentInter *int64 `json:"agent-inter,omitempty"`
 
 	// agent port
@@ -67,17 +69,17 @@ type ServerParams struct {
 	Alpn string `json:"alpn,omitempty"`
 
 	// backup
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Backup string `json:"backup,omitempty"`
 
 	// check
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Check string `json:"check,omitempty"`
 
 	// check send proxy
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	CheckSendProxy string `json:"check-send-proxy,omitempty"`
 
@@ -87,7 +89,7 @@ type ServerParams struct {
 	CheckSni string `json:"check-sni,omitempty"`
 
 	// check ssl
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	CheckSsl string `json:"check-ssl,omitempty"`
 
@@ -102,7 +104,7 @@ type ServerParams struct {
 	CheckProto string `json:"check_proto,omitempty"`
 
 	// check via socks4
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	CheckViaSocks4 string `json:"check_via_socks4,omitempty"`
 
@@ -127,6 +129,8 @@ type ServerParams struct {
 	Curves string `json:"curves,omitempty"`
 
 	// downinter
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	Downinter *int64 `json:"downinter,omitempty"`
 
 	// error limit
@@ -136,32 +140,44 @@ type ServerParams struct {
 	Fall *int64 `json:"fall,omitempty"`
 
 	// fastinter
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	Fastinter *int64 `json:"fastinter,omitempty"`
 
-	// force sslv3
-	// Enum: [enabled disabled]
+	// This field is deprecated in favor of sslv3, and will be removed in a future release
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceSslv3 string `json:"force_sslv3,omitempty"`
 
-	// force tlsv10
-	// Enum: [enabled disabled]
+	// This field is deprecated in favor of tlsv10, and will be removed in a future release
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceTlsv10 string `json:"force_tlsv10,omitempty"`
 
-	// force tlsv11
-	// Enum: [enabled disabled]
+	// This field is deprecated in favor of tlsv11, and will be removed in a future release
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceTlsv11 string `json:"force_tlsv11,omitempty"`
 
-	// force tlsv12
-	// Enum: [enabled disabled]
+	// This field is deprecated in favor of tlsv12, and will be removed in a future release
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceTlsv12 string `json:"force_tlsv12,omitempty"`
 
-	// force tlsv13
-	// Enum: [enabled disabled]
+	// This field is deprecated in favor of tlsv13, and will be removed in a future release
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	ForceTlsv13 string `json:"force_tlsv13,omitempty"`
+
+	// guid
+	// Pattern: ^[A-Za-z0-9-_.:]+$
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9-_.:]+$`
+	GUID string `json:"guid,omitempty"`
+
+	// hash key
+	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
+	HashKey string `json:"hash_key,omitempty"`
 
 	// health check address
 	// Pattern: ^[^\s]+$
@@ -180,19 +196,26 @@ type ServerParams struct {
 	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	InitAddr *string `json:"init-addr,omitempty"`
 
+	// init state
+	// Enum: ["fully-up","up","down","fully-down"]
+	// +kubebuilder:validation:Enum=fully-up;up;down;fully-down;
+	InitState string `json:"init-state,omitempty"`
+
 	// inter
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	Inter *int64 `json:"inter,omitempty"`
 
 	// log bufsize
 	LogBufsize *int64 `json:"log-bufsize,omitempty"`
 
 	// log proto
-	// Enum: [legacy octet-count]
+	// Enum: ["legacy","octet-count"]
 	// +kubebuilder:validation:Enum=legacy;octet-count;
 	LogProto string `json:"log_proto,omitempty"`
 
 	// maintenance
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Maintenance string `json:"maintenance,omitempty"`
 
@@ -211,33 +234,33 @@ type ServerParams struct {
 	// namespace
 	Namespace string `json:"namespace,omitempty"`
 
-	// no sslv3
-	// Enum: [enabled disabled]
+	// This field is deprecated in favor of sslv3, and will be removed in a future release
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoSslv3 string `json:"no_sslv3,omitempty"`
 
-	// no tlsv10
-	// Enum: [enabled disabled]
+	// This field is deprecated in favor of tlsv10, and will be removed in a future release
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoTlsv10 string `json:"no_tlsv10,omitempty"`
 
-	// no tlsv11
-	// Enum: [enabled disabled]
+	// This field is deprecated in favor of tlsv11, and will be removed in a future release
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoTlsv11 string `json:"no_tlsv11,omitempty"`
 
-	// no tlsv12
-	// Enum: [enabled disabled]
+	// This field is deprecated in favor of tlsv12, and will be removed in a future release
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoTlsv12 string `json:"no_tlsv12,omitempty"`
 
-	// no tlsv13
-	// Enum: [enabled disabled]
+	// This field is deprecated in favor of force_tlsv13, and will be removed in a future release
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoTlsv13 string `json:"no_tlsv13,omitempty"`
 
 	// no verifyhost
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	NoVerifyhost string `json:"no_verifyhost,omitempty"`
 
@@ -245,24 +268,29 @@ type ServerParams struct {
 	Npn string `json:"npn,omitempty"`
 
 	// observe
-	// Enum: [layer4 layer7]
+	// Enum: ["layer4","layer7"]
 	// +kubebuilder:validation:Enum=layer4;layer7;
 	Observe string `json:"observe,omitempty"`
 
 	// on error
-	// Enum: [fastinter fail-check sudden-death mark-down]
+	// Enum: ["fastinter","fail-check","sudden-death","mark-down"]
 	// +kubebuilder:validation:Enum=fastinter;fail-check;sudden-death;mark-down;
 	OnError string `json:"on-error,omitempty"`
 
 	// on marked down
-	// Enum: [shutdown-sessions]
+	// Enum: ["shutdown-sessions"]
 	// +kubebuilder:validation:Enum=shutdown-sessions;
 	OnMarkedDown string `json:"on-marked-down,omitempty"`
 
 	// on marked up
-	// Enum: [shutdown-backup-sessions]
+	// Enum: ["shutdown-backup-sessions"]
 	// +kubebuilder:validation:Enum=shutdown-backup-sessions;
 	OnMarkedUp string `json:"on-marked-up,omitempty"`
+
+	// pool conn name
+	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
+	PoolConnName string `json:"pool_conn_name,omitempty"`
 
 	// pool low conn
 	PoolLowConn *int64 `json:"pool_low_conn,omitempty"`
@@ -271,6 +299,8 @@ type ServerParams struct {
 	PoolMaxConn *int64 `json:"pool_max_conn,omitempty"`
 
 	// pool purge delay
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	PoolPurgeDelay *int64 `json:"pool_purge_delay,omitempty"`
 
 	// proto
@@ -290,7 +320,7 @@ type ServerParams struct {
 	ResolveNet string `json:"resolve-net,omitempty"`
 
 	// resolve prefer
-	// Enum: [ipv4 ipv6]
+	// Enum: ["ipv4","ipv6"]
 	// +kubebuilder:validation:Enum=ipv4;ipv6;
 	ResolvePrefer string `json:"resolve-prefer,omitempty"`
 
@@ -308,22 +338,22 @@ type ServerParams struct {
 	Rise *int64 `json:"rise,omitempty"`
 
 	// send proxy
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendProxy string `json:"send-proxy,omitempty"`
 
 	// send proxy v2
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendProxyV2 string `json:"send-proxy-v2,omitempty"`
 
 	// send proxy v2 ssl
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendProxyV2Ssl string `json:"send_proxy_v2_ssl,omitempty"`
 
 	// send proxy v2 ssl cn
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	SendProxyV2SslCn string `json:"send_proxy_v2_ssl_cn,omitempty"`
 
@@ -337,6 +367,8 @@ type ServerParams struct {
 	Sigalgs string `json:"sigalgs,omitempty"`
 
 	// slowstart
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	Slowstart *int64 `json:"slowstart,omitempty"`
 
 	// sni
@@ -353,7 +385,7 @@ type ServerParams struct {
 	Source string `json:"source,omitempty"`
 
 	// ssl
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Ssl string `json:"ssl,omitempty"`
 
@@ -368,43 +400,70 @@ type ServerParams struct {
 	SslCertificate string `json:"ssl_certificate,omitempty"`
 
 	// ssl max ver
-	// Enum: [SSLv3 TLSv1.0 TLSv1.1 TLSv1.2 TLSv1.3]
+	// Enum: ["SSLv3","TLSv1.0","TLSv1.1","TLSv1.2","TLSv1.3"]
 	// +kubebuilder:validation:Enum=SSLv3;TLSv1.0;TLSv1.1;TLSv1.2;TLSv1.3;
 	SslMaxVer string `json:"ssl_max_ver,omitempty"`
 
 	// ssl min ver
-	// Enum: [SSLv3 TLSv1.0 TLSv1.1 TLSv1.2 TLSv1.3]
+	// Enum: ["SSLv3","TLSv1.0","TLSv1.1","TLSv1.2","TLSv1.3"]
 	// +kubebuilder:validation:Enum=SSLv3;TLSv1.0;TLSv1.1;TLSv1.2;TLSv1.3;
 	SslMinVer string `json:"ssl_min_ver,omitempty"`
 
 	// ssl reuse
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	SslReuse string `json:"ssl_reuse,omitempty"`
 
+	// sslv3
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	Sslv3 string `json:"sslv3,omitempty"`
+
 	// stick
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Stick string `json:"stick,omitempty"`
 
 	// tcp ut
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
 	TCPUt *int64 `json:"tcp_ut,omitempty"`
 
 	// tfo
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Tfo string `json:"tfo,omitempty"`
 
 	// tls tickets
-	// Enum: [enabled disabled]
+	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	TLSTickets string `json:"tls_tickets,omitempty"`
+
+	// tlsv10
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	Tlsv10 string `json:"tlsv10,omitempty"`
+
+	// tlsv11
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	Tlsv11 string `json:"tlsv11,omitempty"`
+
+	// tlsv12
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	Tlsv12 string `json:"tlsv12,omitempty"`
+
+	// tlsv13
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	Tlsv13 string `json:"tlsv13,omitempty"`
 
 	// track
 	Track string `json:"track,omitempty"`
 
 	// verify
-	// Enum: [none required]
+	// Enum: ["none","required"]
 	// +kubebuilder:validation:Enum=none;required;
 	Verify string `json:"verify,omitempty"`
 
@@ -415,7 +474,7 @@ type ServerParams struct {
 	Weight *int64 `json:"weight,omitempty"`
 
 	// ws
-	// Enum: [auto h1 h2]
+	// Enum: ["auto","h1","h2"]
 	// +kubebuilder:validation:Enum=auto;h1;h2;
 	Ws string `json:"ws,omitempty"`
 }
@@ -429,6 +488,10 @@ func (m *ServerParams) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateAgentCheck(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateAgentInter(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -476,6 +539,14 @@ func (m *ServerParams) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateDowninter(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateFastinter(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateForceSslv3(formats); err != nil {
 		res = append(res, err)
 	}
@@ -496,6 +567,14 @@ func (m *ServerParams) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateGUID(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateHashKey(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateHealthCheckAddress(formats); err != nil {
 		res = append(res, err)
 	}
@@ -505,6 +584,14 @@ func (m *ServerParams) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateInitAddr(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateInitState(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateInter(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -556,6 +643,14 @@ func (m *ServerParams) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validatePoolConnName(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validatePoolPurgeDelay(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateProto(formats); err != nil {
 		res = append(res, err)
 	}
@@ -600,6 +695,10 @@ func (m *ServerParams) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateSlowstart(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateSni(formats); err != nil {
 		res = append(res, err)
 	}
@@ -632,7 +731,15 @@ func (m *ServerParams) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateSslv3(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateStick(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTCPUt(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -641,6 +748,22 @@ func (m *ServerParams) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateTLSTickets(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTlsv10(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTlsv11(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTlsv12(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTlsv13(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -706,6 +829,18 @@ func (m *ServerParams) validateAgentCheck(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateAgentCheckEnum("agent-check", "body", m.AgentCheck); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *ServerParams) validateAgentInter(formats strfmt.Registry) error {
+	if swag.IsZero(m.AgentInter) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("agent-inter", "body", *m.AgentInter, 0, false); err != nil {
 		return err
 	}
 
@@ -998,6 +1133,30 @@ func (m *ServerParams) validateCookie(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *ServerParams) validateDowninter(formats strfmt.Registry) error {
+	if swag.IsZero(m.Downinter) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("downinter", "body", *m.Downinter, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *ServerParams) validateFastinter(formats strfmt.Registry) error {
+	if swag.IsZero(m.Fastinter) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("fastinter", "body", *m.Fastinter, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 var serverParamsTypeForceSslv3PropEnum []interface{}
 
 func init() {
@@ -1208,6 +1367,30 @@ func (m *ServerParams) validateForceTlsv13(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *ServerParams) validateGUID(formats strfmt.Registry) error {
+	if swag.IsZero(m.GUID) { // not required
+		return nil
+	}
+
+	if err := validate.Pattern("guid", "body", m.GUID, `^[A-Za-z0-9-_.:]+$`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *ServerParams) validateHashKey(formats strfmt.Registry) error {
+	if swag.IsZero(m.HashKey) { // not required
+		return nil
+	}
+
+	if err := validate.Pattern("hash_key", "body", m.HashKey, `^[^\s]+$`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *ServerParams) validateHealthCheckAddress(formats strfmt.Registry) error {
 	if swag.IsZero(m.HealthCheckAddress) { // not required
 		return nil
@@ -1242,6 +1425,66 @@ func (m *ServerParams) validateInitAddr(formats strfmt.Registry) error {
 	}
 
 	if err := validate.Pattern("init-addr", "body", *m.InitAddr, `^[^\s]+$`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var serverParamsTypeInitStatePropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["fully-up","up","down","fully-down"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		serverParamsTypeInitStatePropEnum = append(serverParamsTypeInitStatePropEnum, v)
+	}
+}
+
+const (
+
+	// ServerParamsInitStateFullyDashUp captures enum value "fully-up"
+	ServerParamsInitStateFullyDashUp string = "fully-up"
+
+	// ServerParamsInitStateUp captures enum value "up"
+	ServerParamsInitStateUp string = "up"
+
+	// ServerParamsInitStateDown captures enum value "down"
+	ServerParamsInitStateDown string = "down"
+
+	// ServerParamsInitStateFullyDashDown captures enum value "fully-down"
+	ServerParamsInitStateFullyDashDown string = "fully-down"
+)
+
+// prop value enum
+func (m *ServerParams) validateInitStateEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, serverParamsTypeInitStatePropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *ServerParams) validateInitState(formats strfmt.Registry) error {
+	if swag.IsZero(m.InitState) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateInitStateEnum("init-state", "body", m.InitState); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *ServerParams) validateInter(formats strfmt.Registry) error {
+	if swag.IsZero(m.Inter) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("inter", "body", *m.Inter, 0, false); err != nil {
 		return err
 	}
 
@@ -1752,6 +1995,30 @@ func (m *ServerParams) validateOnMarkedUp(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *ServerParams) validatePoolConnName(formats strfmt.Registry) error {
+	if swag.IsZero(m.PoolConnName) { // not required
+		return nil
+	}
+
+	if err := validate.Pattern("pool_conn_name", "body", m.PoolConnName, `^[^\s]+$`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *ServerParams) validatePoolPurgeDelay(formats strfmt.Registry) error {
+	if swag.IsZero(m.PoolPurgeDelay) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("pool_purge_delay", "body", *m.PoolPurgeDelay, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *ServerParams) validateProto(formats strfmt.Registry) error {
 	if swag.IsZero(m.Proto) { // not required
 		return nil
@@ -2065,6 +2332,18 @@ func (m *ServerParams) validateSetProxyV2TlvFmt(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *ServerParams) validateSlowstart(formats strfmt.Registry) error {
+	if swag.IsZero(m.Slowstart) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("slowstart", "body", *m.Slowstart, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *ServerParams) validateSni(formats strfmt.Registry) error {
 	if swag.IsZero(m.Sni) { // not required
 		return nil
@@ -2299,6 +2578,48 @@ func (m *ServerParams) validateSslReuse(formats strfmt.Registry) error {
 	return nil
 }
 
+var serverParamsTypeSslv3PropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		serverParamsTypeSslv3PropEnum = append(serverParamsTypeSslv3PropEnum, v)
+	}
+}
+
+const (
+
+	// ServerParamsSslv3Enabled captures enum value "enabled"
+	ServerParamsSslv3Enabled string = "enabled"
+
+	// ServerParamsSslv3Disabled captures enum value "disabled"
+	ServerParamsSslv3Disabled string = "disabled"
+)
+
+// prop value enum
+func (m *ServerParams) validateSslv3Enum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, serverParamsTypeSslv3PropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *ServerParams) validateSslv3(formats strfmt.Registry) error {
+	if swag.IsZero(m.Sslv3) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateSslv3Enum("sslv3", "body", m.Sslv3); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 var serverParamsTypeStickPropEnum []interface{}
 
 func init() {
@@ -2335,6 +2656,18 @@ func (m *ServerParams) validateStick(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateStickEnum("stick", "body", m.Stick); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *ServerParams) validateTCPUt(formats strfmt.Registry) error {
+	if swag.IsZero(m.TCPUt) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("tcp_ut", "body", *m.TCPUt, 0, false); err != nil {
 		return err
 	}
 
@@ -2419,6 +2752,174 @@ func (m *ServerParams) validateTLSTickets(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateTLSTicketsEnum("tls_tickets", "body", m.TLSTickets); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var serverParamsTypeTlsv10PropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		serverParamsTypeTlsv10PropEnum = append(serverParamsTypeTlsv10PropEnum, v)
+	}
+}
+
+const (
+
+	// ServerParamsTlsv10Enabled captures enum value "enabled"
+	ServerParamsTlsv10Enabled string = "enabled"
+
+	// ServerParamsTlsv10Disabled captures enum value "disabled"
+	ServerParamsTlsv10Disabled string = "disabled"
+)
+
+// prop value enum
+func (m *ServerParams) validateTlsv10Enum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, serverParamsTypeTlsv10PropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *ServerParams) validateTlsv10(formats strfmt.Registry) error {
+	if swag.IsZero(m.Tlsv10) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateTlsv10Enum("tlsv10", "body", m.Tlsv10); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var serverParamsTypeTlsv11PropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		serverParamsTypeTlsv11PropEnum = append(serverParamsTypeTlsv11PropEnum, v)
+	}
+}
+
+const (
+
+	// ServerParamsTlsv11Enabled captures enum value "enabled"
+	ServerParamsTlsv11Enabled string = "enabled"
+
+	// ServerParamsTlsv11Disabled captures enum value "disabled"
+	ServerParamsTlsv11Disabled string = "disabled"
+)
+
+// prop value enum
+func (m *ServerParams) validateTlsv11Enum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, serverParamsTypeTlsv11PropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *ServerParams) validateTlsv11(formats strfmt.Registry) error {
+	if swag.IsZero(m.Tlsv11) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateTlsv11Enum("tlsv11", "body", m.Tlsv11); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var serverParamsTypeTlsv12PropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		serverParamsTypeTlsv12PropEnum = append(serverParamsTypeTlsv12PropEnum, v)
+	}
+}
+
+const (
+
+	// ServerParamsTlsv12Enabled captures enum value "enabled"
+	ServerParamsTlsv12Enabled string = "enabled"
+
+	// ServerParamsTlsv12Disabled captures enum value "disabled"
+	ServerParamsTlsv12Disabled string = "disabled"
+)
+
+// prop value enum
+func (m *ServerParams) validateTlsv12Enum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, serverParamsTypeTlsv12PropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *ServerParams) validateTlsv12(formats strfmt.Registry) error {
+	if swag.IsZero(m.Tlsv12) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateTlsv12Enum("tlsv12", "body", m.Tlsv12); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var serverParamsTypeTlsv13PropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		serverParamsTypeTlsv13PropEnum = append(serverParamsTypeTlsv13PropEnum, v)
+	}
+}
+
+const (
+
+	// ServerParamsTlsv13Enabled captures enum value "enabled"
+	ServerParamsTlsv13Enabled string = "enabled"
+
+	// ServerParamsTlsv13Disabled captures enum value "disabled"
+	ServerParamsTlsv13Disabled string = "disabled"
+)
+
+// prop value enum
+func (m *ServerParams) validateTlsv13Enum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, serverParamsTypeTlsv13PropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *ServerParams) validateTlsv13(formats strfmt.Registry) error {
+	if swag.IsZero(m.Tlsv13) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateTlsv13Enum("tlsv13", "body", m.Tlsv13); err != nil {
 		return err
 	}
 
@@ -2529,6 +3030,11 @@ func (m *ServerParams) ContextValidate(ctx context.Context, formats strfmt.Regis
 func (m *ServerParams) contextValidateSetProxyV2TlvFmt(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.SetProxyV2TlvFmt != nil {
+
+		if swag.IsZero(m.SetProxyV2TlvFmt) { // not required
+			return nil
+		}
+
 		if err := m.SetProxyV2TlvFmt.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("set-proxy-v2-tlv-fmt")
