@@ -182,16 +182,13 @@ type SSL interface {
 	UpdateOcspResponse(name string) (*models.SslOcspResponse, error)
 	ShowSSLProviders() (*models.SslProviders, error)
 	SetRateLimitSSLSessionGlobal(value uint64) error
+	AddSetCommitSSLCert(filename, content string) error
+	DelSSLCert(filename string) error
 }
 
 type Acme interface {
 	AcmeRenew(certificate string) error
 	AcmeStatus() (models.AcmeStatus, error)
-}
-
-type SSL interface {
-	AddSetCommitSSLCert(filename, content string) error
-	DelSSLCert(filename string) error
 }
 
 type Runtime interface {
