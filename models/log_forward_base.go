@@ -36,11 +36,21 @@ import (
 // swagger:model log_forward_base
 type LogForwardBase struct {
 
+	// assume rfc6587 ntf
+	AssumeRfc6587Ntf bool `json:"assume-rfc6587-ntf,omitempty"`
+
 	// backlog
 	Backlog *int64 `json:"backlog,omitempty"`
 
+	// dont parse log
+	DontParseLog bool `json:"dont-parse-log,omitempty"`
+
 	// maxconn
 	Maxconn *int64 `json:"maxconn,omitempty"`
+
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 
 	// name
 	// Required: true

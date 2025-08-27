@@ -19,11 +19,20 @@ package models
 
 // Equal checks if two structs of type TuneOptions are equal
 //
+// By default empty maps and slices are equal to nil:
+//
 //	var a, b TuneOptions
 //	equal := a.Equal(b)
 //
-// opts ...Options are ignored in this method
+// For more advanced use case you can configure these options (default values are shown):
+//
+//	var a, b TuneOptions
+//	equal := a.Equal(b,Options{
+//		NilSameAsEmpty: true,
+//	})
 func (s TuneOptions) Equal(t TuneOptions, opts ...Options) bool {
+	opt := getOptions(opts...)
+
 	if s.AppletZeroCopyForwarding != t.AppletZeroCopyForwarding {
 		return false
 	}
@@ -40,6 +49,10 @@ func (s TuneOptions) Equal(t TuneOptions, opts ...Options) bool {
 		return false
 	}
 
+	if !equalComparableSlice(s.EpollMaskEvents, t.EpollMaskEvents, opt) {
+		return false
+	}
+
 	if s.EventsMaxEventsAtOnce != t.EventsMaxEventsAtOnce {
 		return false
 	}
@@ -49,6 +62,10 @@ func (s TuneOptions) Equal(t TuneOptions, opts ...Options) bool {
 	}
 
 	if s.FdEdgeTriggered != t.FdEdgeTriggered {
+		return false
+	}
+
+	if !equalPointers(s.GlitchesKillCPUUsage, t.GlitchesKillCPUUsage) {
 		return false
 	}
 
@@ -148,6 +165,10 @@ func (s TuneOptions) Equal(t TuneOptions, opts ...Options) bool {
 		return false
 	}
 
+	if !equalPointers(s.MaxRulesAtOnce, t.MaxRulesAtOnce) {
+		return false
+	}
+
 	if s.Maxaccept != t.Maxaccept {
 		return false
 	}
@@ -161,6 +182,14 @@ func (s TuneOptions) Equal(t TuneOptions, opts ...Options) bool {
 	}
 
 	if !equalPointers(s.MemoryHotSize, t.MemoryHotSize) {
+		return false
+	}
+
+	if !equalPointers(s.NotsentLowatClient, t.NotsentLowatClient) {
+		return false
+	}
+
+	if !equalPointers(s.NotsentLowatServer, t.NotsentLowatServer) {
 		return false
 	}
 
@@ -208,16 +237,29 @@ func (s TuneOptions) Equal(t TuneOptions, opts ...Options) bool {
 		return false
 	}
 
+	if s.TakeoverOtherTgConnections != t.TakeoverOtherTgConnections {
+		return false
+	}
+
 	return true
 }
 
 // Diff checks if two structs of type TuneOptions are equal
 //
+// By default empty maps and slices are equal to nil:
+//
 //	var a, b TuneOptions
 //	diff := a.Diff(b)
 //
-// opts ...Options are ignored in this method
+// For more advanced use case you can configure these options (default values are shown):
+//
+//	var a, b TuneOptions
+//	diff := a.Diff(b,Options{
+//		NilSameAsEmpty: true,
+//	})
 func (s TuneOptions) Diff(t TuneOptions, opts ...Options) map[string][]interface{} {
+	opt := getOptions(opts...)
+
 	diff := make(map[string][]interface{})
 	if s.AppletZeroCopyForwarding != t.AppletZeroCopyForwarding {
 		diff["AppletZeroCopyForwarding"] = []interface{}{s.AppletZeroCopyForwarding, t.AppletZeroCopyForwarding}
@@ -235,6 +277,10 @@ func (s TuneOptions) Diff(t TuneOptions, opts ...Options) map[string][]interface
 		diff["DisableZeroCopyForwarding"] = []interface{}{s.DisableZeroCopyForwarding, t.DisableZeroCopyForwarding}
 	}
 
+	if !equalComparableSlice(s.EpollMaskEvents, t.EpollMaskEvents, opt) {
+		diff["EpollMaskEvents"] = []interface{}{s.EpollMaskEvents, t.EpollMaskEvents}
+	}
+
 	if s.EventsMaxEventsAtOnce != t.EventsMaxEventsAtOnce {
 		diff["EventsMaxEventsAtOnce"] = []interface{}{s.EventsMaxEventsAtOnce, t.EventsMaxEventsAtOnce}
 	}
@@ -245,6 +291,10 @@ func (s TuneOptions) Diff(t TuneOptions, opts ...Options) map[string][]interface
 
 	if s.FdEdgeTriggered != t.FdEdgeTriggered {
 		diff["FdEdgeTriggered"] = []interface{}{s.FdEdgeTriggered, t.FdEdgeTriggered}
+	}
+
+	if !equalPointers(s.GlitchesKillCPUUsage, t.GlitchesKillCPUUsage) {
+		diff["GlitchesKillCPUUsage"] = []interface{}{ValueOrNil(s.GlitchesKillCPUUsage), ValueOrNil(t.GlitchesKillCPUUsage)}
 	}
 
 	if s.H1ZeroCopyFwdRecv != t.H1ZeroCopyFwdRecv {
@@ -343,6 +393,10 @@ func (s TuneOptions) Diff(t TuneOptions, opts ...Options) map[string][]interface
 		diff["MaxChecksPerThread"] = []interface{}{ValueOrNil(s.MaxChecksPerThread), ValueOrNil(t.MaxChecksPerThread)}
 	}
 
+	if !equalPointers(s.MaxRulesAtOnce, t.MaxRulesAtOnce) {
+		diff["MaxRulesAtOnce"] = []interface{}{ValueOrNil(s.MaxRulesAtOnce), ValueOrNil(t.MaxRulesAtOnce)}
+	}
+
 	if s.Maxaccept != t.Maxaccept {
 		diff["Maxaccept"] = []interface{}{s.Maxaccept, t.Maxaccept}
 	}
@@ -357,6 +411,14 @@ func (s TuneOptions) Diff(t TuneOptions, opts ...Options) map[string][]interface
 
 	if !equalPointers(s.MemoryHotSize, t.MemoryHotSize) {
 		diff["MemoryHotSize"] = []interface{}{ValueOrNil(s.MemoryHotSize), ValueOrNil(t.MemoryHotSize)}
+	}
+
+	if !equalPointers(s.NotsentLowatClient, t.NotsentLowatClient) {
+		diff["NotsentLowatClient"] = []interface{}{ValueOrNil(s.NotsentLowatClient), ValueOrNil(t.NotsentLowatClient)}
+	}
+
+	if !equalPointers(s.NotsentLowatServer, t.NotsentLowatServer) {
+		diff["NotsentLowatServer"] = []interface{}{ValueOrNil(s.NotsentLowatServer), ValueOrNil(t.NotsentLowatServer)}
 	}
 
 	if !equalPointers(s.PatternCacheSize, t.PatternCacheSize) {
@@ -401,6 +463,10 @@ func (s TuneOptions) Diff(t TuneOptions, opts ...Options) map[string][]interface
 
 	if !equalPointers(s.StickCounters, t.StickCounters) {
 		diff["StickCounters"] = []interface{}{ValueOrNil(s.StickCounters), ValueOrNil(t.StickCounters)}
+	}
+
+	if s.TakeoverOtherTgConnections != t.TakeoverOtherTgConnections {
+		diff["TakeoverOtherTgConnections"] = []interface{}{s.TakeoverOtherTgConnections, t.TakeoverOtherTgConnections}
 	}
 
 	return diff

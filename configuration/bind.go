@@ -26,6 +26,7 @@ import (
 	parser_errors "github.com/haproxytech/client-native/v6/config-parser/errors"
 	"github.com/haproxytech/client-native/v6/config-parser/params"
 	"github.com/haproxytech/client-native/v6/config-parser/types"
+	"github.com/haproxytech/client-native/v6/configuration/options"
 
 	"github.com/haproxytech/client-native/v6/misc"
 	"github.com/haproxytech/client-native/v6/models"
@@ -127,7 +128,7 @@ func (c *client) CreateBind(parentType string, parentName string, data *models.B
 		return c.HandleError(data.Name, parentType, parentName, t, transactionID == "", e)
 	}
 
-	if err := p.Insert(bindSectionType(parentType), parentName, "bind", SerializeBind(*data), -1); err != nil {
+	if err := p.Insert(bindSectionType(parentType), parentName, "bind", SerializeBind(*data, &c.ConfigurationOptions), -1); err != nil {
 		return c.HandleError(data.Name, parentType, parentName, t, transactionID == "", err)
 	}
 
@@ -158,7 +159,7 @@ func (c *client) EditBind(name string, parentType string, parentName string, dat
 		return c.HandleError(data.Name, parentType, parentType, t, transactionID == "", e)
 	}
 
-	if err := p.Set(bindSectionType(parentType), parentName, "bind", SerializeBind(*data), i); err != nil {
+	if err := p.Set(bindSectionType(parentType), parentName, "bind", SerializeBind(*data, &c.ConfigurationOptions), i); err != nil {
 		return c.HandleError(data.Name, parentType, parentName, t, transactionID == "", err)
 	}
 
@@ -212,6 +213,7 @@ func ParseBind(ondiskBind types.Bind) *models.Bind {
 			}
 		}
 	}
+	b.Metadata = parseMetadata(ondiskBind.Comment)
 	b.BindParams = parseBindParams(ondiskBind.Params)
 	if b.Name == "" {
 		b.Name = ondiskBind.Path
@@ -277,10 +279,17 @@ func parseBindParams(bindOptions []params.BindOption) models.BindParams { //noli
 				b.NoCaNames = true
 			case "no-tls-tickets":
 				b.NoTLSTickets = true
+				b.TLSTickets = "disabled"
+			case "tls-tickets":
+				b.TLSTickets = "enabled"
 			case "prefer-client-ciphers":
 				b.PreferClientCiphers = true
 			case "strict-sni":
 				b.StrictSni = true
+				b.ForceStrictSni = "enabled"
+			case "no-strict-sni":
+				b.NoStrictSni = true
+				b.ForceStrictSni = "disabled"
 			case "tfo":
 				b.Tfo = true
 			case "v6only":
@@ -349,10 +358,14 @@ func parseBindParams(bindOptions []params.BindOption) models.BindParams { //noli
 				b.Group = v.Value
 			case "id":
 				b.ID = v.Value
+			case "idle-ping":
+				b.IdlePing = misc.ParseTimeout(v.Value)
 			case "guid-prefix":
 				b.GUIDPrefix = v.Value
 			case "interface":
 				b.Interface = v.Value
+			case "label":
+				b.Label = v.Value
 			case "level":
 				b.Level = v.Value
 			case "severity-output":
@@ -420,7 +433,7 @@ func parseBindParams(bindOptions []params.BindOption) models.BindParams { //noli
 	return b
 }
 
-func SerializeBind(b models.Bind) types.Bind {
+func SerializeBind(b models.Bind, opt *options.ConfigurationOptions) types.Bind {
 	bind := types.Bind{
 		Params: []params.BindOption{},
 	}
@@ -433,11 +446,15 @@ func SerializeBind(b models.Bind) types.Bind {
 	} else {
 		bind.Path = b.Address
 	}
-	bind.Params = serializeBindParams(b.BindParams, bind.Path)
+	comment, err := serializeMetadata(b.Metadata)
+	if err == nil {
+		bind.Comment = comment
+	}
+	bind.Params = serializeBindParams(b.BindParams, bind.Path, opt)
 	return bind
 }
 
-func serializeBindParams(b models.BindParams, path string) []params.BindOption { //nolint:gocognit,gocyclo,cyclop,maintidx
+func serializeBindParams(b models.BindParams, path string, opt *options.ConfigurationOptions) []params.BindOption { //nolint:gocognit,gocyclo,cyclop,maintidx
 	var options []params.BindOption
 	if b.Name != "" {
 		options = append(options, &params.BindOptionValue{Name: "name", Value: b.Name})
@@ -567,6 +584,13 @@ func serializeBindParams(b models.BindParams, path string) []params.BindOption {
 		b.NoTlsv13 {
 		options = append(options, &params.BindOptionWord{Name: "no-tlsv13"})
 	}
+	if b.TLSTickets == "disabled" ||
+		b.NoTLSTickets {
+		options = append(options, &params.BindOptionWord{Name: "no-tls-tickets"})
+	}
+	if b.TLSTickets == "disabled" {
+		options = append(options, &params.BindOptionWord{Name: "tls-tickets"})
+	}
 	if b.GenerateCertificates {
 		options = append(options, &params.BindOptionWord{Name: "generate-certificates"})
 	}
@@ -582,8 +606,14 @@ func serializeBindParams(b models.BindParams, path string) []params.BindOption {
 	if b.ID != "" {
 		options = append(options, &params.BindOptionValue{Name: "id", Value: b.ID})
 	}
+	if b.IdlePing != nil {
+		options = append(options, &params.BindOptionValue{Name: "idle-ping", Value: misc.SerializeTime(*b.IdlePing, opt.PreferredTimeSuffix)})
+	}
 	if b.Interface != "" {
 		options = append(options, &params.BindOptionValue{Name: "interface", Value: b.Interface})
+	}
+	if b.Label != "" {
+		options = append(options, &params.BindOptionValue{Name: "label", Value: b.Label})
 	}
 	if b.Level != "" {
 		options = append(options, &params.BindOptionValue{Name: "level", Value: b.Level})
@@ -609,9 +639,6 @@ func serializeBindParams(b models.BindParams, path string) []params.BindOption {
 	if b.NoCaNames {
 		options = append(options, &params.BindOptionWord{Name: "no-ca-names"})
 	}
-	if b.NoTLSTickets {
-		options = append(options, &params.BindOptionWord{Name: "no-tls-tickets"})
-	}
 	if b.Npn != "" {
 		options = append(options, &params.BindOptionValue{Name: "npn", Value: b.Npn})
 	}
@@ -630,8 +657,13 @@ func serializeBindParams(b models.BindParams, path string) []params.BindOption {
 	if b.SslMinVer != "" {
 		options = append(options, &params.BindOptionValue{Name: "ssl-min-ver", Value: b.SslMinVer})
 	}
-	if b.StrictSni {
+	if b.ForceStrictSni == "enabled" ||
+		b.StrictSni {
 		options = append(options, &params.BindOptionWord{Name: "strict-sni"})
+	}
+	if b.ForceStrictSni == "disabled" ||
+		b.NoStrictSni {
+		options = append(options, &params.BindOptionWord{Name: "no-strict-sni"})
 	}
 	if b.Tfo {
 		options = append(options, &params.BindOptionWord{Name: "tfo"})

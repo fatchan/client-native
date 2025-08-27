@@ -78,6 +78,16 @@ type ServerParams struct {
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Check string `json:"check,omitempty"`
 
+	// check pool conn name
+	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
+	CheckPoolConnName string `json:"check-pool-conn-name,omitempty"`
+
+	// check reuse pool
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	CheckReusePool string `json:"check-reuse-pool,omitempty"`
+
 	// check send proxy
 	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
@@ -190,6 +200,11 @@ type ServerParams struct {
 	// +kubebuilder:validation:Maximum=65535
 	// +kubebuilder:validation:Minimum=1
 	HealthCheckPort *int64 `json:"health_check_port,omitempty"`
+
+	// idle ping
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
+	IdlePing *int64 `json:"idle_ping,omitempty"`
 
 	// init addr
 	// Pattern: ^[^\s]+$
@@ -314,6 +329,11 @@ type ServerParams struct {
 	// redir
 	Redir string `json:"redir,omitempty"`
 
+	// Toggles the secure renegotiation mechanism for an SSL backend.
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	Renegotiate string `json:"renegotiate,omitempty"`
+
 	// resolve net
 	// Pattern: ^([A-Za-z0-9.:/]+)(,[A-Za-z0-9.:/]+)*$
 	// +kubebuilder:validation:Pattern=`^([A-Za-z0-9.:/]+)(,[A-Za-z0-9.:/]+)*$`
@@ -424,6 +444,9 @@ type ServerParams struct {
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	Stick string `json:"stick,omitempty"`
 
+	// strict maxconn
+	StrictMaxconn bool `json:"strict-maxconn,omitempty"`
+
 	// tcp ut
 	// Minimum: 0
 	// +kubebuilder:validation:Minimum=0
@@ -511,6 +534,14 @@ func (m *ServerParams) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateCheckPoolConnName(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateCheckReusePool(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateCheckSendProxy(formats); err != nil {
 		res = append(res, err)
 	}
@@ -580,6 +611,10 @@ func (m *ServerParams) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateHealthCheckPort(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateIdlePing(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -656,6 +691,10 @@ func (m *ServerParams) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateProxyV2Options(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateRenegotiate(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -953,6 +992,60 @@ func (m *ServerParams) validateCheck(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateCheckEnum("check", "body", m.Check); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *ServerParams) validateCheckPoolConnName(formats strfmt.Registry) error {
+	if swag.IsZero(m.CheckPoolConnName) { // not required
+		return nil
+	}
+
+	if err := validate.Pattern("check-pool-conn-name", "body", m.CheckPoolConnName, `^[^\s]+$`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var serverParamsTypeCheckReusePoolPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		serverParamsTypeCheckReusePoolPropEnum = append(serverParamsTypeCheckReusePoolPropEnum, v)
+	}
+}
+
+const (
+
+	// ServerParamsCheckReusePoolEnabled captures enum value "enabled"
+	ServerParamsCheckReusePoolEnabled string = "enabled"
+
+	// ServerParamsCheckReusePoolDisabled captures enum value "disabled"
+	ServerParamsCheckReusePoolDisabled string = "disabled"
+)
+
+// prop value enum
+func (m *ServerParams) validateCheckReusePoolEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, serverParamsTypeCheckReusePoolPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *ServerParams) validateCheckReusePool(formats strfmt.Registry) error {
+	if swag.IsZero(m.CheckReusePool) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateCheckReusePoolEnum("check-reuse-pool", "body", m.CheckReusePool); err != nil {
 		return err
 	}
 
@@ -1413,6 +1506,18 @@ func (m *ServerParams) validateHealthCheckPort(formats strfmt.Registry) error {
 	}
 
 	if err := validate.MaximumInt("health_check_port", "body", *m.HealthCheckPort, 65535, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *ServerParams) validateIdlePing(formats strfmt.Registry) error {
+	if swag.IsZero(m.IdlePing) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("idle_ping", "body", *m.IdlePing, 0, false); err != nil {
 		return err
 	}
 
@@ -2062,6 +2167,48 @@ func (m *ServerParams) validateProxyV2Options(formats strfmt.Registry) error {
 			return err
 		}
 
+	}
+
+	return nil
+}
+
+var serverParamsTypeRenegotiatePropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		serverParamsTypeRenegotiatePropEnum = append(serverParamsTypeRenegotiatePropEnum, v)
+	}
+}
+
+const (
+
+	// ServerParamsRenegotiateEnabled captures enum value "enabled"
+	ServerParamsRenegotiateEnabled string = "enabled"
+
+	// ServerParamsRenegotiateDisabled captures enum value "disabled"
+	ServerParamsRenegotiateDisabled string = "disabled"
+)
+
+// prop value enum
+func (m *ServerParams) validateRenegotiateEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, serverParamsTypeRenegotiatePropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *ServerParams) validateRenegotiate(formats strfmt.Registry) error {
+	if swag.IsZero(m.Renegotiate) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateRenegotiateEnum("renegotiate", "body", m.Renegotiate); err != nil {
+		return err
 	}
 
 	return nil

@@ -39,11 +39,18 @@ type Table struct {
 	// +kubebuilder:validation:Pattern=`^\d+(ms|s|m|h|d)?$`
 	Expire *string `json:"expire,omitempty"`
 
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+
 	// name
 	Name string `json:"name,omitempty"`
 
 	// no purge
 	NoPurge bool `json:"no_purge,omitempty"`
+
+	// recv only
+	RecvOnly bool `json:"recv_only,omitempty"`
 
 	// size
 	// Pattern: ^\d+(k|K|m|M|g|G)?$

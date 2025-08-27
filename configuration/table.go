@@ -179,15 +179,19 @@ func ParseTables(peerSection string, p parser.Parser) (models.Tables, error) {
 
 func ParseTable(t types.Table) *models.Table {
 	table := &models.Table{
-		Name: t.Name,
-		Type: t.Type,
-		Size: t.Size,
+		Name:     t.Name,
+		Type:     t.Type,
+		Size:     t.Size,
+		Metadata: parseMetadata(t.Comment),
 	}
 	if t.Expire != "" {
 		table.Expire = &t.Expire
 	}
 	if t.NoPurge {
 		table.NoPurge = t.NoPurge
+	}
+	if t.RecvOnly {
+		table.RecvOnly = true
 	}
 	if t.Store != "" {
 		table.Store = t.Store
@@ -206,10 +210,16 @@ func ParseTable(t types.Table) *models.Table {
 }
 
 func SerializeTable(t models.Table) types.Table {
+	comment, err := serializeMetadata(t.Metadata)
+	if err != nil {
+		comment = ""
+	}
 	table := types.Table{
-		Name: t.Name,
-		Type: t.Type,
-		Size: t.Size,
+		Name:     t.Name,
+		Type:     t.Type,
+		Size:     t.Size,
+		Comment:  comment,
+		RecvOnly: t.RecvOnly,
 	}
 	if t.Expire != nil {
 		table.Expire = *t.Expire

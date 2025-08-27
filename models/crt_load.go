@@ -37,6 +37,12 @@ import (
 // swagger:model crt_load
 type CrtLoad struct {
 
+	// List of domains used to generate the certificate with ACME
+	Domains []string `json:"domains,omitempty"`
+
+	// ACME section name to use
+	Acme string `json:"acme,omitempty"`
+
 	// Certificate alias
 	Alias string `json:"alias,omitempty"`
 
@@ -49,6 +55,10 @@ type CrtLoad struct {
 
 	// Private key filename
 	Key string `json:"key,omitempty"`
+
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 
 	// OCSP response filename
 	Ocsp string `json:"ocsp,omitempty"`

@@ -5,7 +5,7 @@ info:
   description: |
     API for editing and managing haproxy instances. Provides process information, configuration management,
     haproxy stats and logs.
-  version: '3.1'
+  version: '3.2'
   contact:
     name: HAProxy Support
     url: https://my.haproxy.com/portal/cust/login
@@ -29,6 +29,9 @@ definitions:
       group:
         description: The group to run the command as, if different than the HAProxy group.
         type: string
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_.:]+$
         type: string
@@ -94,6 +97,9 @@ definitions:
         description: Defines the maximum number of concurrent requests this application can accept. If the FastCGI application retrieves the variable FCGI_MAX_REQS during connection establishment, it can override this option. Furthermore, if the application does not do multiplexing, it will ignore this option.
         minimum: 1
         type: integer
+      metadata:
+        additionalProperties:
+          type: object
       mpxs_conns:
         description: Enables or disables the support of connection multiplexing. If the FastCGI application retrieves the variable FCGI_MPXS_CONNS during connection establishment, it can override this option.
         enum:
@@ -313,6 +319,14 @@ definitions:
         description: This field is deprecated in favor of sslv3, and will be removed in a future release
         type: boolean
         x-deprecated: true
+      force_strict_sni:
+        enum:
+          - enabled
+          - disabled
+        type: string
+        x-dependency:
+          ssl:
+            value: true
       force_tlsv10:
         description: This field is deprecated in favor of tlsv10, and will be removed in a future release
         type: boolean
@@ -346,7 +360,15 @@ definitions:
       id:
         type: string
         x-display-name: Socket ID
+      idle_ping:
+        minimum: 0
+        type: integer
+        x-default-unit: ms
+        x-duration: true
+        x-nullable: true
       interface:
+        type: string
+      label:
         type: string
       level:
         enum:
@@ -392,11 +414,19 @@ definitions:
           ssl:
             value: true
         x-deprecated: true
-      no_tls_tickets:
+      no_strict_sni:
         type: boolean
         x-dependency:
           ssl:
             value: true
+        x-deprecated: true
+      no_tls_tickets:
+        description: This field is deprecated in favor of tls_tickets, and will be removed in a future release
+        type: boolean
+        x-dependency:
+          ssl:
+            value: true
+        x-deprecated: true
       no_tlsv10:
         description: This field is deprecated in favor of tlsv10, and will be removed in a future release
         type: boolean
@@ -519,6 +549,7 @@ definitions:
         x-dependency:
           ssl:
             value: true
+        x-deprecated: true
       tcp_user_timeout:
         type: integer
         x-nullable: true
@@ -528,6 +559,14 @@ definitions:
         type: string
       tls_ticket_keys:
         type: string
+      tls_tickets:
+        enum:
+          - enabled
+          - disabled
+        type: string
+        x-dependency:
+          ssl:
+            value: true
       tlsv10:
         enum:
           - enabled
@@ -619,6 +658,14 @@ definitions:
           - disabled
         type: string
       check:
+        enum:
+          - enabled
+          - disabled
+        type: string
+      check-pool-conn-name:
+        pattern: ^[^\s]+$
+        type: string
+      check-reuse-pool:
         enum:
           - enabled
           - disabled
@@ -744,6 +791,12 @@ definitions:
         maximum: 65535
         minimum: 1
         type: integer
+        x-nullable: true
+      idle_ping:
+        minimum: 0
+        type: integer
+        x-default-unit: ms
+        x-duration: true
         x-nullable: true
       init-addr:
         pattern: ^[^\s]+$
@@ -894,6 +947,12 @@ definitions:
       redir:
         type: string
         x-display-name: Prefix
+      renegotiate:
+        description: Toggles the secure renegotiation mechanism for an SSL backend.
+        enum:
+          - enabled
+          - disabled
+        type: string
       resolve-net:
         pattern: ^([A-Za-z0-9.:/]+)(,[A-Za-z0-9.:/]+)*$
         type: string
@@ -1017,6 +1076,8 @@ definitions:
           - enabled
           - disabled
         type: string
+      strict-maxconn:
+        type: boolean
       tcp_ut:
         minimum: 0
         type: integer
@@ -1336,6 +1397,12 @@ definitions:
     type: object
   ssl_options:
     properties:
+      acme_scheduler:
+        enum:
+          - auto
+          - "off"
+        type: string
+        x-display-name: ACME Scheduler
       ca_base:
         type: string
         x-display-name: SSL CA Certificates Base Directory
@@ -1456,6 +1523,15 @@ definitions:
       disable_zero_copy_forwarding:
         type: boolean
         x-display-name: Disable zero-copy forwarding
+      epoll_mask_events:
+        items:
+          enum:
+            - err
+            - hup
+            - rdhup
+          type: string
+        type: array
+        x-omitempty: true
       events_max_events_at_once:
         maximum: 10000
         minimum: 1
@@ -1469,6 +1545,12 @@ definitions:
           - disabled
         type: string
         x-display-name: Edge-triggered polling mode
+      glitches_kill_cpu_usage:
+        maximum: 100
+        minimum: 0
+        type: integer
+        x-display-name: CPU Usage Kill glitched Connections
+        x-nullable: true
       h1_zero_copy_fwd_recv:
         enum:
           - enabled
@@ -1577,6 +1659,11 @@ definitions:
         type: integer
         x-display-name: Maximum checks per thread
         x-nullable: true
+      max_rules_at_once:
+        minimum: 0
+        type: integer
+        x-display-name: Maximum rules at once
+        x-nullable: true
       maxaccept:
         type: integer
         x-display-name: Maximum Accept Events
@@ -1590,6 +1677,16 @@ definitions:
         type: integer
         x-display-name: Per-thread Amount of Memory
         x-nullable: true
+      notsent_lowat_client:
+        type: integer
+        x-display-name: Client Not Sent Low Watermark
+        x-nullable: true
+        x-size: true
+      notsent_lowat_server:
+        type: integer
+        x-display-name: Server Not Sent Low Watermark
+        x-nullable: true
+        x-size: true
       pattern_cache_size:
         type: integer
         x-display-name: Pattern Lookup Cache Size
@@ -1638,6 +1735,13 @@ definitions:
         type: integer
         x-display-name: Number of stick-counters
         x-nullable: true
+      takeover_other_tg_connections:
+        enum:
+          - none
+          - restricted
+          - full
+        type: string
+        x-display-name: Takeover Other Thread Groups Connections
     type: object
   tune_quic_options:
     properties:
@@ -1656,6 +1760,11 @@ definitions:
         type: integer
         x-display-name: QUIC Max Number of Bidirectional Streams
         x-nullable: true
+      frontend_max_tx_memory:
+        type: integer
+        x-display-name: QUIC Frontend Max Tx Memory
+        x-nullable: true
+        x-size: true
       max_frame_loss:
         type: integer
         x-display-name: QUIC Max Limit for Frame Loss
@@ -1772,6 +1881,11 @@ definitions:
     type: object
   tune_lua_options:
     properties:
+      bool_sample_conversion:
+        enum:
+          - normal
+          - pre-3.1-bug
+        type: string
       burst_timeout:
         minimum: 0
         type: integer
@@ -1899,6 +2013,11 @@ definitions:
         x-nullable: true
       quiet:
         type: boolean
+      stress_level:
+        maximum: 9
+        minimum: 0
+        type: integer
+        x-nullable: true
       zero_warning:
         type: boolean
     type: object
@@ -2112,6 +2231,50 @@ definitions:
         x-display-name: CPU Maps
         x-go-name: CPUMaps
         x-omitempty: true
+      cpu_policy:
+        enum:
+          - none
+          - efficiency
+          - first-usable-node
+          - group-by-2-ccx
+          - group-by-2-clusters
+          - group-by-3-ccx
+          - group-by-3-clusters
+          - group-by-4-ccx
+          - group-by-4-cluster
+          - group-by-ccx
+          - group-by-cluster
+          - performance
+          - resource
+        type: string
+        x-display-name: CPU Policy
+      cpu_set:
+        items:
+          properties:
+            directive:
+              enum:
+                - reset
+                - drop-cpu
+                - only-cpu
+                - drop-node
+                - only-node
+                - drop-cluster
+                - only-cluster
+                - drop-core
+                - only-core
+                - drop-thread
+                - only-thread
+              type: string
+            set:
+              type: string
+          required:
+            - directive
+          type: object
+          x-go-name: CPUSet
+        type: array
+        x-display-name: CPU Set
+        x-go-name: CPUSets
+        x-omitempty: true
       daemon:
         type: boolean
       debug_options:
@@ -2141,6 +2304,10 @@ definitions:
         x-display-name: Text that describes the instance
       device_atlas_options:
         $ref: '#/definitions/device_atlas_options'
+      dns_accept_family:
+        pattern: ^[^\s]+$
+        type: string
+        x-display-name: DNS accept family
       environment_options:
         $ref: '#/definitions/environment_options'
       expose_deprecated_directives:
@@ -2265,6 +2432,9 @@ definitions:
       master-worker:
         type: boolean
         x-display-name: Master Worker Mode
+      metadata:
+        additionalProperties:
+          type: object
       mworker_max_reloads:
         minimum: 0
         type: integer
@@ -2429,12 +2599,24 @@ definitions:
     allOf:
       - $ref: '#/definitions/defaults_base'
       - properties:
+          acl_list:
+            $ref: '#/definitions/acls'
+            x-go-name: AclList
+          http_after_response_rule_list:
+            $ref: '#/definitions/http_after_response_rules'
+            x-go-name: HTTPAfterResponseRuleList
           http_check_list:
             $ref: '#/definitions/http_checks'
             x-go-name: HTTPCheckList
           http_error_rule_list:
             $ref: '#/definitions/http_error_rules'
             x-go-name: HTTPErrorRuleList
+          http_request_rule_list:
+            $ref: '#/definitions/http_request_rules'
+            x-go-name: HTTPRequestRuleList
+          http_response_rule_list:
+            $ref: '#/definitions/http_response_rules'
+            x-go-name: HTTPResponseRuleList
           log_target_list:
             $ref: '#/definitions/log_targets'
             x-go-name: LogTargetList
@@ -2444,6 +2626,12 @@ definitions:
           tcp_check_rule_list:
             $ref: '#/definitions/tcp_checks'
             x-go-name: TCPCheckRuleList
+          tcp_request_rule_list:
+            $ref: '#/definitions/tcp_request_rules'
+            x-go-name: TCPRequestRuleList
+          tcp_response_rule_list:
+            $ref: '#/definitions/tcp_response_rules'
+            x-go-name: TCPResponseRuleList
         type: object
     description: Defaults with all it's children resources
     type: object
@@ -2658,6 +2846,12 @@ definitions:
       hash_balance_factor:
         type: integer
         x-nullable: true
+      hash_preserve_affinity:
+        enum:
+          - always
+          - maxconn
+          - maxqueue
+        type: string
       hash_type:
         $ref: '#/definitions/hash_type'
       http-buffer-request:
@@ -2666,6 +2860,18 @@ definitions:
           - disabled
         type: string
         x-display-name: HTTP bufferrequest
+      http-drop-request-trailers:
+        enum:
+          - enabled
+          - disabled
+        type: string
+        x-display-name: Drop HTTP Request Trailers
+      http-drop-response-trailers:
+        enum:
+          - enabled
+          - disabled
+        type: string
+        x-display-name: Drop HTTP Response Trailers
       http-use-htx:
         enum:
           - enabled
@@ -2810,6 +3016,9 @@ definitions:
         type: integer
         x-display-name: Max Connections
         x-nullable: true
+      metadata:
+        additionalProperties:
+          type: object
       mode:
         enum:
           - tcp
@@ -3024,6 +3233,9 @@ definitions:
           quic_initial_rule_list:
             $ref: '#/definitions/quic_initial_rules'
             x-go-name: QUICInitialRuleList
+          ssl_front_use_list:
+            $ref: '#/definitions/ssl_front_uses'
+            x-go-name: SSLFrontUses
           tcp_request_rule_list:
             $ref: '#/definitions/tcp_request_rules'
             x-go-name: TCPRequestRuleList
@@ -3180,6 +3392,12 @@ definitions:
           - disabled
         type: string
         x-display-name: HTTP bufferrequest
+      http-drop-response-trailers:
+        enum:
+          - enabled
+          - disabled
+        type: string
+        x-display-name: Drop HTTP Response Trailers
       http-use-htx:
         enum:
           - enabled
@@ -3305,6 +3523,9 @@ definitions:
         type: integer
         x-display-name: Max Connections
         x-nullable: true
+      metadata:
+        additionalProperties:
+          type: object
       mode:
         enum:
           - http
@@ -3644,6 +3865,12 @@ definitions:
       hash_balance_factor:
         type: integer
         x-nullable: true
+      hash_preserve_affinity:
+        enum:
+          - always
+          - maxconn
+          - maxqueue
+        type: string
       hash_type:
         $ref: '#/definitions/hash_type'
       http-buffer-request:
@@ -3655,6 +3882,12 @@ definitions:
           mode:
             value: http
         x-display-name: HTTP bufferrequest
+      http-drop-request-trailers:
+        enum:
+          - enabled
+          - disabled
+        type: string
+        x-display-name: Drop HTTP Request Trailers
       http-no-delay:
         enum:
           - enabled
@@ -3817,6 +4050,9 @@ definitions:
         type: integer
         x-display-name: Maximum keep alive queue
         x-nullable: true
+      metadata:
+        additionalProperties:
+          type: object
       mode:
         enum:
           - http
@@ -4028,6 +4264,9 @@ definitions:
         type: integer
         x-display-name: The maximum length of an event message stored into the ring
         x-nullable: true
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_.:]+$
         type: string
@@ -4068,6 +4307,9 @@ definitions:
         type: string
       interface:
         type: string
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[^\s]+$
         type: string
@@ -4115,12 +4357,21 @@ definitions:
     additionalProperties: false
     description: HAProxy log forward configuration
     properties:
+      assume-rfc6587-ntf:
+        type: boolean
+        x-display-name: Assume RFC-6587 Non-Transparent Framing
       backlog:
         type: integer
         x-nullable: true
+      dont-parse-log:
+        type: boolean
+        x-display-name: Don't Parse Log
       maxconn:
         type: integer
         x-nullable: true
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_.:]+$
         type: string
@@ -4159,6 +4410,9 @@ definitions:
   userlist_base:
     description: HAProxy configuration of access control
     properties:
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_.:]+$
         type: string
@@ -4179,6 +4433,9 @@ definitions:
       groups:
         type: string
         x-nullable: false
+      metadata:
+        additionalProperties:
+          type: object
       password:
         type: string
         x-nullable: false
@@ -4193,6 +4450,7 @@ definitions:
       - secure_password
       - password
     title: User
+    type: object
   users:
     title: Users
     description: HAProxy userlist users array
@@ -4202,6 +4460,9 @@ definitions:
   group:
     description: HAProxy userlist group
     properties:
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_.:]+$
         type: string
@@ -4234,6 +4495,9 @@ definitions:
     additionalProperties: false
     description: A list of SMTP servers used by HAProxy to send emails.
     properties:
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_]+$
         type: string
@@ -4262,6 +4526,9 @@ definitions:
         pattern: ^\S+$
         type: string
         x-nullable: false
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_]+$
         type: string
@@ -4318,6 +4585,9 @@ definitions:
         type: boolean
       enabled:
         type: boolean
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_.:]+$
         type: string
@@ -4345,6 +4615,9 @@ definitions:
       address:
         pattern: ^[^\s]+$
         type: string
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_.:]+$
         type: string
@@ -4384,6 +4657,9 @@ definitions:
           $ref: '#/definitions/errorfile'
         type: array
         x-go-name: ErrorFiles
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_]+$
         type: string
@@ -4408,6 +4684,9 @@ definitions:
             example: 127.0.0.1
             pattern: ^[^\s]+$
             type: string
+          metadata:
+            additionalProperties:
+              type: object
           port:
             example: 80
             maximum: 65535
@@ -4480,6 +4759,9 @@ definitions:
           id:
             type: integer
             x-nullable: true
+          metadata:
+            additionalProperties:
+              type: object
           num_or_range:
             type: string
             x-nullable: false
@@ -4522,12 +4804,18 @@ definitions:
         type: integer
         x-display-name: Key Length
         x-nullable: true
+      metadata:
+        additionalProperties:
+          type: object
       nopurge:
         type: boolean
         x-display-name: No Purge
       peers:
         pattern: ^[^\s]+$
         type: string
+      recv_only:
+        type: boolean
+        x-display-name: Receive Only
       size:
         minimum: 0
         type: integer
@@ -4673,6 +4961,7 @@ definitions:
             required: true
             value:
               - do-resolve
+              - pause
               - set-bc-mark
               - set-bc-tos
               - set-dst
@@ -4803,6 +5092,9 @@ definitions:
             required: true
             value: set-mark
         x-display-name: Mark Value
+      metadata:
+        additionalProperties:
+          type: object
       method_fmt:
         pattern: ^[^\s]+$
         type: string
@@ -5136,6 +5428,7 @@ definitions:
           - early-hint
           - lua
           - normalize-uri
+          - pause
           - redirect
           - reject
           - replace-header
@@ -5366,6 +5659,7 @@ definitions:
           type:
             required: true
             value:
+              - pause
               - set-fc-mark
               - set-fc-tos
         x-display-name: Standard HAProxy expression
@@ -5471,6 +5765,9 @@ definitions:
             required: true
             value: set-mark
         x-display-name: Mark Value
+      metadata:
+        additionalProperties:
+          type: object
       nice_value:
         maximum: 1024
         minimum: -1024
@@ -5721,6 +6018,7 @@ definitions:
           - del-map
           - deny
           - lua
+          - pause
           - redirect
           - replace-header
           - replace-value
@@ -5960,6 +6258,9 @@ definitions:
             required: true
             value: set-map
         x-display-name: Map Value Format
+      metadata:
+        additionalProperties:
+          type: object
       sc_expr:
         type: string
         x-dependency:
@@ -6102,6 +6403,9 @@ definitions:
       status: 425
       type: status
     properties:
+      metadata:
+        additionalProperties:
+          type: object
       return_content:
         type: string
         x-dependency:
@@ -6275,6 +6579,9 @@ definitions:
             required: true
             value: expect
         x-display-name: Expect Match
+      metadata:
+        additionalProperties:
+          type: object
       method:
         enum:
           - HEAD
@@ -6674,6 +6981,9 @@ definitions:
               - connection
               - content
         x-display-name: Mark Value
+      metadata:
+        additionalProperties:
+          type: object
       nice_value:
         maximum: 1024
         minimum: -1024
@@ -7089,6 +7399,9 @@ definitions:
           type:
             value: content
         x-display-name: Mark Value
+      metadata:
+        additionalProperties:
+          type: object
       nice_value:
         maximum: 1024
         minimum: -1024
@@ -7348,6 +7661,9 @@ definitions:
             required: true
             value: expect
         x-display-name: Expect Match
+      metadata:
+        additionalProperties:
+          type: object
       min_recv:
         type: integer
         x-dependency:
@@ -7500,6 +7816,9 @@ definitions:
           freeFormat: true
           operation: getACLs
           property: acl_name
+      metadata:
+        additionalProperties:
+          type: object
       type:
         enum:
           - reject
@@ -7544,6 +7863,9 @@ definitions:
           freeFormat: true
           operation: getACLs
           property: acl_name
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[^\s]+$
         type: string
@@ -7586,6 +7908,9 @@ definitions:
           freeFormat: true
           operation: getACLs
           property: acl_name
+      metadata:
+        additionalProperties:
+          type: object
       target_server:
         pattern: ^[^\s]+$
         type: string
@@ -7692,6 +8017,9 @@ definitions:
               - bwlim-in
               - bwlim-out
         x-size: true
+      metadata:
+        additionalProperties:
+          type: object
       min_size:
         description: |-
           The optional minimum number of bytes forwarded at a time by a stream excluding the last packet that may be smaller.
@@ -7798,6 +8126,9 @@ definitions:
           freeFormat: true
           operation: getACLs
           property: acl_name
+      metadata:
+        additionalProperties:
+          type: object
       pattern:
         pattern: ^[^\s]+$
         type: string
@@ -7913,6 +8244,9 @@ definitions:
             value: false
           nolog:
             value: false
+      metadata:
+        additionalProperties:
+          type: object
       minlevel:
         enum:
           - emerg
@@ -7974,6 +8308,9 @@ definitions:
         pattern: ^[^\s]+$
         type: string
         x-nullable: false
+      metadata:
+        additionalProperties:
+          type: object
       value:
         type: string
         x-nullable: false
@@ -9698,6 +10035,12 @@ definitions:
         type: string
       authority_key_id:
         type: string
+      chain_issuer:
+        type: string
+        x-omitempty: true
+      chain_subject:
+        type: string
+        x-omitempty: true
       description:
         type: string
       domains:
@@ -9737,6 +10080,11 @@ definitions:
         readOnly: true
         type: integer
         x-nullable: true
+      status:
+        description: Only set when using the runtime API.
+        readOnly: true
+        type: string
+        x-omitempty: true
       storage_name:
         type: string
       subject:
@@ -9748,45 +10096,265 @@ definitions:
     title: SSL File
     type: object
   ssl_certificates:
-    title: SSL Files Array
+    title: SSL Certificate Files Array
     description: Array of ssl certificate files
     type: array
     items:
       $ref: "#/definitions/ssl_certificate"
-  ssl_cert_entry:
-    description: One SSL/TLS certificate
+  ssl_crt_list_file:
+    description: A file referencing one or more certificates with their configuration.
     properties:
-      algorithm:
+      description:
         type: string
-      chain_issuer:
+      file:
         type: string
-      chain_subject:
+      size:
+        description: File size in bytes.
+        type: integer
+        x-nullable: true
+      storage_name:
         type: string
+    title: SSL CRT List File
+    type: object
+  ssl_crt_list_files:
+    title: List of SSL certificate list files
+    description: List of SSL certificate list files (crt-list)
+    type: array
+    items:
+      $ref: "#/definitions/ssl_crt_list_file"
+  ssl_ca_file:
+    description: A file containing one or more SSL/TLS certificates and keys
+    properties:
+      count:
+        type: string
+      file:
+        type: string
+      storage_name:
+        type: string
+    title: SSL File
+    type: object
+  ssl_ca_files:
+    title: SSL CA Files Array
+    description: Array of SSL CA files
+    type: array
+    items:
+      $ref: "#/definitions/ssl_ca_file"
+  ssl_crl:
+    description: A file containing one or more SSL/TLS CRLs
+    properties:
+      description:
+        type: string
+      file:
+        type: string
+      storage_name:
+        type: string
+    title: SSL CRL File
+    type: object
+  ssl_crls:
+    title: SSL CRL Files Array
+    description: Array of ssl crl files
+    type: array
+    items:
+      $ref: "#/definitions/ssl_crl"
+  ssl_crl_entry:
+    description: A certificate revocation list entry.
+    properties:
       issuer:
         type: string
-      not_after:
+      last_update:
         format: date
         type: string
-      not_before:
+      next_update:
         format: date
         type: string
-      serial:
-        type: string
-      sha1_finger_print:
+      revoked_certificates:
+        items:
+          properties:
+            revocation_date:
+              format: date
+              type: string
+            serial_number:
+              type: string
+          type: object
+          x-go-name: RevokedCertificates
+        type: array
+        x-omitempty: true
+      signature_algorithm:
         type: string
       status:
         type: string
       storage_name:
         type: string
-      subject:
+      version:
         type: string
-      subject_alternative_names:
+    title: One CRL Entry
+    type: object
+  ssl_crl_entries:
+    type: array
+    items:
+      $ref: "#/definitions/ssl_crl_entry"
+  ssl_certificate_id:
+    description: SSL Certificate ID
+    properties:
+      certificate_id:
+        properties:
+          hash_algorithm:
+            type: string
+          issuer_key_hash:
+            type: string
+          issuer_name_hash:
+            type: string
+          serial_number:
+            type: string
+        type: object
+        x-go-name: CertificateId
+      certificate_id_key:
+        type: string
+      certificate_path:
+        type: string
+    title: SSL Certificate ID
+    type: object
+  ssl_crt_list:
+    description: SSL Crt List file
+    properties:
+      file:
+        type: string
+    title: SSL Crt List
+    type: object
+  ssl_crt_lists:
+    title: SSL Crt List Array
+    description: Array of SSL Crt List
+    type: array
+    items:
+      $ref: "#/definitions/ssl_crt_list"
+  ssl_crt_list_entry:
+    description: SSL Crt List Entry
+    properties:
+      file:
+        type: string
+      line_number:
+        minimum: 0
+        type: integer
+        x-nullable: false
+      sni_filter:
+        items:
+          type: string
+        type: array
+        x-go-name: SNIFilter
+        x-omitempty: true
+      ssl_bind_config:
+        type: string
+        x-go-name: SSLBindConfig
+    title: SSL Crt List Entry
+    type: object
+  ssl_crt_list_entries:
+    title: SSL Crt List Entry Array
+    description: Array of SSL Crt List Entry
+    type: array
+    items:
+      $ref: "#/definitions/ssl_crt_list_entry"
+  ssl_ocsp_response:
+    description: SSL OCSP Response
+    properties:
+      base64_response:
+        type: string
+      ocsp_response_status:
+        type: string
+      produced_at:
+        format: date
+        type: string
+      responder_id:
         items:
           type: string
         type: array
         x-omitempty: true
-    title: One SSL Certificate Entry
+      response_type:
+        type: string
+      responses:
+        properties:
+          cert_status:
+            type: string
+          certificate_id:
+            $ref: '#/definitions/ssl_certificate_id/properties/certificate_id'
+          next_update:
+            format: date
+            type: string
+          revocation_reason:
+            type: string
+            x-omitempty: true
+          this_update:
+            format: date
+            type: string
+        type: object
+        x-go-name: OCSPResponses
+      version:
+        type: string
+    title: SSL OCSP Response
     type: object
+  ssl_ocsp_update:
+    description: SSL OCSP Update
+    properties:
+      cert_id:
+        type: string
+      failures:
+        type: integer
+      last_update:
+        type: string
+      last_update_status:
+        type: integer
+      last_update_status_str:
+        type: string
+      next_update:
+        type: string
+      path:
+        type: string
+      successes:
+        type: integer
+    title: SSL OCSP Update
+    type: object
+  ssl_providers:
+    description: SSL Providers
+    properties:
+      providers:
+        items:
+          type: string
+        type: array
+    title: SSL Providers
+    type: object
+  acme_certificate_status:
+    description: Status of a single ACME certificate from runtime.
+    properties:
+      acme_section:
+        description: ACME section which generated the certificate.
+        type: string
+      certificate:
+        description: Certificate name
+        type: string
+      expiries_in:
+        description: Duration until certificate expiry.
+        type: string
+      expiry_date:
+        description: Certificate expiration date.
+        format: date-time
+        type: string
+      renewal_in:
+        description: Duration until the next planned renewal.
+        type: string
+      scheduled_renewal:
+        description: Planned date for certificate renewal.
+        format: date-time
+        type: string
+      state:
+        description: State of the ACME task, either "Running" or "Scheduled".
+        type: string
+    title: ACME certificate status
+    type: object
+  acme_status:
+    title: ACME status
+    description: Status of all the ACME certificates from runtime.
+    type: array
+    items:
+      $ref: "#/definitions/acme_certificate_status"
   acl_file:
     description: ACL File
     properties:
@@ -10029,7 +10597,7 @@ definitions:
         type: string
       interval:
         type: integer
-        x-nullable: false
+        x-nullable: true
     required:
       - enabled
     type: object
@@ -10084,6 +10652,9 @@ definitions:
           type: integer
         type: array
         x-omitempty: true
+      metadata:
+        additionalProperties:
+          type: object
       name:
         type: string
     type: object
@@ -10146,6 +10717,9 @@ definitions:
       length:
         type: integer
         x-nullable: false
+      metadata:
+        additionalProperties:
+          type: object
       type:
         enum:
           - request
@@ -10216,6 +10790,9 @@ definitions:
         x-default-unit: ms
         x-duration: true
         x-nullable: true
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_.:]+$
         type: string
@@ -10257,6 +10834,9 @@ definitions:
       address:
         pattern: ^[^\s]+$
         type: string
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_.:]+$
         type: string
@@ -10289,6 +10869,9 @@ definitions:
         x-size: false
       max_secondary_entries:
         type: integer
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_.:]+$
         type: string
@@ -10785,6 +11368,14 @@ definitions:
           - both
         type: string
         x-omitempty: true
+      minsize_req:
+        type: integer
+        x-display-name: Minimum Size for Requests
+        x-size: true
+      minsize_res:
+        type: integer
+        x-display-name: Minimum Size for Responses
+        x-size: true
       offload:
         type: boolean
       types:
@@ -10861,6 +11452,9 @@ definitions:
         x-dynamic-enum:
           operation: getMailersSections
           property: name
+      metadata:
+        additionalProperties:
+          type: object
       myhostname:
         type: string
       to:
@@ -10900,6 +11494,9 @@ definitions:
           - 503
           - 504
         type: integer
+      metadata:
+        additionalProperties:
+          type: object
       url:
         type: string
     required:
@@ -10909,6 +11506,11 @@ definitions:
   default_bind:
     allOf:
       - $ref: '#/definitions/bind_params'
+      - properties:
+          metadata:
+            additionalProperties:
+              type: object
+        type: object
     description: HAProxy default bind configuration
     title: Default Bind
   table:
@@ -10919,12 +11521,18 @@ definitions:
         x-default-unit: ms
         x-duration: true
         x-nullable: true
+      metadata:
+        additionalProperties:
+          type: object
       name:
         type: string
         x-nullable: false
       no_purge:
         type: boolean
         x-display-name: No Purge
+      recv_only:
+        type: boolean
+        x-display-name: Receive Only
       size:
         pattern: ^\d+(k|K|m|M|g|G)?$
         type: string
@@ -10974,6 +11582,9 @@ definitions:
         type: string
       loads:
         $ref: '#/definitions/crt_loads'
+      metadata:
+        additionalProperties:
+          type: object
       name:
         pattern: ^[A-Za-z0-9-_]+$
         type: string
@@ -10990,6 +11601,9 @@ definitions:
   crt_load:
     description: Loads a certificate from a store with options
     properties:
+      acme:
+        description: ACME section name to use
+        type: string
       alias:
         description: Certificate alias
         type: string
@@ -10997,12 +11611,22 @@ definitions:
         description: Certificate filename
         type: string
         x-nullable: false
+      domains:
+        description: List of domains used to generate the certificate with ACME
+        items:
+          type: string
+        type: array
+        x-go-name: Domains
+        x-omitempty: true
       issuer:
         description: OCSP issuer filename
         type: string
       key:
         description: Private key filename
         type: string
+      metadata:
+        additionalProperties:
+          type: object
       ocsp:
         description: OCSP response filename
         type: string
@@ -11031,11 +11655,17 @@ definitions:
     properties:
       entries:
         $ref: '#/definitions/trace_entries'
+      metadata:
+        additionalProperties:
+          type: object
     type: object
     x-go-name: Traces
   trace_entry:
     description: Configure a trace event
     properties:
+      metadata:
+        additionalProperties:
+          type: object
       trace:
         description: Trace parameters
         minLength: 1
@@ -11056,6 +11686,9 @@ definitions:
       log_tag:
         description: Override syslog log tag set by other "log-tag" directives.
         type: string
+      metadata:
+        additionalProperties:
+          type: object
       name:
         description: Name of the logging profile.
         minLength: 1
@@ -11084,6 +11717,9 @@ definitions:
       format:
         description: Override "log-format" or "error-log-format" strings depending on the step.
         type: string
+      metadata:
+        additionalProperties:
+          type: object
       sd:
         description: Override the "log-format-sd" string.
         type: string
@@ -11116,6 +11752,153 @@ definitions:
       $ref: "#/definitions/log_profile_step"
     description: List of steps where to override the logging.
     x-omitempty: true
+  ssl_front_use:
+    description: Assign a certificate to the current frontend
+    properties:
+      allow_0rtt:
+        type: boolean
+      alpn:
+        type: string
+        x-display-name: ALPN Protocols
+      ca_file:
+        type: string
+      certificate:
+        description: Certificate filename
+        pattern: ^[^\s]+$
+        type: string
+        x-nullable: false
+      ciphers:
+        type: string
+      ciphersuites:
+        type: string
+      client_sigalgs:
+        type: string
+      crl_file:
+        type: string
+      curves:
+        type: string
+      ecdhe:
+        type: string
+      issuer:
+        description: OCSP issuer filename
+        type: string
+      key:
+        description: Private key filename
+        type: string
+      metadata:
+        additionalProperties:
+          type: object
+      no_alpn:
+        type: boolean
+      no_ca_names:
+        type: boolean
+      npn:
+        type: string
+      ocsp:
+        description: OCSP response filename
+        type: string
+      ocsp_update:
+        description: Automatic OCSP response update
+        enum:
+          - enabled
+          - disabled
+        type: string
+      sctl:
+        description: Signed Certificate Timestamp List filename
+        type: string
+      sigalgs:
+        type: string
+      ssl_max_ver:
+        enum:
+          - SSLv3
+          - TLSv1.0
+          - TLSv1.1
+          - TLSv1.2
+          - TLSv1.3
+        type: string
+      ssl_min_ver:
+        enum:
+          - SSLv3
+          - TLSv1.0
+          - TLSv1.1
+          - TLSv1.2
+          - TLSv1.3
+        type: string
+      verify:
+        enum:
+          - none
+          - optional
+          - required
+        type: string
+    required:
+      - certificate
+    title: SSL Frontend Use certificate
+    type: object
+    x-go-name: SSLFrontUse
+  ssl_front_uses:
+    type: array
+    items:
+      $ref: "#/definitions/ssl_front_use"
+    x-omitempty: true
+    x-go-name: SSLFrontUses
+  acme_provider:
+    description: Define an ACME provider to generate certificates automatically
+    properties:
+      account_key:
+        description: Path where the the ACME account key is stored
+        type: string
+      bits:
+        description: Number of bits to generate an RSA certificate
+        minimum: 1024
+        type: integer
+        x-nullable: true
+        x-omitempty: true
+      challenge:
+        description: ACME challenge type. Only http-01 and dns-01 are supported.
+        enum:
+          - http-01
+          - dns-01
+        type: string
+      contact:
+        description: Contact email for the ACME account
+        type: string
+      curves:
+        description: Curves used with the ECDSA key type
+        type: string
+      directory:
+        description: |
+          URL to the ACME provider's directory. For example:
+          https://acme-staging-v02.api.letsencrypt.org/directory
+        pattern: ^https://[^\s]+$
+        type: string
+        x-nullable: false
+      keytype:
+        description: Type of key to generate
+        enum:
+          - RSA
+          - ECDSA
+        type: string
+      map:
+        description: The map which will be used to store the ACME token (key) and thumbprint
+        type: string
+      metadata:
+        additionalProperties:
+          type: object
+      name:
+        description: ACME provider's name
+        type: string
+        x-nullable: false
+    required:
+      - name
+      - directory
+    title: ACME Provider
+    type: object
+  acme_providers:
+    description: List of ACME sections.
+    type: array
+    items:
+      $ref: "#/definitions/acme_provider"
+      x-omitempty: true
 responses:
   BadRequest:
     description: Bad request
@@ -11212,6 +11995,7 @@ produces:
   - application/json
 tags:
   - name: ACL
+  - name: Acme
   - name: Backend
     description: Managing backend configurations (advanced mode)
   - name: BackendSwitchingRule
@@ -16366,6 +17150,60 @@ paths:
       summary: Replace an HTTP Request Rule list
       tags:
         - HTTPRequestRule
+  /services/haproxy/configuration/defaults/{parent_name}/http_request_rules:
+    get:
+      description: Returns all HTTP Request Rules that are configured in specified parent.
+      operationId: getAllHTTPRequestRuleDefaults
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/http_request_rules'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return an array of all HTTP Request Rules
+      tags:
+        - HTTPRequestRule
+    put:
+      description: Replaces a whole list of HTTP Request Rules with the list given in parameter
+      operationId: replaceAllHTTPRequestRuleDefaults
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/http_request_rules'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: All HTTP Request Rule lines replaced
+          schema:
+            $ref: '#/definitions/http_request_rules'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/http_request_rules'
+        "400":
+          $ref: '#/responses/BadRequest'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace an HTTP Request Rule list
+      tags:
+        - HTTPRequestRule
   /services/haproxy/configuration/backends/{parent_name}/http_request_rules/{index}:
     delete:
       description: Deletes a HTTP Request Rule configuration by it's index from the specified parent.
@@ -16640,6 +17478,143 @@ paths:
       summary: Replace a HTTP Request Rule
       tags:
         - HTTPRequestRule
+  /services/haproxy/configuration/defaults/{parent_name}/http_request_rules/{index}:
+    delete:
+      description: Deletes a HTTP Request Rule configuration by it's index from the specified parent.
+      operationId: deleteHTTPRequestRuleDefaults
+      parameters:
+        - description: HTTP Request Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+        "204":
+          description: HTTP Request Rule deleted
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Delete a HTTP Request Rule
+      tags:
+        - HTTPRequestRule
+    get:
+      description: Returns one HTTP Request Rule configuration by it's index in the specified parent.
+      operationId: getHTTPRequestRuleDefaults
+      parameters:
+        - description: HTTP Request Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/http_request_rule'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return one HTTP Request Rule
+      tags:
+        - HTTPRequestRule
+    post:
+      description: Adds a new HTTP Request Rule of the specified type in the specified parent.
+      operationId: createHTTPRequestRuleDefaults
+      parameters:
+        - description: HTTP Request Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/http_request_rule'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "201":
+          description: HTTP Request Rule created
+          schema:
+            $ref: '#/definitions/http_request_rule'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/http_request_rule'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Add a new HTTP Request Rule
+      tags:
+        - HTTPRequestRule
+    put:
+      description: Replaces a HTTP Request Rule configuration by it's index in the specified parent.
+      operationId: replaceHTTPRequestRuleDefaults
+      parameters:
+        - description: HTTP Request Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/http_request_rule'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: HTTP Request Rule replaced
+          schema:
+            $ref: '#/definitions/http_request_rule'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/http_request_rule'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace a HTTP Request Rule
+      tags:
+        - HTTPRequestRule
   /services/haproxy/configuration/backends/{parent_name}/http_response_rules:
     get:
       description: Returns all HTTP Response Rules that are configured in specified parent.
@@ -16718,6 +17693,60 @@ paths:
     put:
       description: Replaces a whole list of HTTP Response Rules with the list given in parameter
       operationId: replaceAllHTTPResponseRuleFrontend
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/http_response_rules'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: All HTTP Response Rule lines replaced
+          schema:
+            $ref: '#/definitions/http_response_rules'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/http_response_rules'
+        "400":
+          $ref: '#/responses/BadRequest'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace an HTTP Response Rule list
+      tags:
+        - HTTPResponseRule
+  /services/haproxy/configuration/defaults/{parent_name}/http_response_rules:
+    get:
+      description: Returns all HTTP Response Rules that are configured in specified parent.
+      operationId: getAllHTTPResponseRuleDefaults
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/http_response_rules'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return an array of all HTTP Response Rules
+      tags:
+        - HTTPResponseRule
+    put:
+      description: Replaces a whole list of HTTP Response Rules with the list given in parameter
+      operationId: replaceAllHTTPResponseRuleDefaults
       parameters:
         - $ref: '#/parameters/parent_name'
         - in: body
@@ -17022,6 +18051,143 @@ paths:
       summary: Replace a HTTP Response Rule
       tags:
         - HTTPResponseRule
+  /services/haproxy/configuration/defaults/{parent_name}/http_response_rules/{index}:
+    delete:
+      description: Deletes a HTTP Response Rule configuration by it's index from the specified parent.
+      operationId: deleteHTTPResponseRuleDefaults
+      parameters:
+        - description: HTTP Response Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+        "204":
+          description: HTTP Response Rule deleted
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Delete a HTTP Response Rule
+      tags:
+        - HTTPResponseRule
+    get:
+      description: Returns one HTTP Response Rule configuration by it's index in the specified parent.
+      operationId: getHTTPResponseRuleDefaults
+      parameters:
+        - description: HTTP Response Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/http_response_rule'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return one HTTP Response Rule
+      tags:
+        - HTTPResponseRule
+    post:
+      description: Adds a new HTTP Response Rule of the specified type in the specified parent.
+      operationId: createHTTPResponseRuleDefaults
+      parameters:
+        - description: HTTP Response Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/http_response_rule'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "201":
+          description: HTTP Response Rule created
+          schema:
+            $ref: '#/definitions/http_response_rule'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/http_response_rule'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Add a new HTTP Response Rule
+      tags:
+        - HTTPResponseRule
+    put:
+      description: Replaces a HTTP Response Rule configuration by it's index in the specified parent.
+      operationId: replaceHTTPResponseRuleDefaults
+      parameters:
+        - description: HTTP Response Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/http_response_rule'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: HTTP Response Rule replaced
+          schema:
+            $ref: '#/definitions/http_response_rule'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/http_response_rule'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace a HTTP Response Rule
+      tags:
+        - HTTPResponseRule
   /services/haproxy/configuration/backends/{parent_name}/http_after_response_rules:
     get:
       description: Returns all HTTP After Response Rules that are configured in specified parent.
@@ -17100,6 +18266,60 @@ paths:
     put:
       description: Replaces a whole list of HTTP After Response Rules with the list given in parameter
       operationId: replaceAllHTTPAfterResponseRuleFrontend
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/http_after_response_rules'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: All TTP After Response Rules lines replaced
+          schema:
+            $ref: '#/definitions/http_after_response_rules'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/http_after_response_rules'
+        "400":
+          $ref: '#/responses/BadRequest'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace an HTTP After Response Rules list
+      tags:
+        - HTTPAfterResponseRule
+  /services/haproxy/configuration/defaults/{parent_name}/http_after_response_rules:
+    get:
+      description: Returns all HTTP After Response Rules that are configured in specified parent.
+      operationId: getAllHTTPAfterResponseRuleDefaults
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/http_after_response_rules'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return an array of all HTTP After Response Rules
+      tags:
+        - HTTPAfterResponseRule
+    put:
+      description: Replaces a whole list of HTTP After Response Rules with the list given in parameter
+      operationId: replaceAllHTTPAfterResponseRuleDefaults
       parameters:
         - $ref: '#/parameters/parent_name'
         - in: body
@@ -17367,6 +18587,143 @@ paths:
     put:
       description: Replaces a HTTP After Response Rule configuration by it's index in the specified parent.
       operationId: replaceHTTPAfterResponseRuleFrontend
+      parameters:
+        - description: HTTP After Response Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/http_after_response_rule'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: HTTP After Response Rule replaced
+          schema:
+            $ref: '#/definitions/http_after_response_rule'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/http_after_response_rule'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace a HTTP After Response Rule
+      tags:
+        - HTTPAfterResponseRule
+  /services/haproxy/configuration/defaults/{parent_name}/http_after_response_rules/{index}:
+    delete:
+      description: Deletes a HTTP After Response Rule configuration by it's index from the specified parent.
+      operationId: deleteHTTPAfterResponseRuleDefaults
+      parameters:
+        - description: HTTP After Response Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+        "204":
+          description: HTTP After Response Rule deleted
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Delete a HTTP After Response Rule
+      tags:
+        - HTTPAfterResponseRule
+    get:
+      description: Returns one HTTP After Response Rule configuration by it's index in the specified parent.
+      operationId: getHTTPAfterResponseRuleDefaults
+      parameters:
+        - description: HTTP After Response Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/http_after_response_rule'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return one HTTP After Response Rule
+      tags:
+        - HTTPAfterResponseRule
+    post:
+      description: Adds a new HTTP After Response Rule of the specified type in the specified parent.
+      operationId: createHTTPAfterResponseRuleDefaults
+      parameters:
+        - description: HTTP After Response Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/http_after_response_rule'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "201":
+          description: HTTP Response Rule created
+          schema:
+            $ref: '#/definitions/http_after_response_rule'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/http_after_response_rule'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Add a new HTTP After Response Rule
+      tags:
+        - HTTPAfterResponseRule
+    put:
+      description: Replaces a HTTP After Response Rule configuration by it's index in the specified parent.
+      operationId: replaceHTTPAfterResponseRuleDefaults
       parameters:
         - description: HTTP After Response Rule Index
           in: path
@@ -19002,6 +20359,60 @@ paths:
       summary: Replace an TCP Request Rule list
       tags:
         - TCPRequestRule
+  /services/haproxy/configuration/defaults/{parent_name}/tcp_request_rules:
+    get:
+      description: Returns all TCP Request Rules that are configured in specified parent and parent type.
+      operationId: getAllTCPRequestRuleDefaults
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/tcp_request_rules'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return an array of all TCP Request Rules
+      tags:
+        - TCPRequestRule
+    put:
+      description: Replaces a whole list of TCP Request Rules with the list given in parameter
+      operationId: replaceAllTCPRequestRuleDefaults
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/tcp_request_rules'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: All TCP Request Rule lines replaced
+          schema:
+            $ref: '#/definitions/tcp_request_rules'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/tcp_request_rules'
+        "400":
+          $ref: '#/responses/BadRequest'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace an TCP Request Rule list
+      tags:
+        - TCPRequestRule
   /services/haproxy/configuration/backends/{parent_name}/tcp_request_rules/{index}:
     delete:
       description: Deletes a TCP Request Rule configuration by it's index from the specified parent.
@@ -19276,6 +20687,143 @@ paths:
       summary: Replace a TCP Request Rule
       tags:
         - TCPRequestRule
+  /services/haproxy/configuration/defaults/{parent_name}/tcp_request_rules/{index}:
+    delete:
+      description: Deletes a TCP Request Rule configuration by it's index from the specified parent.
+      operationId: deleteTCPRequestRuleDefaults
+      parameters:
+        - description: TCP Request Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+        "204":
+          description: TCP Request Rule deleted
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Delete a TCP Request Rule
+      tags:
+        - TCPRequestRule
+    get:
+      description: Returns one TCP Request Rule configuration by it's index in the specified parent.
+      operationId: getTCPRequestRuleDefaults
+      parameters:
+        - description: TCP Request Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/tcp_request_rule'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return one TCP Request Rule
+      tags:
+        - TCPRequestRule
+    post:
+      description: Adds a new TCP Request Rule of the specified type in the specified parent.
+      operationId: createTCPRequestRuleDefaults
+      parameters:
+        - description: TCP Request Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/tcp_request_rule'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "201":
+          description: TCP Request Rule created
+          schema:
+            $ref: '#/definitions/tcp_request_rule'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/tcp_request_rule'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Add a new TCP Request Rule
+      tags:
+        - TCPRequestRule
+    put:
+      description: Replaces a TCP Request Rule configuration by it's index in the specified parent.
+      operationId: replaceTCPRequestRuleDefaults
+      parameters:
+        - description: TCP Request Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/tcp_request_rule'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: TCP Request Rule replaced
+          schema:
+            $ref: '#/definitions/tcp_request_rule'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/tcp_request_rule'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace a TCP Request Rule
+      tags:
+        - TCPRequestRule
   /services/haproxy/configuration/backends/{parent_name}/tcp_response_rules:
     get:
       description: Returns all TCP Response Rules that are configured in specified backend.
@@ -19300,6 +20848,60 @@ paths:
     put:
       description: Replaces a whole list of TCP Response Rules with the list given in parameter
       operationId: replaceAllTCPResponseRuleBackend
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/tcp_response_rules'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: All TCP Response Rule lines replaced
+          schema:
+            $ref: '#/definitions/tcp_response_rules'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/tcp_response_rules'
+        "400":
+          $ref: '#/responses/BadRequest'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace a TCP Response Rule list
+      tags:
+        - TCPResponseRule
+  /services/haproxy/configuration/defaults/{parent_name}/tcp_response_rules:
+    get:
+      description: Returns all TCP Response Rules that are configured in specified backend.
+      operationId: getAllTCPResponseRuleDefaults
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/tcp_response_rules'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return an array of all TCP Response Rules
+      tags:
+        - TCPResponseRule
+    put:
+      description: Replaces a whole list of TCP Response Rules with the list given in parameter
+      operationId: replaceAllTCPResponseRuleDefaults
       parameters:
         - $ref: '#/parameters/parent_name'
         - in: body
@@ -19430,6 +21032,143 @@ paths:
     put:
       description: Replaces a TCP Response Rule configuration by it's Index in the specified backend.
       operationId: replaceTCPResponseRuleBackend
+      parameters:
+        - description: TCP Response Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/tcp_response_rule'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: TCP Response Rule replaced
+          schema:
+            $ref: '#/definitions/tcp_response_rule'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/tcp_response_rule'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace a TCP Response Rule
+      tags:
+        - TCPResponseRule
+  /services/haproxy/configuration/defaults/{parent_name}/tcp_response_rules/{index}:
+    delete:
+      description: Deletes a TCP Response Rule configuration by it's index from the specified backend.
+      operationId: deleteTCPResponseRuleDefaults
+      parameters:
+        - description: TCP Response Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+        "204":
+          description: TCP Response Rule deleted
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Delete a TCP Response Rule
+      tags:
+        - TCPResponseRule
+    get:
+      description: Returns one TCP Response Rule configuration by it's index in the specified backend.
+      operationId: getTCPResponseRuleDefaults
+      parameters:
+        - description: TCP Response Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/tcp_response_rule'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return one TCP Response Rule
+      tags:
+        - TCPResponseRule
+    post:
+      description: Adds a new TCP Response Rule of the specified type in the specified backend.
+      operationId: createTCPResponseRuleDefaults
+      parameters:
+        - description: TCP Response Rule Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/tcp_response_rule'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "201":
+          description: TCP Response Rule created
+          schema:
+            $ref: '#/definitions/tcp_response_rule'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/tcp_response_rule'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Add a new TCP Response Rule
+      tags:
+        - TCPResponseRule
+    put:
+      description: Replaces a TCP Response Rule configuration by it's Index in the specified backend.
+      operationId: replaceTCPResponseRuleDefaults
       parameters:
         - description: TCP Response Rule Index
           in: path
@@ -21736,6 +23475,64 @@ paths:
       summary: Replace an ACL list
       tags:
         - ACL
+  /services/haproxy/configuration/defaults/{parent_name}/acls:
+    get:
+      description: Returns all ACL lines that are configured in specified parent.
+      operationId: getAllAclDefaults
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - description: ACL name
+          in: query
+          name: acl_name
+          type: string
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/acls'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return an array of all ACL lines
+      tags:
+        - ACL
+    put:
+      description: Replaces a whole list of ACLs with the list given in parameter
+      operationId: replaceAllAclDefaults
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/acls'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: All ACL lines replaced
+          schema:
+            $ref: '#/definitions/acls'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/acls'
+        "400":
+          $ref: '#/responses/BadRequest'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace an ACL list
+      tags:
+        - ACL
   /services/haproxy/configuration/backends/{parent_name}/acls/{index}:
     delete:
       description: Deletes a ACL line configuration by it's index from the specified parent.
@@ -22110,6 +23907,143 @@ paths:
     put:
       description: Replaces a ACL line configuration by it's index in the specified parent.
       operationId: replaceAclFCGIApp
+      parameters:
+        - description: ACL line Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/acl'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: ACL line replaced
+          schema:
+            $ref: '#/definitions/acl'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/acl'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace a ACL line
+      tags:
+        - ACL
+  /services/haproxy/configuration/defaults/{parent_name}/acls/{index}:
+    delete:
+      description: Deletes a ACL line configuration by it's index from the specified parent.
+      operationId: deleteAclDefaults
+      parameters:
+        - description: ACL line Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+        "204":
+          description: ACL line deleted
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Delete a ACL line
+      tags:
+        - ACL
+    get:
+      description: Returns one ACL line configuration by it's index in the specified parent.
+      operationId: getAclDefaults
+      parameters:
+        - description: ACL line Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/acl'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return one ACL line
+      tags:
+        - ACL
+    post:
+      description: Adds a new ACL line of the specified type in the specified parent.
+      operationId: createAclDefaults
+      parameters:
+        - description: ACL line Index
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/acl'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "201":
+          description: ACL line created
+          schema:
+            $ref: '#/definitions/acl'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/acl'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Add a new ACL line
+      tags:
+        - ACL
+    put:
+      description: Replaces a ACL line configuration by it's index in the specified parent.
+      operationId: replaceAclDefaults
       parameters:
         - description: ACL line Index
           in: path
@@ -23694,6 +25628,504 @@ paths:
       summary: Replace server transient settings
       tags:
         - Server
+  /services/haproxy/runtime/ssl_ca_files:
+    get:
+      description: Returns all SSL CA files using the runtime socket.
+      operationId: getAllCaFiles
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/ssl_ca_files'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return an array of all SSL CA files
+      tags:
+        - SSLRuntime
+    post:
+      consumes:
+        - multipart/form-data
+      description: Creates a new SSL CA file using the runtime socket.
+      operationId: createCaFile
+      parameters:
+        - description: CA certificate file
+          in: formData
+          name: file_upload
+          required: true
+          type: file
+          x-mimetype: text/plain
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: SSL CA file created
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Creates a new SSL CA file
+      tags:
+        - SSLRuntime
+  /services/haproxy/runtime/ssl_ca_files/{name}:
+    delete:
+      description: Deletes a CA file
+      operationId: deleteCaFile
+      parameters:
+        - description: SSL CA file name
+          in: path
+          name: name
+          required: true
+          type: string
+      responses:
+        "204":
+          description: SSL CA deleted
+        "400":
+          $ref: '#/responses/BadRequest'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Deletes a CA file
+      tags:
+        - SSLRuntime
+    get:
+      description: Returns an SSL CA file by name using the runtime socket.
+      operationId: getCaFile
+      parameters:
+        - description: SSL CA file name
+          in: path
+          name: name
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/ssl_ca_file'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return an SSL CA file
+      tags:
+        - SSLRuntime
+    put:
+      consumes:
+        - multipart/form-data
+      description: Replace the contents of a CA file using the runtime socket.
+      operationId: setCaFile
+      parameters:
+        - description: SSL CA file name
+          in: path
+          name: name
+          required: true
+          type: string
+        - in: formData
+          name: file_upload
+          required: true
+          type: file
+          x-mimetype: text/plain
+      responses:
+        "200":
+          description: SSL CA payload added
+        "400":
+          $ref: '#/responses/BadRequest'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Update the contents of a CA file
+      tags:
+        - SSLRuntime
+  /services/haproxy/runtime/ssl_ca_files/{name}/entries:
+    post:
+      consumes:
+        - multipart/form-data
+      description: Adds an entry to an existing CA file using the runtime socket.
+      operationId: addCaEntry
+      parameters:
+        - description: SSL CA file name
+          in: path
+          name: name
+          required: true
+          type: string
+        - description: Payload of the cert entry
+          in: formData
+          name: file_upload
+          required: true
+          type: file
+          x-mimetype: text/plain
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/ssl_certificate'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Add a certificate to a CA file
+      tags:
+        - SSLRuntime
+  /services/haproxy/runtime/ssl_ca_files/{name}/entries/{index}:
+    get:
+      description: Returns an SSL CA file cert entry.
+      operationId: getCaEntry
+      parameters:
+        - description: SSL CA file name
+          in: path
+          name: name
+          required: true
+          type: string
+        - description: SSL CA file index
+          in: path
+          minimum: 0
+          name: index
+          required: true
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/ssl_certificate'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return an SSL CA file cert entry
+      tags:
+        - SSLRuntime
+  /services/haproxy/runtime/ssl_certs:
+    get:
+      description: Returns certificate files descriptions from runtime.
+      operationId: getAllCerts
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/ssl_certificates'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return a list of SSL certificate files
+      tags:
+        - SSLRuntime
+    post:
+      consumes:
+        - multipart/form-data
+      description: Creates a new SSL certificate file using the runtime socket.
+      operationId: createCert
+      parameters:
+        - description: Certificate file
+          in: formData
+          name: file_upload
+          required: true
+          type: file
+          x-mimetype: text/plain
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Certificate created
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Create a new SSL certificate file
+      tags:
+        - SSLRuntime
+  /services/haproxy/runtime/ssl_certs/{name}:
+    delete:
+      description: Deletes a certificate using the runtime socket.
+      operationId: deleteCert
+      parameters:
+        - description: SSL certificate name
+          in: path
+          name: name
+          required: true
+          type: string
+      responses:
+        "204":
+          description: File deleted
+        "400":
+          $ref: '#/responses/BadRequest'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Delete a certificate
+      tags:
+        - SSLRuntime
+    get:
+      description: Returns one structured certificate using the runtime socket.
+      operationId: getCert
+      parameters:
+        - description: SSL certificate name
+          in: path
+          name: name
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/ssl_certificate'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return one structured certificate
+      tags:
+        - SSLRuntime
+    put:
+      consumes:
+        - multipart/form-data
+      description: Sets a certificate payload using the runtime socket.
+      operationId: replaceCert
+      parameters:
+        - description: SSL certificate name
+          in: path
+          name: name
+          required: true
+          type: string
+        - in: formData
+          name: file_upload
+          required: true
+          type: file
+          x-mimetype: text/plain
+      responses:
+        "200":
+          description: File updated
+        "400":
+          $ref: '#/responses/BadRequest'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace the contents of a certificate
+      tags:
+        - SSLRuntime
+  /services/haproxy/runtime/ssl_crl_files:
+    get:
+      description: Returns all the certificate revocation list files using the runtime socket.
+      operationId: getAllCrl
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/ssl_crls'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return an array of all the CRL files
+      tags:
+        - SSLRuntime
+    post:
+      consumes:
+        - multipart/form-data
+      description: Creates a new CRL file with its contents using the runtime socket.
+      operationId: createCrl
+      parameters:
+        - description: CRL file
+          in: formData
+          name: file_upload
+          required: true
+          type: file
+          x-mimetype: text/plain
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: CRL file created
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Create a new CRL file
+      tags:
+        - SSLRuntime
+  /services/haproxy/runtime/ssl_crl_files/{name}:
+    delete:
+      description: Deletes a CRL file using the runtime socket.
+      operationId: deleteCrl
+      parameters:
+        - description: CRL file name
+          in: path
+          name: name
+          required: true
+          type: string
+      responses:
+        "204":
+          description: File deleted
+        "400":
+          $ref: '#/responses/BadRequest'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Delete a CRL file
+      tags:
+        - SSLRuntime
+    get:
+      description: Returns one or all entries in a CRL file using the runtime socket.
+      operationId: getCrl
+      parameters:
+        - description: CRL file name
+          in: path
+          name: name
+          required: true
+          type: string
+        - description: Entry index to return. Starts at 1. If not provided, all entries are returned.
+          in: query
+          minimum: 1
+          name: index
+          type: integer
+          x-nullable: true
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/ssl_crl_entries'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Get the contents of a CRL file
+      tags:
+        - SSLRuntime
+    put:
+      consumes:
+        - multipart/form-data
+      description: Replaces the contents of a CRL file using the runtime socket.
+      operationId: replaceCrl
+      parameters:
+        - description: CRL file name
+          in: path
+          name: name
+          required: true
+          type: string
+        - description: CRL file contents
+          in: formData
+          name: file_upload
+          required: true
+          type: file
+          x-mimetype: text/plain
+      responses:
+        "200":
+          description: File modified
+        "400":
+          $ref: '#/responses/BadRequest'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace the contents of a CRL file
+      tags:
+        - SSLRuntime
+  /services/haproxy/runtime/ssl_crt_lists:
+    get:
+      description: Returns an array of crt-list file descriptions from runtime.
+      operationId: getAllCrtLists
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/ssl_crt_lists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Get the list of all crt-list files
+      tags:
+        - SSLRuntime
+  /services/haproxy/runtime/ssl_crt_lists/entries:
+    delete:
+      description: Deletes a single entry from the given crt-list using the runtime socket.
+      operationId: deleteCrtListEntry
+      parameters:
+        - description: SSL crt list name
+          in: query
+          name: name
+          required: true
+          type: string
+        - description: SSL cert entry name
+          in: query
+          name: cert_file
+          required: true
+          type: string
+        - description: The line number where the entry is located, in case several entries share the same certificate.
+          in: query
+          minimum: 1
+          name: line_number
+          type: integer
+          x-nullable: true
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          $ref: '#/responses/BadRequest'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Delete an entry from a crt-list
+      tags:
+        - SSLRuntime
+    get:
+      description: Returns an array of entries present inside the given crt-list file. Their index can be used to delete them.
+      operationId: getAllCrtListEntries
+      parameters:
+        - description: SSL crt-list filename
+          in: query
+          name: name
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/ssl_crt_list_entries'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Get all the entries inside a crt-list
+      tags:
+        - SSLRuntime
+    post:
+      description: Appends an entry to the given crt-list using the runtime socket.
+      operationId: addCrtListEntry
+      parameters:
+        - description: SSL crt-list filename
+          in: query
+          name: name
+          required: true
+          type: string
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/ssl_crt_list_entry'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Successful operation
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Add an entry into a crt-list
+      tags:
+        - SSLRuntime
   /services/haproxy/runtime/stick_tables:
     get:
       description: Returns an array of all stick tables.
@@ -24027,6 +26459,41 @@ paths:
       summary: Replace the value corresponding to each id in a map
       tags:
         - Maps
+  /services/haproxy/runtime/acme:
+    get:
+      description: Returns the status of each managed ACME certificate.
+      operationId: getAcmeStatus
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/acme_status'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: ACME Status
+      tags:
+        - AcmeRuntime
+    put:
+      description: Force renewal of an ACME certificate.
+      operationId: renewAcmeCertificate
+      parameters:
+        - description: Certificate file name
+          in: query
+          name: certificate
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Operation started
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Renew ACME certificate
+      tags:
+        - AcmeRuntime
   /services/haproxy/configuration/version:
     get:
       description: Returns configuration version.
@@ -24323,6 +26790,250 @@ paths:
         default:
           $ref: '#/responses/DefaultError'
       summary: Replace SSL certificates on disk
+      tags:
+        - Storage
+  /services/haproxy/storage/ssl_crt_lists:
+    get:
+      description: Returns all available certificate lists on disk.
+      operationId: getAllStorageSSLCrtListFiles
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/ssl_crt_list_files'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return all available certificate lists on disk
+      tags:
+        - Storage
+    post:
+      consumes:
+        - multipart/form-data
+      description: Creates a certificate list.
+      operationId: createStorageSSLCrtListFile
+      parameters:
+        - description: The certificate list to upload
+          in: formData
+          name: file_upload
+          type: file
+          x-mimetype: text/plain
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "201":
+          description: Certificate list created
+          schema:
+            $ref: '#/definitions/ssl_crt_list_file'
+        "202":
+          description: Certificate list created requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/ssl_crt_list_file'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Create a certificate list
+      tags:
+        - Storage
+  /services/haproxy/storage/ssl_crt_lists/{name}:
+    delete:
+      description: Deletes a certificate list from disk.
+      operationId: deleteStorageSSLCrtListFile
+      parameters:
+        - description: Certificate list name
+          in: path
+          name: name
+          required: true
+          type: string
+        - $ref: '#/parameters/skip_reload'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "202":
+          description: Certificate list deleted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+        "204":
+          description: Certificate list deleted
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Delete a certificate list from disk
+      tags:
+        - Storage
+    get:
+      description: Returns one certificate list from disk.
+      operationId: getOneStorageSSLCrtListFile
+      parameters:
+        - description: Certificate list name
+          in: path
+          name: name
+          required: true
+          type: string
+      produces:
+        - application/octet-stream
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            type: file
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return one certificate list from disk
+      tags:
+        - Storage
+    put:
+      consumes:
+        - text/plain
+      description: Replaces a certificate list on disk.
+      operationId: replaceStorageSSLCrtListFile
+      parameters:
+        - description: Certificate list name
+          in: path
+          name: name
+          required: true
+          type: string
+        - in: body
+          name: data
+          required: true
+          schema:
+            type: string
+        - $ref: '#/parameters/skip_reload'
+        - $ref: '#/parameters/force_reload'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Certificate list replaced
+          schema:
+            $ref: '#/definitions/ssl_crt_list_file'
+        "202":
+          description: Certificate list replaced and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/ssl_crt_list_file'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace a certificate lists on disk
+      tags:
+        - Storage
+  /services/haproxy/storage/ssl_crt_lists/{name}/entries:
+    delete:
+      description: Deletes an entry from a certificate list.
+      operationId: DeleteStorageSSLCrtListEntry
+      parameters:
+        - description: SSL crt list name
+          in: path
+          name: name
+          required: true
+          type: string
+        - description: SSL certificate filename
+          in: query
+          name: certificate
+          required: true
+          type: string
+        - description: The line number in the crt-list
+          in: query
+          minimum: 0
+          name: line_number
+          required: true
+          type: integer
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+        "204":
+          description: Successful operation
+        "400":
+          $ref: '#/responses/BadRequest'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Deletes an entry from CrtList file
+      tags:
+        - Storage
+    get:
+      description: Returns all the entries in a certificate list.
+      operationId: GetStorageSSLCrtListEntries
+      parameters:
+        - description: SSL crt-list file
+          in: path
+          name: name
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/ssl_crt_list_entries'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Returns all the entries in a CrtList
+      tags:
+        - Storage
+    post:
+      description: Creates a new entry in a certificate list.
+      operationId: CreateStorageSSLCrtListEntry
+      parameters:
+        - description: SSL crt-list file
+          in: path
+          name: name
+          required: true
+          type: string
+        - description: SSL crt-list entry
+          in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/ssl_crt_list_entry'
+        - $ref: '#/parameters/force_reload'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: New entry added
+          schema:
+            $ref: '#/definitions/ssl_crt_list_entry'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Creates a new entry in a CrtList
       tags:
         - Storage
   /services/haproxy/storage/general:
@@ -25318,3 +28029,304 @@ paths:
       summary: Replace a declare capture
       tags:
         - DeclareCapture
+  /services/haproxy/configuration/frontends/{parent_name}/ssl_front_uses:
+    get:
+      description: Returns an array of all SSLFrontUses that are configured in specified frontend.
+      operationId: getAllSSLFrontUses
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/ssl_front_uses'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return an array of SSLFrontUses
+      tags:
+        - SSLFrontUse
+    post:
+      description: Adds a new SSLFrontUse in the specified frontend in the configuration file.
+      operationId: createSSLFrontUse
+      parameters:
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/ssl_front_use'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "201":
+          description: SSLFrontUse created
+          schema:
+            $ref: '#/definitions/ssl_front_use'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/ssl_front_use'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Add a new SSLFrontUse
+      tags:
+        - SSLFrontUse
+  /services/haproxy/configuration/frontends/{parent_name}/ssl_front_uses/{index}:
+    delete:
+      description: Deletes an SSLFrontUse configuration by its index in the specified frontend.
+      operationId: deleteSSLFrontUse
+      parameters:
+        - description: SSLFrontUse index (zero-based)
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+        "204":
+          description: SSLFrontUse deleted
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Delete an SSLFrontUse
+      tags:
+        - SSLFrontUse
+    get:
+      description: Returns one SSLFrontUse configuration by its index in the specified frontend.
+      operationId: getSSLFrontUse
+      parameters:
+        - description: SSLFrontUse index (zero-based)
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/ssl_front_use'
+        "404":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return one SSLFrontUse
+      tags:
+        - SSLFrontUse
+    put:
+      description: Replaces an SSLFrontUse configuration by its index in the specified frontend.
+      operationId: replaceSSLFrontUse
+      parameters:
+        - description: SSLFrontUse index (zero-based)
+          in: path
+          name: index
+          required: true
+          type: integer
+        - $ref: '#/parameters/parent_name'
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/ssl_front_use'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: SSLFrontUse replaced
+          schema:
+            $ref: '#/definitions/ssl_front_use'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/ssl_front_use'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Replace an SSLFrontUse
+      tags:
+        - SSLFrontUse
+  /services/haproxy/configuration/acme:
+    get:
+      description: Returns an array of all the configured ACME providers
+      operationId: getAcmeProviders
+      parameters:
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/acme_providers'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Return all the ACME providers
+      tags:
+        - Acme
+    post:
+      description: Creates a new acme section
+      operationId: createAcmeProvider
+      parameters:
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/acme_provider'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "201":
+          description: Log Profile created
+          schema:
+            $ref: '#/definitions/acme_provider'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/acme_provider'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "409":
+          $ref: '#/responses/AlreadyExists'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Add a new Acme provider
+      tags:
+        - Acme
+  /services/haproxy/configuration/acme/{name}:
+    delete:
+      description: Deletes an acme section from the configuration
+      operationId: deleteAcmeProvider
+      parameters:
+        - description: acme section name
+          in: path
+          name: name
+          required: true
+          type: string
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+        "204":
+          description: acme provider deleted
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Delete an ACME provider
+      tags:
+        - Acme
+    get:
+      description: Find an acme section by its name
+      operationId: getAcmeProvider
+      parameters:
+        - description: acme section name
+          in: path
+          name: name
+          required: true
+          type: string
+        - $ref: '#/parameters/transaction_id'
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            Configuration-Version:
+              description: Configuration file version
+              type: string
+          schema:
+            $ref: '#/definitions/acme_provider'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Find an ACME provider
+      tags:
+        - Acme
+    put:
+      description: Modifies a acme_provider's configuration by its name
+      operationId: editAcmeProvider
+      parameters:
+        - description: acme section name
+          in: path
+          name: name
+          required: true
+          type: string
+        - in: body
+          name: data
+          required: true
+          schema:
+            $ref: '#/definitions/acme_provider'
+        - $ref: '#/parameters/transaction_id'
+        - $ref: '#/parameters/version'
+        - $ref: '#/parameters/force_reload'
+      responses:
+        "200":
+          description: acme_provider configuration updated
+          schema:
+            $ref: '#/definitions/acme_provider'
+        "202":
+          description: Configuration change accepted and reload requested
+          headers:
+            Reload-ID:
+              description: ID of the requested reload
+              type: string
+          schema:
+            $ref: '#/definitions/acme_provider'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "404":
+          $ref: '#/responses/NotFound'
+        default:
+          $ref: '#/responses/DefaultError'
+      summary: Modify an ACME provider
+      tags:
+        - Acme

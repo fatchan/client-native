@@ -50,6 +50,7 @@ const (
 	CrtStoreParentName   = "crt-store"
 	TracesParentName     = "traces"
 	LogProfileParentName = "log-profile"
+	AcmeParentName       = "acme"
 )
 
 // ClientParams is just a placeholder for all client options
@@ -309,6 +310,8 @@ func (s *SectionParser) parseField(fieldName string) interface{} {
 
 func (s *SectionParser) checkSpecialFields(fieldName string) (bool, interface{}) { //nolint:gocyclo,cyclop
 	switch fieldName {
+	case "Metadata":
+		return true, s.metadata()
 	case "Shards":
 		return true, s.shards()
 	case "From":
@@ -408,6 +411,16 @@ func (s *SectionParser) checkSpecialFields(fieldName string) (bool, interface{})
 	default:
 		return false, nil
 	}
+}
+
+func (s *SectionParser) metadata() any {
+	sectionData, err := s.Parser.SectionGet(s.Section, s.Name)
+	if err != nil {
+		return nil
+	}
+
+	d := sectionData.(types.Section)
+	return parseMetadata(d.Comment)
 }
 
 func (s *SectionParser) checkTimeouts(fieldName string) (bool, interface{}) {
@@ -793,6 +806,7 @@ func (s *SectionParser) stickTable() interface{} {
 	bst.Store = d.Store
 	bst.Expire = misc.ParseTimeout(d.Expire)
 	bst.Peers = d.Peers
+	bst.RecvOnly = d.RecvOnly
 
 	k, err := strconv.ParseInt(d.Length, 10, 64)
 	if err == nil {
@@ -981,9 +995,8 @@ func (s *SectionParser) redispatch() interface{} {
 		return nil
 	}
 	d := data.(*types.OptionRedispatch)
-	br := &models.Redispatch{}
-	if d.Interval != nil {
-		br.Interval = *d.Interval
+	br := &models.Redispatch{
+		Interval: d.Interval,
 	}
 	if d.NoOption {
 		d := "disabled"
@@ -1217,6 +1230,30 @@ func (s *SectionParser) compression() interface{} { //nolint:gocognit
 		if ok && d != nil {
 			compressionFound = true
 			compression.Direction = d.Value
+		}
+	}
+
+	data, err = s.get("compression minsize-req", false)
+	if err == nil {
+		d, ok := data.(*types.StringC)
+		if ok && d != nil {
+			v := misc.ParseSize(d.Value)
+			if v != nil {
+				compressionFound = true
+				compression.MinsizeReq = *v
+			}
+		}
+	}
+
+	data, err = s.get("compression minsize-res", false)
+	if err == nil {
+		d, ok := data.(*types.StringC)
+		if ok && d != nil {
+			v := misc.ParseSize(d.Value)
+			if v != nil {
+				compressionFound = true
+				compression.MinsizeRes = *v
+			}
 		}
 	}
 
@@ -1557,6 +1594,8 @@ func (s *SectionObject) checkParams(fieldName string) bool {
 
 func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value) (bool, error) { //nolint:gocyclo,cyclop
 	switch fieldName {
+	case "Metadata":
+		return true, s.metadata(field)
 	case "Shard":
 		return true, s.shard(field)
 	case "From":
@@ -1668,6 +1707,31 @@ func (s *SectionObject) checkSpecialFields(fieldName string, field reflect.Value
 	default:
 		return false, nil
 	}
+}
+
+func (s *SectionObject) metadata(field reflect.Value) error {
+	if valueIsNil(field) {
+		return s.Parser.SectionCommentSet(s.Section, s.Name, "")
+	}
+	// Check if key type is string
+	if field.Type().Key().Kind() != reflect.String {
+		return misc.CreateTypeAssertError("metadata")
+	}
+
+	// Convert to map[string]any
+	metadata := make(map[string]any)
+	iter := field.MapRange()
+	for iter.Next() {
+		key := iter.Key().String()
+		valueVal := iter.Value().Interface()
+		metadata[key] = valueVal
+	}
+
+	comment, err := serializeMetadata(metadata)
+	if err != nil {
+		return err
+	}
+	return s.Parser.SectionCommentSet(s.Section, s.Name, comment)
 }
 
 func (s *SectionObject) checkTimeouts(fieldName string, field reflect.Value) (bool, error) {
@@ -2119,10 +2183,11 @@ func (s *SectionObject) stickTable(field reflect.Value) error {
 			return misc.CreateTypeAssertError("stick-table")
 		}
 		d := types.StickTable{
-			Type:    st.Type,
-			Store:   st.Store,
-			Peers:   st.Peers,
-			NoPurge: st.Nopurge,
+			Type:     st.Type,
+			Store:    st.Store,
+			Peers:    st.Peers,
+			NoPurge:  st.Nopurge,
+			RecvOnly: st.RecvOnly,
 		}
 
 		if st.Keylen != nil {
@@ -2370,14 +2435,11 @@ func (s *SectionObject) redispatch(field reflect.Value) error {
 			return misc.CreateTypeAssertError("option redispatch")
 		}
 		d := &types.OptionRedispatch{
-			Interval: &br.Interval,
+			Interval: br.Interval,
 			NoOption: false,
 		}
 		if *br.Enabled == "disabled" {
 			d.NoOption = true
-		}
-		if br.Interval == 0 {
-			d = nil
 		}
 		if err := s.set("option redispatch", d); err != nil {
 			return err
@@ -2610,7 +2672,14 @@ func (s *SectionObject) compression(field reflect.Value) error { //nolint:gocogn
 		if err != nil {
 			return err
 		}
-
+		err = s.set("compression minsize-req", nil)
+		if err != nil {
+			return err
+		}
+		err = s.set("compression minsize-res", nil)
+		if err != nil {
+			return err
+		}
 		err = s.set("compression direction", nil)
 		if err != nil {
 			// compression direction does not exist on Frontends
@@ -2674,6 +2743,19 @@ func (s *SectionObject) compression(field reflect.Value) error { //nolint:gocogn
 			return err
 		}
 	}
+	if compression.MinsizeReq > 0 {
+		err = s.set("compression minsize-req", &types.StringC{Value: misc.SerializeSize(compression.MinsizeReq)})
+		if err != nil {
+			return err
+		}
+	}
+	if compression.MinsizeRes > 0 {
+		err = s.set("compression minsize-res", &types.StringC{Value: misc.SerializeSize(compression.MinsizeRes)})
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -2800,7 +2882,7 @@ func (s *SectionObject) defaultBind(field reflect.Value) error {
 		return misc.CreateTypeAssertError("default-bind")
 	}
 	dBind := &types.DefaultBind{
-		Params: serializeBindParams(db.BindParams, ""),
+		Params: serializeBindParams(db.BindParams, "", s.Options),
 	}
 
 	return s.set("default-bind", dBind)
@@ -2949,7 +3031,7 @@ func (c *client) deleteSection(section parser.Section, name string, transactionI
 		return err
 	}
 
-	if !c.checkSectionExists(section, name, p) {
+	if !p.SectionExists(section, name) {
 		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("%s %s does not exist", section, name))
 		return c.HandleError(name, "", "", t, transactionID == "", e)
 	}
@@ -2967,7 +3049,7 @@ func (c *client) editSection(section parser.Section, name string, data interface
 		return err
 	}
 
-	if !c.checkSectionExists(section, name, p) {
+	if !p.SectionExists(section, name) {
 		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("%s %s does not exist", section, name))
 		return c.HandleError(name, "", "", t, transactionID == "", e)
 	}
@@ -2985,7 +3067,7 @@ func (c *client) createSection(section parser.Section, name string, data interfa
 		return err
 	}
 
-	if c.checkSectionExists(section, name, p) {
+	if p.SectionExists(section, name) {
 		e := NewConfError(ErrObjectAlreadyExists, fmt.Sprintf("%s %s already exists", section, name))
 		return c.HandleError(name, "", "", t, transactionID == "", e)
 	}
@@ -2999,18 +3081,6 @@ func (c *client) createSection(section parser.Section, name string, data interfa
 	}
 
 	return c.SaveData(p, t, transactionID == "")
-}
-
-func (c *client) checkSectionExists(section parser.Section, sectionName string, p parser.Parser) bool {
-	sections, err := p.SectionsGet(section)
-	if err != nil {
-		return false
-	}
-
-	if misc.StringInSlice(sectionName, sections) {
-		return true
-	}
-	return false
 }
 
 func (c *client) loadDataForChange(transactionID string, version int64) (parser.Parser, string, error) {
@@ -3041,8 +3111,8 @@ func valueIsNil(v reflect.Value) bool {
 		return v.String() == ""
 	case reflect.Bool:
 		return !v.Bool()
-	case reflect.Ptr:
-		return !v.Elem().IsValid()
+	case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Interface, reflect.Chan, reflect.Func:
+		return v.IsNil()
 	default:
 		return false
 	}

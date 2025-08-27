@@ -1741,6 +1741,30 @@ const backend_servername127001guidguidexample = `
 backend test
   server name 127.0.0.1 guid guid-example
 `
+const backend_servername127001idleping10s = `
+backend test
+  server name 127.0.0.1 idle-ping 10s
+`
+const backend_servername127001idleping10 = `
+backend test
+  server name 127.0.0.1 idle-ping 10
+`
+const backend_servername127001checkreusepool = `
+backend test
+  server name 127.0.0.1 check-reuse-pool
+`
+const backend_servername127001nocheckreusepool = `
+backend test
+  server name 127.0.0.1 no-check-reuse-pool
+`
+const backend_servername127001checkpoolconnnam = `
+backend test
+  server name 127.0.0.1 check-pool-conn-name foo
+`
+const backend_servername127001strictmaxconn = `
+backend test
+  server name 127.0.0.1 strict-maxconn
+`
 const backend_sticktabletypeipsize1mexpire5mst = `
 backend test
   stick-table type ip size 1m expire 5m store gpc0,conn_rate(30s)
@@ -1760,6 +1784,10 @@ backend test
 const backend_sticktabletypeintegersize1msrvke = `
 backend test
   stick-table type integer size 1m srvkey addr write-to t2
+`
+const backend_sticktabletypeintegersize1msrvke_ = `
+backend test
+  stick-table type integer size 1m srvkey addr write-to t2 recv-only
 `
 const backend_stickonsrctablepopiflocalhost = `
 backend test
@@ -2156,6 +2184,30 @@ backend test
 const backend_httprequestnormalizeuriquerysort_ = `
 backend test
   http-request normalize-uri query-sort-by-name if TRUE
+`
+const backend_httprequestpause20 = `
+backend test
+  http-request pause 20
+`
+const backend_httprequestpause20s = `
+backend test
+  http-request pause 20s
+`
+const backend_httprequestpausereshdrXPauseSeco = `
+backend test
+  http-request pause res.hdr(X-Pause-Seconds),mul(1000)
+`
+const backend_httprequestpause20ifTRUE = `
+backend test
+  http-request pause 20 if TRUE
+`
+const backend_httprequestpause20sifTRUE = `
+backend test
+  http-request pause 20s if TRUE
+`
+const backend_httprequestpausecalcscconnrate03 = `
+backend test
+  http-request pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 }
 `
 const backend_httprequestredirectprefixhttpsmy = `
 backend test
@@ -2804,6 +2856,30 @@ backend test
 const backend_httpresponseluafooparamparam2 = `
 backend test
   http-response lua.foo param param2
+`
+const backend_httpresponsepause20 = `
+backend test
+  http-response pause 20
+`
+const backend_httpresponsepause20s = `
+backend test
+  http-response pause 20s
+`
+const backend_httpresponsepausereshdrXPauseSec = `
+backend test
+  http-response pause res.hdr(X-Pause-Seconds),mul(1000)
+`
+const backend_httpresponsepause20ifTRUE = `
+backend test
+  http-response pause 20 if TRUE
+`
+const backend_httpresponsepause20sifTRUE = `
+backend test
+  http-response pause 20s if TRUE
+`
+const backend_httpresponsepausecalcscconnrate0 = `
+backend test
+  http-response pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 }
 `
 const backend_httpresponseredirectprefixhttpsm = `
 backend test

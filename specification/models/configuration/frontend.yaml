@@ -43,6 +43,9 @@ frontend:
         quic_initial_rule_list:
           $ref: "#/definitions/quic_initial_rules"
           x-go-name: QUICInitialRuleList
+        ssl_front_use_list:
+          $ref: "#/definitions/ssl_front_uses"
+          x-go-name: SSLFrontUses
 frontend_base:
   title: Frontend Base
   description: HAProxy frontend configuration
@@ -118,6 +121,10 @@ frontend_base:
       x-dependency:
         mode:
           value: http
+    http-drop-response-trailers:
+      type: string
+      enum: [enabled, disabled]
+      x-display-name: Drop HTTP Response Trailers
     client_timeout:
       type: integer
       minimum: 0
@@ -332,6 +339,9 @@ frontend_base:
       $ref: "#/definitions/errorloc"
     error_log_format:
       type: string
+    metadata:
+      additionalProperties:
+        type: object
   additionalProperties: false
   example:
     name: test_frontend

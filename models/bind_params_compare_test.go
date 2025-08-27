@@ -98,12 +98,14 @@ func TestBindParamsEqualFalse(t *testing.T) {
 		result.ForceTlsv13 = !sample.ForceTlsv13
 		result.GenerateCertificates = !sample.GenerateCertificates
 		result.Gid = sample.Gid + 1
+		result.IdlePing = Ptr(*sample.IdlePing + 1)
 		result.Maxconn = sample.Maxconn + 1
 		result.Nbconn = sample.Nbconn + 1
 		result.Nice = sample.Nice + 1
 		result.NoAlpn = !sample.NoAlpn
 		result.NoCaNames = !sample.NoCaNames
 		result.NoSslv3 = !sample.NoSslv3
+		result.NoStrictSni = !sample.NoStrictSni
 		result.NoTLSTickets = !sample.NoTLSTickets
 		result.NoTlsv10 = !sample.NoTlsv10
 		result.NoTlsv11 = !sample.NoTlsv11
@@ -211,12 +213,14 @@ func TestBindParamsDiffFalse(t *testing.T) {
 		result.ForceTlsv13 = !sample.ForceTlsv13
 		result.GenerateCertificates = !sample.GenerateCertificates
 		result.Gid = sample.Gid + 1
+		result.IdlePing = Ptr(*sample.IdlePing + 1)
 		result.Maxconn = sample.Maxconn + 1
 		result.Nbconn = sample.Nbconn + 1
 		result.Nice = sample.Nice + 1
 		result.NoAlpn = !sample.NoAlpn
 		result.NoCaNames = !sample.NoCaNames
 		result.NoSslv3 = !sample.NoSslv3
+		result.NoStrictSni = !sample.NoStrictSni
 		result.NoTLSTickets = !sample.NoTLSTickets
 		result.NoTlsv10 = !sample.NoTlsv10
 		result.NoTlsv11 = !sample.NoTlsv11
@@ -240,7 +244,7 @@ func TestBindParamsDiffFalse(t *testing.T) {
 
 	for _, sample := range samples {
 		result := sample.a.Diff(sample.b)
-		if len(result) != 78 {
+		if len(result) != 83 {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
@@ -250,7 +254,7 @@ func TestBindParamsDiffFalse(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			t.Errorf("Expected BindParams to be different in 78 cases, but it is not (%d) %s %s", len(result), a, b)
+			t.Errorf("Expected BindParams to be different in 83 cases, but it is not (%d) %s %s", len(result), a, b)
 		}
 	}
 }

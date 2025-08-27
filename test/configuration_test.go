@@ -37,10 +37,12 @@ global
   crt-base /etc/ssl/private
   cluster-secret my_secret
 	stats socket /var/run/haproxy.sock level admin mode 0660
+  cpu-policy none
+  cpu-set reset
+  cpu-set only-node 0
+  cpu-set drop-core 5-9
   lua-prepend-path /usr/share/haproxy-lua/?/init.lua
   lua-prepend-path /usr/share/haproxy-lua/?.lua cpath
-	lua-load /etc/foo.lua
-	lua-load /etc/bar.lua
   h1-case-adjust-file /etc/headers.adjust
   h1-case-adjust host Host
   h1-case-adjust content-type Content-Type
@@ -58,6 +60,7 @@ global
   tune.disable-zero-copy-forwarding
   tune.events.max-events-at-once 10
   tune.fail-alloc
+  tune.glitches.kill.cpu-usage 75
   tune.fd.edge-triggered on
   tune.h1.zero-copy-fwd-recv on
   tune.h1.zero-copy-fwd-send on
@@ -73,6 +76,7 @@ global
   tune.idletimer 22
   tune.listener.default-shards by-process
   tune.listener.multi-queue on
+  tune.lua.bool-sample-conversion normal
   tune.lua.forced-yield 23
   tune.lua.log.loggers on
   tune.lua.log.stderr auto
@@ -112,6 +116,7 @@ global
   tune.ssl.ocsp-update.maxdelay 48
   tune.ssl.ocsp-update.mindelay 49
   tune.stick-counters 50
+  tune.takeover-other-tg-connections none
   tune.vars.global-max-size 51
   tune.vars.proc-max-size 52
   tune.vars.reqres-max-size 53
@@ -120,6 +125,7 @@ global
   tune.quic.frontend.conn-tx-buffers.limit 10
   tune.quic.frontend.max-idle-timeout 10000
   tune.quic.frontend.max-streams-bidi 100
+  tune.quic.frontend.max-tx-mem 1k
   tune.quic.max-frame-loss 5
   tune.quic.reorder-ratio 75
   tune.quic.retry-threshold 5
@@ -133,6 +139,8 @@ global
   busy-polling
   max-spread-checks 1ms
   close-spread-time 1s
+  lua-load /etc/foo.lua
+	lua-load /etc/bar.lua
   maxconnrate 2
   maxcomprate 3
   maxcompcpuusage 4
@@ -241,6 +249,8 @@ global
   tune.h2.fe.max-total-streams 8192
   tune.h2.fe.rxbuf 8k
   tune.lua.burst-timeout 205
+  tune.notsent-lowat.client 32k
+  tune.notsent-lowat.server 16k
   ssl-default-bind-sigalgs RSA+SHA256
   ssl-default-bind-client-sigalgs ECDSA+SHA256:RSA+SHA256
   ssl-default-server-sigalgs RSA+SHA256
@@ -276,20 +286,30 @@ global
   ocsp-update.maxdelay 10
   ocsp-update.mindelay 7
   ocsp-update.mode on
+  dns-accept-family ipv4,ipv6
   warn-blocked-traffic-after 50ms
+  acme.scheduler off
+  stress-level 5
+  tune.epoll.mask-events err,hup,rdhup
+  tune.max-rules-at-once 60
 
-defaults test_defaults
+defaults test_defaults # testing_defaults
   acl invalid_src  src          0.0.0.0/7 224.0.0.0/3
   acl invalid_src  src_port     0:1023
   acl local_dst    hdr(host) -i localhost
   http-request allow if src 192.168.0.0/16
   tcp-request connection accept if TRUE
   tcp-request connection reject if FALSE
+  tcp-response content accept if TRUE # my comment
+  tcp-response content lua.foo param1 param2 if FALSE
+  tcp-response content set-bandwidth-limit my-limit limit 1m period 10s
   http-response allow if src 192.168.0.0/16
   http-response set-header X-SSL %[ssl_fc]
   http-after-response set-map(map.lst) %[src] %[res.hdr(X-Value)]
   http-after-response del-map(map.lst) %[src] if FALSE
   http-after-response del-acl(map.lst) %[src] if FALSE
+  no option http-drop-request-trailers
+  no option http-drop-response-trailers
   quic-initial reject
   quic-initial reject if TRUE
   quic-initial accept
@@ -303,6 +323,7 @@ defaults test_defaults
   mode http
   balance roundrobin
   hash-balance-factor 150
+  hash-preserve-affinity maxconn
 
 defaults test_defaults_2 from test_defaults
   option srvtcpka
@@ -402,14 +423,14 @@ frontend test
   mode http
   backlog 2048
   bind 192.168.1.1:80 name webserv thread all sigalgs RSA+SHA256 client-sigalgs ECDSA+SHA256:RSA+SHA256 ca-verify-file ca.pem nice 789 guid-prefix guid-example default-crt foobar.pem.rsa default-crt foobar.pem.ecdsa
-  bind 192.168.1.1:8080 name webserv2 thread 1/all force-tlsv10
-  bind 192.168.1.2:8080 name webserv3 thread 1/1 no-tlsv10
-  bind [2a01:c9c0:a3:8::3]:80 name ipv6 thread 1/1-1 force-sslv3
+  bind 192.168.1.1:8080 name webserv2 thread 1/all force-tlsv10 ssl no-strict-sni tls-tickets
+  bind 192.168.1.2:8080 name webserv3 thread 1/1 no-tlsv10 strict-sni no-tls-tickets
+  bind [2a01:c9c0:a3:8::3]:80 name ipv6 thread 1/1-1 force-sslv3 idle-ping 10000
   bind 192.168.1.1:80 name test-quic quic-socket connection thread 1/1
   bind 192.168.1.1:80 name testnbcon thread 1/all nbconn 6
   bind 192.168.1.1:80 name test-quic-algo thread 1/1 quic-cc-algo newreno
   bind 192.168.1.1:80 name test-quic-algo2 thread 1/1 quic-cc-algo bbr(480k)
-  bind 192.168.1.1:80 name test-quic-algo3 thread 1/1 quic-cc-algo nocc(,12)
+  bind 192.168.1.1:80 name test-quic-algo3 thread 1/1 quic-cc-algo nocc(,12) label quic3
   option httplog
   option dontlognull
   option contstats
@@ -429,6 +450,7 @@ frontend test
   option splice-response
   option idle-close-on-response
   option http-restrict-req-hdr-names delete
+  option http-drop-response-trailers
   acl invalid_src  src          0.0.0.0/7 224.0.0.0/3
   acl invalid_src  src_port     0:1023
   acl local_dst    hdr(host) -i localhost
@@ -498,6 +520,8 @@ frontend test
   http-request set-retries var(txn.retries) if TRUE
   http-request do-log
   http-request do-log if FALSE
+  http-request pause 20s
+  http-request pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 } # delay according to conn rate
   http-response allow if src 192.168.0.0/16
   http-response set-header X-SSL %[ssl_fc]
   http-response set-var(req.my_var) req.fhdr(user-agent),lower
@@ -536,6 +560,8 @@ frontend test
   http-response sc-set-gpt(1,2) 1234 if FALSE
   http-response do-log
   http-response do-log if FALSE
+  http-response pause 20s
+  http-response pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 } # delay according to conn rate
   http-after-response set-map(map.lst) %[src] %[res.hdr(X-Value)]
   http-after-response del-map(map.lst) %[src] if FALSE
   http-after-response del-acl(map.lst) %[src] if FALSE
@@ -669,6 +695,8 @@ frontend test
   error-log-format %T\ %t\ Some\ Text
   guid guid-example
   declare capture request len 1
+  ssl-f-use crt foobar.pem.rsa sigalgs "RSA-PSS+SHA256"
+  ssl-f-use crt test2.foobar.crt key test2.foobar.key ocsp test2.foobar.ocsp ocsp-update on
 
 frontend test_2 from test_defaults
   mode http
@@ -713,11 +741,12 @@ frontend test_2 from test_defaults
   stats show-modules
   stats realm HAProxy\\ Statistics
 
-backend test
+backend test # my comment
   mode http
   balance roundrobin
   hash-type consistent sdbm avalanche
   hash-balance-factor 150
+  hash-preserve-affinity always
   log-tag bla
   option http-keep-alive
   option forwardfor header X-Forwarded-For
@@ -737,14 +766,15 @@ backend test
   option splice-request
   option splice-response
   option http-restrict-req-hdr-names preserve
+  option http-drop-request-trailers
   default-server fall 2s rise 4s inter 5s port 8888 ws auto pool-low-conn 128 log-bufsize 6 force-sslv3
-  stick store-request src table test
+  stick store-request src table test # my comment
   stick match src table test
   stick on src table test
   stick store-response src
   stick store-response src_port table test_port
   stick store-response src table test if TRUE
-  tcp-response content accept if TRUE
+  tcp-response content accept if TRUE # my comment
   tcp-response content reject if FALSE
   tcp-response content lua.foo param1 param2 if FALSE
   tcp-response content set-bandwidth-limit my-limit limit 1m period 10s
@@ -776,14 +806,16 @@ backend test
   cookie BLA rewrite httponly nocache
   option external-check
   external-check command /bin/false
-  use-server webserv if TRUE
+  use-server webserv if TRUE # my comment
   use-server webserv2 unless TRUE
-  server webserv 192.168.1.1:9200 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128 id 1234 pool-purge-delay 10s tcp-ut 2s curves secp384r1 client-sigalgs ECDSA+SHA256:RSA+SHA256 sigalgs ECDSA+SHA256 log-bufsize 10 set-proxy-v2-tlv-fmt(0x20) %[fc_pp_tlv(0x20)] init-state fully-up # my comment
-  server webserv2 192.168.1.1:9300 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128 hash-key akey pool-conn-name apoolconnname # {"comment": "my structured comment", "id": "my_random_id_for_server"}
-  http-request set-dst hdr(x-dst)
+  server webserv 192.168.1.1:9200 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128 id 1234 pool-purge-delay 10s tcp-ut 2s curves secp384r1 client-sigalgs ECDSA+SHA256:RSA+SHA256 sigalgs ECDSA+SHA256 no-renegotiate log-bufsize 10 set-proxy-v2-tlv-fmt(0x20) %[fc_pp_tlv(0x20)] init-state fully-up idle-ping 10s check-reuse-pool strict-maxconn # my comment
+  server webserv2 192.168.1.1:9300 maxconn 1000 ssl weight 10 inter 2s cookie BLAH slowstart 6000 proxy-v2-options authority,crc32c ws h1 pool-low-conn 128 hash-key akey pool-conn-name apoolconnname no-check-reuse-pool check-pool-conn-name foo renegotiate # {"comment": "my structured comment", "id": "my_random_id_for_server"}
+  http-request set-dst hdr(x-dst) # my comment
   http-request set-dst-port int(4000)
   http-request set-uri %[url,regsub(^/metrics/,/,)] if { path_beg /metrics }
-  http-check connect
+  http-request pause 20s
+  http-request pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 } # delay according to conn rate
+  http-check connect # my comment
   http-check send meth GET uri / ver HTTP/1.1 hdr host haproxy.1wt.eu
   http-check expect status 200-399
   http-check connect port 443 ssl sni haproxy.1wt.eu
@@ -797,7 +829,7 @@ backend test
   http-check set-var-fmt(check.port) int(1234)
   http-check send-state
   http-check disable-on-404
-  server-template srv 1-3 google.com:80 check
+  server-template srv 1-3 google.com:80 check # my comment
   server-template site 1-10 google.com:8080 check backup
   server-template website 10-100 google.com:443 check no-backup
   server-template test 5 test.com check backup
@@ -810,6 +842,8 @@ backend test
   compression algo-res raw-deflate identity
   compression type-req text/plain application/json
   compression type-res text/plain
+  compression minsize-req 1k
+  compression minsize-res 2048
   srvtcpka-cnt 10
   srvtcpka-idle 10s
   srvtcpka-intvl 10
@@ -849,8 +883,10 @@ backend test
   http-send-name-header X-My-Awesome-Header
   persist rdp-cookie(name)
   source 192.168.1.222 usesrc hdr_ip(hdr,occ)
-  http-response set-fc-mark 123
+  http-response set-fc-mark 123 # my comment
   http-response set-fc-tos 1 if TRUE
+  http-response pause 20s
+  http-response pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 } # delay according to conn rate
   guid guid-example
 
 peers mycluster
@@ -860,7 +896,7 @@ peers mycluster
   peer hapee 192.168.1.1:1023 shard 1
   peer aggregator HARDCODEDCLUSTERIP:10023
   shards 3
-  table t1 type string len 1000 size 200k expire 5m nopurge store gpc0,conn_rate(30s)
+  table t1 type string len 1000 size 200k expire 5m nopurge store gpc0,conn_rate(30s) recv-only
   table t2 type string len 1000 size 200k expire 5m nopurge store gpc0 store gpc1,conn_rate(30s)
   table t9 type string len 1000 size 200k expire 5m write-to t2 nopurge store gpc0,conn_rate(30s)
 
@@ -949,6 +985,8 @@ ring myring
   server s1 192.168.1.1:80 check resolve-opts allow-dup-ip,ignore-weight resolve-net 10.0.0.0/8,10.200.200.0/12
 
 log-forward sylog-loadb
+  option assume-rfc6587-ntf
+  option dont-parse-log
   dgram-bind 127.0.0.1:1514 transparent name webserv
   bind 127.0.0.1:1514
   backlog 10
@@ -972,6 +1010,14 @@ mailers localmailer1
   mailer smtp2 10.0.10.2:514
   timeout mail 15s
 
+acme test
+  contact me@example.com
+  bits 4096
+  challenge http-01
+  directory https://acme.example.com/directory
+  keytype ECDSA
+  map acme@t
+
 crt-store cert-bunker1
   crt-base /secure/certs
   key-base /secure/keys
@@ -990,7 +1036,7 @@ http-errors website-2
   errorfile 404 /etc/haproxy/errorfiles/site2/404.http
   errorfile 501 /etc/haproxy/errorfiles/site2/501.http
 
-backend test_2 from test_defaults_2
+backend test_2 from test_defaults_2 # {"comment": "my comment"}
   mode http
   balance roundrobin
   hash-type consistent sdbm avalanche
@@ -1018,9 +1064,9 @@ backend test_2 from test_defaults_2
   timeout tunnel 5s
   timeout server 3s
   cookie BLA rewrite httponly nocache
-  stick-table type ip size 100k expire 1h peers mycluster write-to t99 store http_req_rate(10s)
+  stick-table type ip size 100k expire 1h peers mycluster write-to t99 store http_req_rate(10s) recv-only
   http-check expect rstatus some-pattern
-  http-error status 200 content-type "text/plain" string "My content" hdr Some-Header value
+  http-error status 200 content-type "text/plain" string "My content" hdr Some-Header value # {"comment": "my comment", "id": 123}
   http-error status 503 content-type application/json string "My content" hdr Additional-Header value1 hdr Some-Header value
   srvtcpka-cnt 10
   srvtcpka-idle 10s

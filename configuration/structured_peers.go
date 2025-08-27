@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	parser "github.com/haproxytech/client-native/v6/config-parser"
+	"github.com/haproxytech/client-native/v6/configuration/options"
 	"github.com/haproxytech/client-native/v6/models"
 )
 
@@ -44,7 +45,7 @@ func (c *client) GetStructuredPeerSection(name string, transactionID string) (in
 		return 0, nil, err
 	}
 
-	if !c.checkSectionExists(parser.Peers, name, p) {
+	if !p.SectionExists(parser.Peers, name) {
 		return v, nil, NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("PeerSection %s does not exist", name))
 	}
 
@@ -87,7 +88,7 @@ func (c *client) EditStructuredPeerSection(data *models.PeerSection, transaction
 		return err
 	}
 
-	if !c.checkSectionExists(parser.Peers, data.Name, p) {
+	if !p.SectionExists(parser.Peers, data.Name) {
 		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("%s %s does not exist", parser.Peers, data.Name))
 		return c.HandleError(data.Name, "", "", t, transactionID == "", e)
 	}
@@ -97,12 +98,11 @@ func (c *client) EditStructuredPeerSection(data *models.PeerSection, transaction
 	}
 
 	if err = serializePeerSection(StructuredToParserArgs{
-		TID:                transactionID,
-		Parser:             &p,
-		Options:            &c.ConfigurationOptions,
-		HandleError:        c.HandleError,
-		CheckSectionExists: c.checkSectionExists,
-	}, data); err != nil {
+		TID:         transactionID,
+		Parser:      &p,
+		Options:     &c.ConfigurationOptions,
+		HandleError: c.HandleError,
+	}, data, &c.ConfigurationOptions); err != nil {
 		return err
 	}
 	return c.SaveData(p, t, transactionID == "")
@@ -123,18 +123,17 @@ func (c *client) CreateStructuredPeerSection(data *models.PeerSection, transacti
 		return err
 	}
 
-	if c.checkSectionExists(parser.Peers, data.Name, p) {
+	if p.SectionExists(parser.Peers, data.Name) {
 		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("%s %s already exist", parser.Peers, data.Name))
 		return c.HandleError(data.Name, "", "", t, transactionID == "", e)
 	}
 
 	if err = serializePeerSection(StructuredToParserArgs{
-		TID:                transactionID,
-		Parser:             &p,
-		Options:            &c.ConfigurationOptions,
-		HandleError:        c.HandleError,
-		CheckSectionExists: c.checkSectionExists,
-	}, data); err != nil {
+		TID:         transactionID,
+		Parser:      &p,
+		Options:     &c.ConfigurationOptions,
+		HandleError: c.HandleError,
+	}, data, &c.ConfigurationOptions); err != nil {
 		return err
 	}
 	return c.SaveData(p, t, transactionID == "")
@@ -214,7 +213,7 @@ func parsePeerSection(name string, p parser.Parser) (*models.PeerSection, error)
 	return ps, nil
 }
 
-func serializePeerSection(a StructuredToParserArgs, ps *models.PeerSection) error {
+func serializePeerSection(a StructuredToParserArgs, ps *models.PeerSection, opt *options.ConfigurationOptions) error {
 	p := *a.Parser
 	var err error
 	err = p.SectionsCreate(parser.Peers, ps.Name)
@@ -230,7 +229,7 @@ func serializePeerSection(a StructuredToParserArgs, ps *models.PeerSection) erro
 		}
 	}
 	for _, bind := range ps.Binds {
-		if err = p.Insert(parser.Peers, ps.Name, "bind", SerializeBind(bind), -1); err != nil {
+		if err = p.Insert(parser.Peers, ps.Name, "bind", SerializeBind(bind, opt), -1); err != nil {
 			return a.HandleError(bind.Name, PeersParentName, ps.Name, a.TID, a.TID == "", err)
 		}
 	}

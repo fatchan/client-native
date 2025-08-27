@@ -581,6 +581,22 @@ const frontend_bind443defaultcrtfoobarpemrsadef = `
 frontend test
   bind :443 default-crt foobar.pem.rsa default-crt foobar.pem.ecdsa
 `
+const frontend_bind443idleping10s = `
+frontend test
+  bind :443 idle-ping 10s
+`
+const frontend_bind443idleping10 = `
+frontend test
+  bind :443 idle-ping 10
+`
+const frontend_bind443ssltlstickets = `
+frontend test
+  bind :443 ssl tls-tickets
+`
+const frontend_bind443sslnostrictsni = `
+frontend test
+  bind :443 ssl no-strict-sni
+`
 const frontend_bindprocessall = `
 frontend test
   bind-process all
@@ -801,6 +817,10 @@ const frontend_sticktabletypeintegersize1msrvke = `
 frontend test
   stick-table type integer size 1m srvkey addr write-to t2
 `
+const frontend_sticktabletypeintegersize1msrvke_ = `
+frontend test
+  stick-table type integer size 1m srvkey addr write-to t2 recv-only
+`
 const frontend_usebackendtestifTRUE = `
 frontend test
   use_backend test if TRUE
@@ -892,6 +912,18 @@ frontend test
 const frontend_optionoriginaltoexcept127001comm = `
 frontend test
   option originalto except 127.0.0.1 # comment
+`
+const frontend_sslfusecrttestfoobarpem = `
+frontend test
+  ssl-f-use crt test.foobar.pem
+`
+const frontend_sslfusecrttest2foobarcrtkeytest2 = `
+frontend test
+  ssl-f-use crt test2.foobar.crt key test2.foobar.key ocsp test2.foobar.ocsp ocsp-update on
+`
+const frontend_sslfusecrtfoobarpemrsasigalgsRSA = `
+frontend test
+  ssl-f-use crt foobar.pem.rsa sigalgs "RSA-PSS+SHA256"
 `
 const frontend_httprequestsetmapmaplstsrcreqhdr = `
 frontend test
@@ -1132,6 +1164,30 @@ frontend test
 const frontend_httprequestnormalizeuriquerysort_ = `
 frontend test
   http-request normalize-uri query-sort-by-name if TRUE
+`
+const frontend_httprequestpause20 = `
+frontend test
+  http-request pause 20
+`
+const frontend_httprequestpause20s = `
+frontend test
+  http-request pause 20s
+`
+const frontend_httprequestpausereshdrXPauseSeco = `
+frontend test
+  http-request pause res.hdr(X-Pause-Seconds),mul(1000)
+`
+const frontend_httprequestpause20ifTRUE = `
+frontend test
+  http-request pause 20 if TRUE
+`
+const frontend_httprequestpause20sifTRUE = `
+frontend test
+  http-request pause 20s if TRUE
+`
+const frontend_httprequestpausecalcscconnrate03 = `
+frontend test
+  http-request pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 }
 `
 const frontend_httprequestredirectprefixhttpsmy = `
 frontend test
@@ -1788,6 +1844,30 @@ frontend test
 const frontend_httpresponseluafooparamparam2 = `
 frontend test
   http-response lua.foo param param2
+`
+const frontend_httpresponsepause20 = `
+frontend test
+  http-response pause 20
+`
+const frontend_httpresponsepause20s = `
+frontend test
+  http-response pause 20s
+`
+const frontend_httpresponsepausereshdrXPauseSec = `
+frontend test
+  http-response pause res.hdr(X-Pause-Seconds),mul(1000)
+`
+const frontend_httpresponsepause20ifTRUE = `
+frontend test
+  http-response pause 20 if TRUE
+`
+const frontend_httpresponsepause20sifTRUE = `
+frontend test
+  http-response pause 20s if TRUE
+`
+const frontend_httpresponsepausecalcscconnrate0 = `
+frontend test
+  http-response pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 }
 `
 const frontend_httpresponseredirectprefixhttpsm = `
 frontend test

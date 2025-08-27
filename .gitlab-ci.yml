@@ -4,12 +4,37 @@ variables:
   GO_VERSION: "1.24"
   DOCKER_VERSION: "26.0"
 stages:
+  - bots
   - check-commit
   - generate
   - build
   - lint
   - test
   - e2e
+pipelines-check:
+  stage: bots
+  needs: []
+  image:
+    name: $CI_REGISTRY_GO/docker:$DOCKER_VERSION-go$GO_VERSION
+    entrypoint: [""]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  tags:
+    - go
+  script:
+    - go run cmd/gitlab-mr-pipelines/main.go
+mr-backport-question:
+  stage: bots
+  needs: []
+  image:
+    name: $CI_REGISTRY_GO/docker:$DOCKER_VERSION-go$GO_VERSION
+    entrypoint: [""]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
+  tags:
+    - go
+  script:
+    - go run cmd/gitlab-mr-checker/main.go
 build-specification:
   stage: build
   needs: []
@@ -126,7 +151,7 @@ lint-commit-msg:
   stage: lint
   needs: ["build"]
   image:
-    name: $CI_REGISTRY_GO/check-commit:v2.1.0
+    name: $CI_REGISTRY_GO/commit-check:5.2.0
     entrypoint: [""]
   tags:
     - go
@@ -212,3 +237,7 @@ HAProxy-3.1:
   extends: .e2e
   variables:
     HAPROXY_VERSION: "3.1"
+HAProxy-3.2:
+  extends: .e2e
+  variables:
+    HAPROXY_VERSION: "3.2"

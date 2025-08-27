@@ -29,7 +29,7 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-// SslCertificates SSL Files Array
+// SslCertificates SSL Certificate Files Array
 //
 // # Array of ssl certificate files
 //

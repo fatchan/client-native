@@ -279,6 +279,10 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 				serverParams.CheckSendProxy = "enabled"
 			case "no-check-send-proxy":
 				serverParams.CheckSendProxy = "disabled"
+			case "check-reuse-pool":
+				serverParams.CheckReusePool = "enabled"
+			case "no-check-reuse-pool":
+				serverParams.CheckReusePool = "disabled"
 			case "check-ssl":
 				serverParams.CheckSsl = "enabled"
 			case "no-check-ssl":
@@ -320,6 +324,10 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 			case "no-tlsv13":
 				serverParams.Tlsv13 = "disabled"
 				serverParams.ForceTlsv13 = "disabled"
+			case "renegotiate":
+				serverParams.Renegotiate = "enabled"
+			case "no-renegotiate":
+				serverParams.Renegotiate = "disabled"
 			case "send-proxy":
 				serverParams.SendProxy = "enabled"
 			case "no-send-proxy":
@@ -344,6 +352,8 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 				serverParams.SslReuse = "enabled"
 			case "no-ssl-reuse":
 				serverParams.SslReuse = "disabled"
+			case "strict-maxconn":
+				serverParams.StrictMaxconn = true
 			case "tls-tickets":
 				serverParams.TLSTickets = "enabled"
 			case "no-tls-tickets":
@@ -378,6 +388,8 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 				serverParams.SslCafile = v.Value
 			case "check-alpn":
 				serverParams.CheckAlpn = v.Value
+			case "check-pool-conn-name":
+				serverParams.CheckPoolConnName = v.Value
 			case "check-proto":
 				serverParams.CheckProto = v.Value
 			case "check-sni":
@@ -405,6 +417,8 @@ func parseServerParams(serverOptions []params.ServerOption, serverParams *models
 				serverParams.Fall = misc.ParseTimeout(v.Value)
 			case "guid":
 				serverParams.GUID = v.Value
+			case "idle-ping":
+				serverParams.IdlePing = misc.ParseTimeout(v.Value)
 			case "init-addr":
 				serverParams.InitAddr = &v.Value
 			case "init-state":
@@ -608,8 +622,22 @@ func SerializeServerParams(s models.ServerParams, opt *options.ConfigurationOpti
 	if s.CheckSsl == "disabled" {
 		options = append(options, &params.ServerOptionWord{Name: "no-check-ssl"})
 	}
+	if s.CheckPoolConnName != "" {
+		options = append(options, &params.ServerOptionValue{Name: "check-pool-conn-name", Value: s.CheckPoolConnName})
+	}
+	if s.CheckReusePool == "enabled" {
+		options = append(options, &params.ServerOptionWord{Name: "check-reuse-pool"})
+	}
+	if s.CheckReusePool == "disabled" {
+		options = append(options, &params.ServerOptionWord{Name: "no-check-reuse-pool"})
+	}
 	if s.CheckViaSocks4 == "enabled" {
 		options = append(options, &params.ServerOptionWord{Name: "check-via-socks4"})
+	}
+	if s.Renegotiate == "enabled" {
+		options = append(options, &params.ServerOptionWord{Name: "renegotiate"})
+	} else if s.Renegotiate == "disabled" {
+		options = append(options, &params.ServerOptionWord{Name: "no-renegotiate"})
 	}
 	if s.Sslv3 == "enabled" {
 		options = append(options, &params.ServerOptionWord{Name: "force-sslv3"})
@@ -727,6 +755,9 @@ func SerializeServerParams(s models.ServerParams, opt *options.ConfigurationOpti
 	if s.Stick == "disabled" {
 		options = append(options, &params.ServerOptionWord{Name: "non-stick"})
 	}
+	if s.StrictMaxconn {
+		options = append(options, &params.ServerOptionWord{Name: "strict-maxconn"})
+	}
 	if s.Tfo == "enabled" {
 		options = append(options, &params.ServerOptionWord{Name: "tfo"})
 	}
@@ -789,6 +820,9 @@ func SerializeServerParams(s models.ServerParams, opt *options.ConfigurationOpti
 	}
 	if s.Fall != nil {
 		options = append(options, &params.ServerOptionValue{Name: "fall", Value: strconv.FormatInt(*s.Fall, 10)})
+	}
+	if s.IdlePing != nil {
+		options = append(options, &params.ServerOptionValue{Name: "idle-ping", Value: misc.SerializeTime(*s.IdlePing, opt.PreferredTimeSuffix)})
 	}
 	if s.InitAddr != nil {
 		options = append(options, &params.ServerOptionValue{Name: "init-addr", Value: *s.InitAddr})

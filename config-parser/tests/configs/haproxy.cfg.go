@@ -28,6 +28,10 @@ global
   cpu-map 1 3
   cpu-map 2 1
   cpu-map 3 2
+  cpu-policy none
+  cpu-set reset
+  cpu-set only-node 0
+  cpu-set drop-core 8-9
   maxconn 5000
   pidfile /var/run/haproxy.pid
   stats socket /var/run/haproxy-runtime-api.1.sock level admin mode 777 expose-fd listeners process 1
@@ -52,6 +56,8 @@ global
   tune.h2.fe.rxbuf 32k
   tune.h2.zero-copy-fwd-send on
   tune.lua.maxmem 65536
+  tune.notsent-lowat.client 32k
+  tune.notsent-lowat.server 16k
   tune.pt.zero-copy-forwarding on
   tune.renice.runtime -10
   tune.renice.startup 8
@@ -66,6 +72,7 @@ global
   expose-deprecated-directives
   force-cfg-parser-pause 1s
   warn-blocked-traffic-after 50ms
+  dns-accept-family ipv4,ipv6
   # random comment before snippet
   ###_config-snippet_### BEGIN
   tune.ssl.default-dh-param 2048
@@ -88,6 +95,7 @@ defaults A
   log-format '%ci:%cp [%tr] %ft %b/%s %TR/%Tw/%Tc/%Tr/%Ta %ST %B %CC %CS %tsc %ac/%fc/%bc/%sc/%rc %sq/%bq %hr %hs "%HM %[var(txn.base)] %HV"'
   option redispatch
   option dontlognull
+  no option http-drop-request-trailers
   option http-server-close
   option http-keep-alive
   no option checkcache
@@ -121,6 +129,7 @@ defaults A
   srvtcpka-intvl 10s
   load-server-state-from-file global
   hash-balance-factor 150
+  hash-preserve-affinity maxconn
 
 # some random userlist L1
 userlist L1
@@ -184,6 +193,10 @@ cache foobar
 traces
   trace h1 sink buf1 level developer verbosity complete start now
   trace h2 sink buf2 level developer verbosity complete start now
+
+log-forward
+  option assume-rfc6587-ntf
+  option dont-parse-log
 
 crt-store tpm2
   crt-base /c
@@ -322,6 +335,7 @@ frontend xyz5 from A
 
 backend default_backend from A
   mode http
+  no option http-drop-request-trailers
   option checkcache
   option independent-streams
   option nolinger
@@ -386,6 +400,7 @@ backend test from A
   tcp-response content accept if TRUE
   tcp-response content reject if FALSE
   hash-balance-factor 150
+  hash-preserve-affinity always
   option httplog
   option contstats
   option contstats
@@ -410,6 +425,7 @@ listen stats from A
   option transparent
   option idle-close-on-response
   option dontlog-normal
+  hash-preserve-affinity maxconn
   stats enable
   stats realm HAProxy\ Statistics
   stats uri /

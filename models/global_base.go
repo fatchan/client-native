@@ -41,6 +41,9 @@ type GlobalBase struct {
 	// CPU maps
 	CPUMaps []*CPUMap `json:"cpu_maps,omitempty"`
 
+	// CPU sets
+	CPUSets []*CPUSet `json:"cpu_set,omitempty"`
+
 	// h1 case adjusts
 	H1CaseAdjusts []*H1CaseAdjust `json:"h1_case_adjust,omitempty"`
 
@@ -69,6 +72,11 @@ type GlobalBase struct {
 	// cluster secret
 	ClusterSecret string `json:"cluster_secret,omitempty"`
 
+	// cpu policy
+	// Enum: ["none","efficiency","first-usable-node","group-by-2-ccx","group-by-2-clusters","group-by-3-ccx","group-by-3-clusters","group-by-4-ccx","group-by-4-cluster","group-by-ccx","group-by-cluster","performance","resource"]
+	// +kubebuilder:validation:Enum=none;efficiency;first-usable-node;group-by-2-ccx;group-by-2-clusters;group-by-3-ccx;group-by-3-clusters;group-by-4-ccx;group-by-4-cluster;group-by-ccx;group-by-cluster;performance;resource;
+	CPUPolicy string `json:"cpu_policy,omitempty"`
+
 	// daemon
 	Daemon bool `json:"daemon,omitempty"`
 
@@ -83,6 +91,11 @@ type GlobalBase struct {
 
 	// device atlas options
 	DeviceAtlasOptions *DeviceAtlasOptions `json:"device_atlas_options,omitempty"`
+
+	// dns accept family
+	// Pattern: ^[^\s]+$
+	// +kubebuilder:validation:Pattern=`^[^\s]+$`
+	DNSAcceptFamily string `json:"dns_accept_family,omitempty"`
 
 	// environment options
 	EnvironmentOptions *EnvironmentOptions `json:"environment_options,omitempty"`
@@ -168,6 +181,10 @@ type GlobalBase struct {
 
 	// master worker
 	MasterWorker bool `json:"master-worker,omitempty"`
+
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 
 	// mworker max reloads
 	// Minimum: 0
@@ -280,6 +297,10 @@ func (m *GlobalBase) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateCPUSets(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateH1CaseAdjusts(formats); err != nil {
 		res = append(res, err)
 	}
@@ -308,6 +329,10 @@ func (m *GlobalBase) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateCPUPolicy(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateDebugOptions(formats); err != nil {
 		res = append(res, err)
 	}
@@ -317,6 +342,10 @@ func (m *GlobalBase) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateDeviceAtlasOptions(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateDNSAcceptFamily(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -462,6 +491,32 @@ func (m *GlobalBase) validateCPUMaps(formats strfmt.Registry) error {
 					return ve.ValidateName("cpu_maps" + "." + strconv.Itoa(i))
 				} else if ce, ok := err.(*errors.CompositeError); ok {
 					return ce.ValidateName("cpu_maps" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+func (m *GlobalBase) validateCPUSets(formats strfmt.Registry) error {
+	if swag.IsZero(m.CPUSets) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(m.CPUSets); i++ {
+		if swag.IsZero(m.CPUSets[i]) { // not required
+			continue
+		}
+
+		if m.CPUSets[i] != nil {
+			if err := m.CPUSets[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("cpu_set" + "." + strconv.Itoa(i))
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("cpu_set" + "." + strconv.Itoa(i))
 				}
 				return err
 			}
@@ -626,6 +681,81 @@ func (m *GlobalBase) validateCloseSpreadTime(formats strfmt.Registry) error {
 	return nil
 }
 
+var globalBaseTypeCPUPolicyPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["none","efficiency","first-usable-node","group-by-2-ccx","group-by-2-clusters","group-by-3-ccx","group-by-3-clusters","group-by-4-ccx","group-by-4-cluster","group-by-ccx","group-by-cluster","performance","resource"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		globalBaseTypeCPUPolicyPropEnum = append(globalBaseTypeCPUPolicyPropEnum, v)
+	}
+}
+
+const (
+
+	// GlobalBaseCPUPolicyNone captures enum value "none"
+	GlobalBaseCPUPolicyNone string = "none"
+
+	// GlobalBaseCPUPolicyEfficiency captures enum value "efficiency"
+	GlobalBaseCPUPolicyEfficiency string = "efficiency"
+
+	// GlobalBaseCPUPolicyFirstDashUsableDashNode captures enum value "first-usable-node"
+	GlobalBaseCPUPolicyFirstDashUsableDashNode string = "first-usable-node"
+
+	// GlobalBaseCPUPolicyGroupDashByDash2DashCcx captures enum value "group-by-2-ccx"
+	GlobalBaseCPUPolicyGroupDashByDash2DashCcx string = "group-by-2-ccx"
+
+	// GlobalBaseCPUPolicyGroupDashByDash2DashClusters captures enum value "group-by-2-clusters"
+	GlobalBaseCPUPolicyGroupDashByDash2DashClusters string = "group-by-2-clusters"
+
+	// GlobalBaseCPUPolicyGroupDashByDash3DashCcx captures enum value "group-by-3-ccx"
+	GlobalBaseCPUPolicyGroupDashByDash3DashCcx string = "group-by-3-ccx"
+
+	// GlobalBaseCPUPolicyGroupDashByDash3DashClusters captures enum value "group-by-3-clusters"
+	GlobalBaseCPUPolicyGroupDashByDash3DashClusters string = "group-by-3-clusters"
+
+	// GlobalBaseCPUPolicyGroupDashByDash4DashCcx captures enum value "group-by-4-ccx"
+	GlobalBaseCPUPolicyGroupDashByDash4DashCcx string = "group-by-4-ccx"
+
+	// GlobalBaseCPUPolicyGroupDashByDash4DashCluster captures enum value "group-by-4-cluster"
+	GlobalBaseCPUPolicyGroupDashByDash4DashCluster string = "group-by-4-cluster"
+
+	// GlobalBaseCPUPolicyGroupDashByDashCcx captures enum value "group-by-ccx"
+	GlobalBaseCPUPolicyGroupDashByDashCcx string = "group-by-ccx"
+
+	// GlobalBaseCPUPolicyGroupDashByDashCluster captures enum value "group-by-cluster"
+	GlobalBaseCPUPolicyGroupDashByDashCluster string = "group-by-cluster"
+
+	// GlobalBaseCPUPolicyPerformance captures enum value "performance"
+	GlobalBaseCPUPolicyPerformance string = "performance"
+
+	// GlobalBaseCPUPolicyResource captures enum value "resource"
+	GlobalBaseCPUPolicyResource string = "resource"
+)
+
+// prop value enum
+func (m *GlobalBase) validateCPUPolicyEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, globalBaseTypeCPUPolicyPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *GlobalBase) validateCPUPolicy(formats strfmt.Registry) error {
+	if swag.IsZero(m.CPUPolicy) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateCPUPolicyEnum("cpu_policy", "body", m.CPUPolicy); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *GlobalBase) validateDebugOptions(formats strfmt.Registry) error {
 	if swag.IsZero(m.DebugOptions) { // not required
 		return nil
@@ -678,6 +808,18 @@ func (m *GlobalBase) validateDeviceAtlasOptions(formats strfmt.Registry) error {
 			}
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (m *GlobalBase) validateDNSAcceptFamily(formats strfmt.Registry) error {
+	if swag.IsZero(m.DNSAcceptFamily) { // not required
+		return nil
+	}
+
+	if err := validate.Pattern("dns_accept_family", "body", m.DNSAcceptFamily, `^[^\s]+$`); err != nil {
+		return err
 	}
 
 	return nil
@@ -1228,6 +1370,10 @@ func (m *GlobalBase) ContextValidate(ctx context.Context, formats strfmt.Registr
 		res = append(res, err)
 	}
 
+	if err := m.contextValidateCPUSets(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.contextValidateH1CaseAdjusts(ctx, formats); err != nil {
 		res = append(res, err)
 	}
@@ -1357,6 +1503,31 @@ func (m *GlobalBase) contextValidateCPUMaps(ctx context.Context, formats strfmt.
 					return ve.ValidateName("cpu_maps" + "." + strconv.Itoa(i))
 				} else if ce, ok := err.(*errors.CompositeError); ok {
 					return ce.ValidateName("cpu_maps" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+func (m *GlobalBase) contextValidateCPUSets(ctx context.Context, formats strfmt.Registry) error {
+
+	for i := 0; i < len(m.CPUSets); i++ {
+
+		if m.CPUSets[i] != nil {
+
+			if swag.IsZero(m.CPUSets[i]) { // not required
+				return nil
+			}
+
+			if err := m.CPUSets[i].ContextValidate(ctx, formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("cpu_set" + "." + strconv.Itoa(i))
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("cpu_set" + "." + strconv.Itoa(i))
 				}
 				return err
 			}
@@ -2046,6 +2217,127 @@ func (m *CPUMap) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (m *CPUMap) UnmarshalBinary(b []byte) error {
 	var res CPUMap
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*m = res
+	return nil
+}
+
+// CPUSet CPU set
+//
+// swagger:model CPUSet
+type CPUSet struct {
+	// directive
+	// Required: true
+	// Enum: ["reset","drop-cpu","only-cpu","drop-node","only-node","drop-cluster","only-cluster","drop-core","only-core","drop-thread","only-thread"]
+	// +kubebuilder:validation:Enum=reset;drop-cpu;only-cpu;drop-node;only-node;drop-cluster;only-cluster;drop-core;only-core;drop-thread;only-thread;
+	Directive *string `json:"directive"`
+
+	// set
+	Set string `json:"set,omitempty"`
+}
+
+// Validate validates this CPU set
+func (m *CPUSet) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.validateDirective(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+var cpuSetTypeDirectivePropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["reset","drop-cpu","only-cpu","drop-node","only-node","drop-cluster","only-cluster","drop-core","only-core","drop-thread","only-thread"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		cpuSetTypeDirectivePropEnum = append(cpuSetTypeDirectivePropEnum, v)
+	}
+}
+
+const (
+
+	// CPUSetDirectiveReset captures enum value "reset"
+	CPUSetDirectiveReset string = "reset"
+
+	// CPUSetDirectiveDropDashCPU captures enum value "drop-cpu"
+	CPUSetDirectiveDropDashCPU string = "drop-cpu"
+
+	// CPUSetDirectiveOnlyDashCPU captures enum value "only-cpu"
+	CPUSetDirectiveOnlyDashCPU string = "only-cpu"
+
+	// CPUSetDirectiveDropDashNode captures enum value "drop-node"
+	CPUSetDirectiveDropDashNode string = "drop-node"
+
+	// CPUSetDirectiveOnlyDashNode captures enum value "only-node"
+	CPUSetDirectiveOnlyDashNode string = "only-node"
+
+	// CPUSetDirectiveDropDashCluster captures enum value "drop-cluster"
+	CPUSetDirectiveDropDashCluster string = "drop-cluster"
+
+	// CPUSetDirectiveOnlyDashCluster captures enum value "only-cluster"
+	CPUSetDirectiveOnlyDashCluster string = "only-cluster"
+
+	// CPUSetDirectiveDropDashCore captures enum value "drop-core"
+	CPUSetDirectiveDropDashCore string = "drop-core"
+
+	// CPUSetDirectiveOnlyDashCore captures enum value "only-core"
+	CPUSetDirectiveOnlyDashCore string = "only-core"
+
+	// CPUSetDirectiveDropDashThread captures enum value "drop-thread"
+	CPUSetDirectiveDropDashThread string = "drop-thread"
+
+	// CPUSetDirectiveOnlyDashThread captures enum value "only-thread"
+	CPUSetDirectiveOnlyDashThread string = "only-thread"
+)
+
+// prop value enum
+func (m *CPUSet) validateDirectiveEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, cpuSetTypeDirectivePropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *CPUSet) validateDirective(formats strfmt.Registry) error {
+
+	if err := validate.Required("directive", "body", m.Directive); err != nil {
+		return err
+	}
+
+	// value enum
+	if err := m.validateDirectiveEnum("directive", "body", *m.Directive); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ContextValidate validates this CPU set based on context it is used
+func (m *CPUSet) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (m *CPUSet) MarshalBinary() ([]byte, error) {
+	if m == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(m)
+}
+
+// UnmarshalBinary interface implementation
+func (m *CPUSet) UnmarshalBinary(b []byte) error {
+	var res CPUSet
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

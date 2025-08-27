@@ -33,6 +33,7 @@ import (
 type Configuration interface {
 	Parser
 	ACL
+	Acme
 	Backend
 	Bind
 	Cache
@@ -66,6 +67,7 @@ type Configuration interface {
 	Server
 	ServerTemplate
 	Site
+	SSLFrontUse
 	StickRule
 	ServiceI
 	Table

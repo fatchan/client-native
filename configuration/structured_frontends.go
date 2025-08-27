@@ -22,6 +22,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	parser "github.com/haproxytech/client-native/v6/config-parser"
 	"github.com/haproxytech/client-native/v6/config-parser/types"
+	"github.com/haproxytech/client-native/v6/configuration/options"
 	"github.com/haproxytech/client-native/v6/models"
 )
 
@@ -45,7 +46,7 @@ func (c *client) GetStructuredFrontend(name string, transactionID string) (int64
 		return 0, nil, err
 	}
 
-	if !c.checkSectionExists(parser.Frontends, name, p) {
+	if !p.SectionExists(parser.Frontends, name) {
 		return v, nil, NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("Frontend %s does not exist", name))
 	}
 
@@ -88,7 +89,7 @@ func (c *client) EditStructuredFrontend(name string, data *models.Frontend, tran
 		return err
 	}
 
-	if !c.checkSectionExists(parser.Frontends, name, p) {
+	if !p.SectionExists(parser.Frontends, name) {
 		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("%s %s does not exist", parser.Frontends, name))
 		return c.HandleError(name, "", "", t, transactionID == "", e)
 	}
@@ -98,12 +99,11 @@ func (c *client) EditStructuredFrontend(name string, data *models.Frontend, tran
 	}
 
 	if err = serializeFrontendSection(StructuredToParserArgs{
-		TID:                transactionID,
-		Parser:             &p,
-		Options:            &c.ConfigurationOptions,
-		HandleError:        c.HandleError,
-		CheckSectionExists: c.checkSectionExists,
-	}, data); err != nil {
+		TID:         transactionID,
+		Parser:      &p,
+		Options:     &c.ConfigurationOptions,
+		HandleError: c.HandleError,
+	}, data, &c.ConfigurationOptions); err != nil {
 		return err
 	}
 	return c.SaveData(p, t, transactionID == "")
@@ -124,18 +124,17 @@ func (c *client) CreateStructuredFrontend(data *models.Frontend, transactionID s
 		return err
 	}
 
-	if c.checkSectionExists(parser.Frontends, data.Name, p) {
+	if p.SectionExists(parser.Frontends, data.Name) {
 		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("%s %s already exist", parser.Frontends, data.Name))
 		return c.HandleError(data.Name, "", "", t, transactionID == "", e)
 	}
 
 	if err = serializeFrontendSection(StructuredToParserArgs{
-		TID:                transactionID,
-		Parser:             &p,
-		Options:            &c.ConfigurationOptions,
-		HandleError:        c.HandleError,
-		CheckSectionExists: c.checkSectionExists,
-	}, data); err != nil {
+		TID:         transactionID,
+		Parser:      &p,
+		Options:     &c.ConfigurationOptions,
+		HandleError: c.HandleError,
+	}, data, &c.ConfigurationOptions); err != nil {
 		return err
 	}
 	return c.SaveData(p, t, transactionID == "")
@@ -251,10 +250,17 @@ func parseFrontendsSection(name string, p parser.Parser) (*models.Frontend, erro
 	}
 	f.QUICInitialRuleList = quicInitialRules
 
+	// ssl-f-use rules
+	sslFuses, err := ParseSSLFrontUses(FrontendParentName, name, p)
+	if err != nil {
+		return nil, err
+	}
+	f.SSLFrontUses = sslFuses
+
 	return f, nil
 }
 
-func serializeFrontendSection(a StructuredToParserArgs, f *models.Frontend) error { //nolint:gocognit
+func serializeFrontendSection(a StructuredToParserArgs, f *models.Frontend, opt *options.ConfigurationOptions) error { //nolint:gocognit
 	p := *a.Parser
 	var err error
 
@@ -266,7 +272,7 @@ func serializeFrontendSection(a StructuredToParserArgs, f *models.Frontend) erro
 		return a.HandleError(f.Name, "", "", a.TID, a.TID == "", err)
 	}
 	for _, bind := range f.Binds {
-		if err = p.Insert(parser.Frontends, f.Name, "bind", SerializeBind(bind), -1); err != nil {
+		if err = p.Insert(parser.Frontends, f.Name, "bind", SerializeBind(bind, opt), -1); err != nil {
 			return a.HandleError(bind.Name, FrontendParentName, f.Name, a.TID, a.TID == "", err)
 		}
 	}
@@ -276,7 +282,7 @@ func serializeFrontendSection(a StructuredToParserArgs, f *models.Frontend) erro
 		}
 	}
 	for i, acl := range f.ACLList {
-		if err = p.Insert(parser.Frontends, f.Name, "acl", SerializeACL(*acl), i); err != nil {
+		if err = p.Insert(parser.Frontends, f.Name, "acl", *acl, i); err != nil {
 			return a.HandleError(strconv.FormatInt(int64(i), 10), FrontendParentName, f.Name, a.TID, a.TID == "", err)
 		}
 	}
@@ -352,6 +358,12 @@ func serializeFrontendSection(a StructuredToParserArgs, f *models.Frontend) erro
 			return err
 		}
 		if err = p.Insert(parser.Frontends, f.Name, "quic-initial", s, i); err != nil {
+			return a.HandleError(strconv.FormatInt(int64(i), 10), FrontendParentName, f.Name, a.TID, a.TID == "", err)
+		}
+	}
+	for i, use := range f.SSLFrontUses {
+		u := SerializeSSLFrontUse(*use)
+		if err = p.Insert(parser.Frontends, f.Name, "ssl-f-use", u, i); err != nil {
 			return a.HandleError(strconv.FormatInt(int64(i), 10), FrontendParentName, f.Name, a.TID, a.TID == "", err)
 		}
 	}

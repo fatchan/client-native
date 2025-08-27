@@ -26,6 +26,38 @@ global test
   cpu-map 1/all 0-3
   cpu-map auto:1-4 0-3
   cpu-map auto:1-4 0-1 2-3
+  cpu-set reset
+  cpu-set reset # some comment
+  cpu-set drop-cpu 1 # some comment
+  cpu-set drop-cpu 1,3
+  cpu-set drop-cpu 0-5
+  cpu-set only-cpu 1 # some comment
+  cpu-set only-cpu 1,3
+  cpu-set only-cpu 0-5
+  cpu-set drop-node 1 # some comment
+  cpu-set drop-node 1,3
+  cpu-set drop-node 0-5
+  cpu-set only-node 1 # some comment
+  cpu-set only-node 1,3
+  cpu-set only-node 0-5
+  cpu-set drop-cluster 1 # some comment
+  cpu-set drop-cluster 1,3
+  cpu-set drop-cluster 0-5
+  cpu-set only-cluster 1 # some comment
+  cpu-set only-cluster 1,3
+  cpu-set only-cluster 0-5
+  cpu-set drop-core 1 # some comment
+  cpu-set drop-core 1,3
+  cpu-set drop-core 0-5
+  cpu-set only-core 1 # some comment
+  cpu-set only-core 1,3
+  cpu-set only-core 0-5
+  cpu-set drop-thread 1 # some comment
+  cpu-set drop-thread 1,3
+  cpu-set drop-thread 0-5
+  cpu-set only-thread 1 # some comment
+  cpu-set only-thread 1,3
+  cpu-set only-thread 0-5
   stats socket 127.0.0.1:8080
   stats socket 127.0.0.1:8080 mode admin
   stats socket /some/path/to/socket
@@ -411,6 +443,12 @@ backend test
   server name 127.0.0.1 ws auto
   server name 127.0.0.1 log-bufsize 10
   server name 127.0.0.1 guid guid-example
+  server name 127.0.0.1 idle-ping 10s
+  server name 127.0.0.1 idle-ping 10
+  server name 127.0.0.1 check-reuse-pool
+  server name 127.0.0.1 no-check-reuse-pool
+  server name 127.0.0.1 check-pool-conn-name foo
+  server name 127.0.0.1 strict-maxconn
   stick-table type ip size 1m expire 5m store gpc0,conn_rate(30s)
   stick on src table pop if !localhost
   stick match src table pop if !localhost
@@ -491,6 +529,12 @@ backend test
   http-request normalize-uri percent-to-uppercase strict if TRUE
   http-request normalize-uri query-sort-by-name
   http-request normalize-uri query-sort-by-name if TRUE
+  http-request pause 20
+  http-request pause 20s
+  http-request pause res.hdr(X-Pause-Seconds),mul(1000)
+  http-request pause 20 if TRUE
+  http-request pause 20s if TRUE
+  http-request pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 }
   http-request redirect prefix https://mysite.com
   http-request reject
   http-request replace-header User-agent curl foo
@@ -653,6 +697,12 @@ backend test
   http-response lua.foo if FALSE
   http-response lua.foo param
   http-response lua.foo param param2
+  http-response pause 20
+  http-response pause 20s
+  http-response pause res.hdr(X-Pause-Seconds),mul(1000)
+  http-response pause 20 if TRUE
+  http-response pause 20s if TRUE
+  http-response pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 }
   http-response redirect prefix https://mysite.com
   http-response replace-header User-agent curl foo
   http-response replace-value X-Forwarded-For ^192.168.(.*)$ 172.16.1
@@ -1102,6 +1152,7 @@ crt-store test
   load crt foo.pem alias foo.com key foo.priv.key ocsp foo.ocsp.der issuer foo.issuer.pem sctl foo.sctl
   load crt foo.pem alias foo.com key foo.priv.key ocsp foo.ocsp.der issuer foo.issuer.pem sctl foo.sctl ocsp-update on
   load crt foo.pem alias foo.com key foo.priv.key ocsp foo.ocsp.der issuer foo.issuer.pem sctl foo.sctl ocsp-update off
+  load crt foo.pem acme LE domains example.com,example.org
 
 defaults test
   acl url_stats path_beg /stats
@@ -1368,6 +1419,12 @@ defaults test
   http-request normalize-uri percent-to-uppercase strict if TRUE
   http-request normalize-uri query-sort-by-name
   http-request normalize-uri query-sort-by-name if TRUE
+  http-request pause 20
+  http-request pause 20s
+  http-request pause res.hdr(X-Pause-Seconds),mul(1000)
+  http-request pause 20 if TRUE
+  http-request pause 20s if TRUE
+  http-request pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 }
   http-request redirect prefix https://mysite.com
   http-request reject
   http-request replace-header User-agent curl foo
@@ -1530,6 +1587,12 @@ defaults test
   http-response lua.foo if FALSE
   http-response lua.foo param
   http-response lua.foo param param2
+  http-response pause 20
+  http-response pause 20s
+  http-response pause res.hdr(X-Pause-Seconds),mul(1000)
+  http-response pause 20 if TRUE
+  http-response pause 20s if TRUE
+  http-response pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 }
   http-response redirect prefix https://mysite.com
   http-response replace-header User-agent curl foo
   http-response replace-value X-Forwarded-For ^192.168.(.*)$ 172.16.1
@@ -2095,6 +2158,10 @@ frontend test
   bind :443 nbconn +2
   bind :443 guid-prefix guid-example
   bind :443 default-crt foobar.pem.rsa default-crt foobar.pem.ecdsa
+  bind :443 idle-ping 10s
+  bind :443 idle-ping 10
+  bind :443 ssl tls-tickets
+  bind :443 ssl no-strict-sni
   bind-process all
   email-alert from admin@example.com
   email-alert to a@z,x@y
@@ -2140,6 +2207,9 @@ frontend test
   declare capture response len 2
   option http-restrict-req-hdr-names preserve
   option originalto
+  ssl-f-use crt test.foobar.pem
+  ssl-f-use crt test2.foobar.crt key test2.foobar.key ocsp test2.foobar.ocsp ocsp-update on
+  ssl-f-use crt foobar.pem.rsa sigalgs "RSA-PSS+SHA256"
   http-request set-map(map.lst) %[src] %[req.hdr(X-Value)] if value
   http-request set-map(map.lst) %[src] %[req.hdr(X-Value)]
   http-request add-acl(map.lst) [src]
@@ -2200,6 +2270,12 @@ frontend test
   http-request normalize-uri percent-to-uppercase strict if TRUE
   http-request normalize-uri query-sort-by-name
   http-request normalize-uri query-sort-by-name if TRUE
+  http-request pause 20
+  http-request pause 20s
+  http-request pause res.hdr(X-Pause-Seconds),mul(1000)
+  http-request pause 20 if TRUE
+  http-request pause 20s if TRUE
+  http-request pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 }
   http-request redirect prefix https://mysite.com
   http-request reject
   http-request replace-header User-agent curl foo
@@ -2364,6 +2440,12 @@ frontend test
   http-response lua.foo if FALSE
   http-response lua.foo param
   http-response lua.foo param param2
+  http-response pause 20
+  http-response pause 20s
+  http-response pause res.hdr(X-Pause-Seconds),mul(1000)
+  http-response pause 20 if TRUE
+  http-response pause 20s if TRUE
+  http-response pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 }
   http-response redirect prefix https://mysite.com
   http-response replace-header User-agent curl foo
   http-response replace-value X-Forwarded-For ^192.168.(.*)$ 172.16.1
@@ -2920,6 +3002,7 @@ peers test
   table t1 type string len 1000 size 1m expire 5m nopurge store gpc0,conn_rate(40s)
   table t1 type string len 1000 size 1m expire 5m nopurge store gpc0,gpc1,conn_rate(30s)
   table t1 type string len 1000 size 1m expire 5m write-to t2
+  table t1 type string len 1000 size 1m expire 5m write-to t2 recv-only
 
 program test
   command spoa-mirror --runtime 0 --mirror-url http://test.local
@@ -3246,6 +3329,14 @@ var configTests = []configTest{{`  command spoa-mirror --runtime 0 --mirror-url 
 `, 1},
 	{`  bind :443 default-crt foobar.pem.rsa default-crt foobar.pem.ecdsa
 `, 1},
+	{`  bind :443 idle-ping 10s
+`, 1},
+	{`  bind :443 idle-ping 10
+`, 1},
+	{`  bind :443 ssl tls-tickets
+`, 1},
+	{`  bind :443 ssl no-strict-sni
+`, 1},
 	{`  dgram-bind :80,:443
 `, 1},
 	{`  dgram-bind 10.0.0.1:10080,10.0.0.1:10443
@@ -3275,6 +3366,70 @@ var configTests = []configTest{{`  command spoa-mirror --runtime 0 --mirror-url 
 	{`  cpu-map auto:1-4 0-3
 `, 1},
 	{`  cpu-map auto:1-4 0-1 2-3
+`, 1},
+	{`  cpu-set reset
+`, 1},
+	{`  cpu-set reset # some comment
+`, 1},
+	{`  cpu-set drop-cpu 1 # some comment
+`, 1},
+	{`  cpu-set drop-cpu 1,3
+`, 1},
+	{`  cpu-set drop-cpu 0-5
+`, 1},
+	{`  cpu-set only-cpu 1 # some comment
+`, 1},
+	{`  cpu-set only-cpu 1,3
+`, 1},
+	{`  cpu-set only-cpu 0-5
+`, 1},
+	{`  cpu-set drop-node 1 # some comment
+`, 1},
+	{`  cpu-set drop-node 1,3
+`, 1},
+	{`  cpu-set drop-node 0-5
+`, 1},
+	{`  cpu-set only-node 1 # some comment
+`, 1},
+	{`  cpu-set only-node 1,3
+`, 1},
+	{`  cpu-set only-node 0-5
+`, 1},
+	{`  cpu-set drop-cluster 1 # some comment
+`, 1},
+	{`  cpu-set drop-cluster 1,3
+`, 1},
+	{`  cpu-set drop-cluster 0-5
+`, 1},
+	{`  cpu-set only-cluster 1 # some comment
+`, 1},
+	{`  cpu-set only-cluster 1,3
+`, 1},
+	{`  cpu-set only-cluster 0-5
+`, 1},
+	{`  cpu-set drop-core 1 # some comment
+`, 1},
+	{`  cpu-set drop-core 1,3
+`, 1},
+	{`  cpu-set drop-core 0-5
+`, 1},
+	{`  cpu-set only-core 1 # some comment
+`, 1},
+	{`  cpu-set only-core 1,3
+`, 1},
+	{`  cpu-set only-core 0-5
+`, 1},
+	{`  cpu-set drop-thread 1 # some comment
+`, 1},
+	{`  cpu-set drop-thread 1,3
+`, 1},
+	{`  cpu-set drop-thread 0-5
+`, 1},
+	{`  cpu-set only-thread 1 # some comment
+`, 1},
+	{`  cpu-set only-thread 1,3
+`, 1},
+	{`  cpu-set only-thread 0-5
 `, 1},
 	{`  default-server addr 127.0.0.1
 `, 3},
@@ -3956,6 +4111,18 @@ var configTests = []configTest{{`  command spoa-mirror --runtime 0 --mirror-url 
 `, 1},
 	{`  server name 127.0.0.1 guid guid-example
 `, 1},
+	{`  server name 127.0.0.1 idle-ping 10s
+`, 1},
+	{`  server name 127.0.0.1 idle-ping 10
+`, 1},
+	{`  server name 127.0.0.1 check-reuse-pool
+`, 1},
+	{`  server name 127.0.0.1 no-check-reuse-pool
+`, 1},
+	{`  server name 127.0.0.1 check-pool-conn-name foo
+`, 1},
+	{`  server name 127.0.0.1 strict-maxconn
+`, 1},
 	{`  stick-table type ip size 1m expire 5m store gpc0,conn_rate(30s)
 `, 2},
 	{`  stats socket 127.0.0.1:8080
@@ -4086,6 +4253,8 @@ var configTests = []configTest{{`  command spoa-mirror --runtime 0 --mirror-url 
 `, 1},
 	{`  table t1 type string len 1000 size 1m expire 5m write-to t2
 `, 1},
+	{`  table t1 type string len 1000 size 1m expire 5m write-to t2 recv-only
+`, 1},
 	{`  httpclient.resolvers.prefer ipv4
 `, 1},
 	{`  httpclient.ssl.verify none
@@ -4118,9 +4287,15 @@ var configTests = []configTest{{`  command spoa-mirror --runtime 0 --mirror-url 
 `, 1},
 	{`  load crt foo.pem alias foo.com key foo.priv.key ocsp foo.ocsp.der issuer foo.issuer.pem sctl foo.sctl ocsp-update off
 `, 1},
+	{`  load crt foo.pem acme LE domains example.com,example.org
+`, 1},
 	{`  trace h1 sink buf1 level developer verbosity complete start now
 `, 1},
 	{`  on connect drop
+`, 1},
+	{`  ssl-f-use crt test.foobar.pem
+`, 1},
+	{`  ssl-f-use crt test2.foobar.crt key test2.foobar.key ocsp test2.foobar.ocsp ocsp-update on
 `, 1},
 	{`  http-request set-map(map.lst) %[src] %[req.hdr(X-Value)] if value
 `, 3},
@@ -4241,6 +4416,18 @@ var configTests = []configTest{{`  command spoa-mirror --runtime 0 --mirror-url 
 	{`  http-request normalize-uri query-sort-by-name
 `, 3},
 	{`  http-request normalize-uri query-sort-by-name if TRUE
+`, 3},
+	{`  http-request pause 20
+`, 3},
+	{`  http-request pause 20s
+`, 3},
+	{`  http-request pause res.hdr(X-Pause-Seconds),mul(1000)
+`, 3},
+	{`  http-request pause 20 if TRUE
+`, 3},
+	{`  http-request pause 20s if TRUE
+`, 3},
+	{`  http-request pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 }
 `, 3},
 	{`  http-request redirect prefix https://mysite.com
 `, 3},
@@ -4543,6 +4730,18 @@ var configTests = []configTest{{`  command spoa-mirror --runtime 0 --mirror-url 
 	{`  http-response lua.foo param
 `, 3},
 	{`  http-response lua.foo param param2
+`, 3},
+	{`  http-response pause 20
+`, 3},
+	{`  http-response pause 20s
+`, 3},
+	{`  http-response pause res.hdr(X-Pause-Seconds),mul(1000)
+`, 3},
+	{`  http-response pause 20 if TRUE
+`, 3},
+	{`  http-response pause 20s if TRUE
+`, 3},
+	{`  http-response pause %[calc((sc_conn_rate(0) - 30) * 10)] if { sc_conn_rate(0) gt 30 }
 `, 3},
 	{`  http-response redirect prefix https://mysite.com
 `, 3},

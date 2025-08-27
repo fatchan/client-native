@@ -41,7 +41,26 @@ func (p *configParser) String() string {
 	p.writeParsers("", p.Parsers[Comments][CommentsSectionName], &result, false)
 	p.writeParsers("global", p.Parsers[Global][GlobalSectionName], &result, true)
 
-	sections := []Section{Defaults, UserList, Peers, Mailers, Resolvers, Cache, Ring, Traces, LogForward, LogProfile, HTTPErrors, CrtStore, Frontends, Backends, Listen, Program, FCGIApp}
+	sections := []Section{
+		Defaults,
+		UserList,
+		Peers,
+		Mailers,
+		Resolvers,
+		Cache,
+		Ring,
+		Traces,
+		LogForward,
+		LogProfile,
+		HTTPErrors,
+		Acme,
+		CrtStore,
+		Frontends,
+		Backends,
+		Listen,
+		Program,
+		FCGIApp,
+	}
 
 	for _, section := range sections {
 		var sortedSections []string
@@ -113,17 +132,23 @@ func (p *configParser) StringWithHash() (string, error) {
 	return result.String(), nil
 }
 
-func (p *configParser) writeSection(sectionName string, comments []string, defaultsSection string, result io.StringWriter) {
+func (p *configParser) writeSection(sectionName string, comment string, preComments []string, defaultsSection string, result io.StringWriter) {
 	_, _ = result.WriteString("\n")
-	for _, line := range comments {
+	for _, line := range preComments {
 		_, _ = result.WriteString("# ")
 		_, _ = result.WriteString(line)
 		_, _ = result.WriteString("\n")
 	}
 	_, _ = result.WriteString(sectionName)
+
 	if defaultsSection != "" {
 		_, _ = result.WriteString(" from ")
 		_, _ = result.WriteString(defaultsSection)
+	}
+
+	if comment != "" {
+		_, _ = result.WriteString(" # ")
+		_, _ = result.WriteString(comment)
 	}
 	_, _ = result.WriteString("\n")
 }
@@ -136,7 +161,7 @@ func (p *configParser) writeParsers(sectionName string, parsersData *Parsers, re
 	case "global":
 		break
 	default:
-		p.writeSection(sectionName, parsersData.PreComments, parsersData.DefaultSectionName, result)
+		p.writeSection(sectionName, parsersData.Section.Comment, parsersData.PreComments, parsersData.DefaultSectionName, result)
 		sectionNameWritten = true
 	}
 	for _, parserName := range parsersData.ParserSequence {
@@ -146,7 +171,7 @@ func (p *configParser) writeParsers(sectionName string, parsersData *Parsers, re
 			continue
 		}
 		if !sectionNameWritten {
-			p.writeSection(sectionName, parsersData.PreComments, parsersData.DefaultSectionName, result)
+			p.writeSection(sectionName, parsersData.Section.Comment, parsersData.PreComments, parsersData.DefaultSectionName, result)
 			sectionNameWritten = true
 		}
 		for _, line := range comments {

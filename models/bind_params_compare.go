@@ -117,6 +117,10 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 		return false
 	}
 
+	if s.ForceStrictSni != t.ForceStrictSni {
+		return false
+	}
+
 	if s.ForceTlsv10 != t.ForceTlsv10 {
 		return false
 	}
@@ -153,7 +157,15 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 		return false
 	}
 
+	if !equalPointers(s.IdlePing, t.IdlePing) {
+		return false
+	}
+
 	if s.Interface != t.Interface {
+		return false
+	}
+
+	if s.Label != t.Label {
 		return false
 	}
 
@@ -198,6 +210,10 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 	}
 
 	if s.NoSslv3 != t.NoSslv3 {
+		return false
+	}
+
+	if s.NoStrictSni != t.NoStrictSni {
 		return false
 	}
 
@@ -302,6 +318,10 @@ func (s BindParams) Equal(t BindParams, opts ...Options) bool {
 	}
 
 	if s.TLSTicketKeys != t.TLSTicketKeys {
+		return false
+	}
+
+	if s.TLSTickets != t.TLSTickets {
 		return false
 	}
 
@@ -449,6 +469,10 @@ func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{}
 		diff["ForceSslv3"] = []interface{}{s.ForceSslv3, t.ForceSslv3}
 	}
 
+	if s.ForceStrictSni != t.ForceStrictSni {
+		diff["ForceStrictSni"] = []interface{}{s.ForceStrictSni, t.ForceStrictSni}
+	}
+
 	if s.ForceTlsv10 != t.ForceTlsv10 {
 		diff["ForceTlsv10"] = []interface{}{s.ForceTlsv10, t.ForceTlsv10}
 	}
@@ -485,8 +509,16 @@ func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{}
 		diff["ID"] = []interface{}{s.ID, t.ID}
 	}
 
+	if !equalPointers(s.IdlePing, t.IdlePing) {
+		diff["IdlePing"] = []interface{}{ValueOrNil(s.IdlePing), ValueOrNil(t.IdlePing)}
+	}
+
 	if s.Interface != t.Interface {
 		diff["Interface"] = []interface{}{s.Interface, t.Interface}
+	}
+
+	if s.Label != t.Label {
+		diff["Label"] = []interface{}{s.Label, t.Label}
 	}
 
 	if s.Level != t.Level {
@@ -531,6 +563,10 @@ func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{}
 
 	if s.NoSslv3 != t.NoSslv3 {
 		diff["NoSslv3"] = []interface{}{s.NoSslv3, t.NoSslv3}
+	}
+
+	if s.NoStrictSni != t.NoStrictSni {
+		diff["NoStrictSni"] = []interface{}{s.NoStrictSni, t.NoStrictSni}
 	}
 
 	if s.NoTLSTickets != t.NoTLSTickets {
@@ -635,6 +671,10 @@ func (s BindParams) Diff(t BindParams, opts ...Options) map[string][]interface{}
 
 	if s.TLSTicketKeys != t.TLSTicketKeys {
 		diff["TLSTicketKeys"] = []interface{}{s.TLSTicketKeys, t.TLSTicketKeys}
+	}
+
+	if s.TLSTickets != t.TLSTickets {
+		diff["TLSTickets"] = []interface{}{s.TLSTickets, t.TLSTickets}
 	}
 
 	if s.Tlsv10 != t.Tlsv10 {

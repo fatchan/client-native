@@ -18,6 +18,7 @@
 package models
 
 import (
+	"reflect"
 	"strconv"
 )
 
@@ -42,6 +43,16 @@ func (s GlobalBase) Equal(t GlobalBase, opts ...Options) bool {
 	} else {
 		for i := range s.CPUMaps {
 			if !s.CPUMaps[i].Equal(*t.CPUMaps[i], opt) {
+				return false
+			}
+		}
+	}
+
+	if !CheckSameNilAndLen(s.CPUSets, t.CPUSets, opt) {
+		return false
+	} else {
+		for i := range s.CPUSets {
+			if !s.CPUSets[i].Equal(*t.CPUSets[i], opt) {
 				return false
 			}
 		}
@@ -106,6 +117,10 @@ func (s GlobalBase) Equal(t GlobalBase, opts ...Options) bool {
 	}
 
 	if s.ClusterSecret != t.ClusterSecret {
+		return false
+	}
+
+	if s.CPUPolicy != t.CPUPolicy {
 		return false
 	}
 
@@ -180,6 +195,10 @@ func (s GlobalBase) Equal(t GlobalBase, opts ...Options) bool {
 			}
 		}
 	} else if !s.DeviceAtlasOptions.Equal(*t.DeviceAtlasOptions, opt) {
+		return false
+	}
+
+	if s.DNSAcceptFamily != t.DNSAcceptFamily {
 		return false
 	}
 
@@ -401,6 +420,16 @@ func (s GlobalBase) Equal(t GlobalBase, opts ...Options) bool {
 
 	if s.MasterWorker != t.MasterWorker {
 		return false
+	}
+
+	if !CheckSameNilAndLenMap[string](s.Metadata, t.Metadata, opt) {
+		return false
+	}
+
+	for k, v := range s.Metadata {
+		if !reflect.DeepEqual(t.Metadata[k], v) {
+			return false
+		}
 	}
 
 	if !equalPointers(s.MworkerMaxReloads, t.MworkerMaxReloads) {
@@ -758,6 +787,23 @@ func (s GlobalBase) Diff(t GlobalBase, opts ...Options) map[string][]interface{}
 		}
 	}
 
+	if !CheckSameNilAndLen(s.CPUSets, t.CPUSets, opt) {
+		diff["CPUSets"] = []interface{}{s.CPUSets, t.CPUSets}
+	} else {
+		diff2 := make(map[string][]interface{})
+		for i := range s.CPUSets {
+			if !s.CPUSets[i].Equal(*t.CPUSets[i], opt) {
+				diffSub := s.CPUSets[i].Diff(*t.CPUSets[i], opt)
+				if len(diffSub) > 0 {
+					diff2[strconv.Itoa(i)] = []interface{}{diffSub}
+				}
+			}
+		}
+		if len(diff2) > 0 {
+			diff["CPUSets"] = []interface{}{diff2}
+		}
+	}
+
 	if !CheckSameNilAndLen(s.H1CaseAdjusts, t.H1CaseAdjusts, opt) {
 		diff["H1CaseAdjusts"] = []interface{}{s.H1CaseAdjusts, t.H1CaseAdjusts}
 	} else {
@@ -855,6 +901,10 @@ func (s GlobalBase) Diff(t GlobalBase, opts ...Options) map[string][]interface{}
 		diff["ClusterSecret"] = []interface{}{s.ClusterSecret, t.ClusterSecret}
 	}
 
+	if s.CPUPolicy != t.CPUPolicy {
+		diff["CPUPolicy"] = []interface{}{s.CPUPolicy, t.CPUPolicy}
+	}
+
 	if s.Daemon != t.Daemon {
 		diff["Daemon"] = []interface{}{s.Daemon, t.Daemon}
 	}
@@ -927,6 +977,10 @@ func (s GlobalBase) Diff(t GlobalBase, opts ...Options) map[string][]interface{}
 		}
 	} else if !s.DeviceAtlasOptions.Equal(*t.DeviceAtlasOptions, opt) {
 		diff["DeviceAtlasOptions"] = []interface{}{ValueOrNil(s.DeviceAtlasOptions), ValueOrNil(t.DeviceAtlasOptions)}
+	}
+
+	if s.DNSAcceptFamily != t.DNSAcceptFamily {
+		diff["DNSAcceptFamily"] = []interface{}{s.DNSAcceptFamily, t.DNSAcceptFamily}
 	}
 
 	if s.EnvironmentOptions == nil || t.EnvironmentOptions == nil {
@@ -1161,6 +1215,16 @@ func (s GlobalBase) Diff(t GlobalBase, opts ...Options) map[string][]interface{}
 
 	if s.MasterWorker != t.MasterWorker {
 		diff["MasterWorker"] = []interface{}{s.MasterWorker, t.MasterWorker}
+	}
+
+	if !CheckSameNilAndLenMap[string](s.Metadata, t.Metadata, opt) {
+		diff["Metadata"] = []interface{}{s.Metadata, t.Metadata}
+	}
+
+	for k, v := range s.Metadata {
+		if !reflect.DeepEqual(t.Metadata[k], v) {
+			diff["Metadata"] = []interface{}{s.Metadata, t.Metadata}
+		}
 	}
 
 	if !equalPointers(s.MworkerMaxReloads, t.MworkerMaxReloads) {
@@ -1516,6 +1580,43 @@ func (s CPUMap) Diff(t CPUMap, opts ...Options) map[string][]interface{} {
 
 	if !equalPointers(s.Process, t.Process) {
 		diff["Process"] = []interface{}{ValueOrNil(s.Process), ValueOrNil(t.Process)}
+	}
+
+	return diff
+}
+
+// Equal checks if two structs of type CPUSet are equal
+//
+//	var a, b CPUSet
+//	equal := a.Equal(b)
+//
+// opts ...Options are ignored in this method
+func (s CPUSet) Equal(t CPUSet, opts ...Options) bool {
+	if !equalPointers(s.Directive, t.Directive) {
+		return false
+	}
+
+	if s.Set != t.Set {
+		return false
+	}
+
+	return true
+}
+
+// Diff checks if two structs of type CPUSet are equal
+//
+//	var a, b CPUSet
+//	diff := a.Diff(b)
+//
+// opts ...Options are ignored in this method
+func (s CPUSet) Diff(t CPUSet, opts ...Options) map[string][]interface{} {
+	diff := make(map[string][]interface{})
+	if !equalPointers(s.Directive, t.Directive) {
+		diff["Directive"] = []interface{}{ValueOrNil(s.Directive), ValueOrNil(t.Directive)}
+	}
+
+	if s.Set != t.Set {
+		diff["Set"] = []interface{}{s.Set, t.Set}
 	}
 
 	return diff

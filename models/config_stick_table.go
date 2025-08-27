@@ -42,6 +42,10 @@ type ConfigStickTable struct {
 	// keylen
 	Keylen *int64 `json:"keylen,omitempty"`
 
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+
 	// nopurge
 	Nopurge bool `json:"nopurge,omitempty"`
 
@@ -49,6 +53,9 @@ type ConfigStickTable struct {
 	// Pattern: ^[^\s]+$
 	// +kubebuilder:validation:Pattern=`^[^\s]+$`
 	Peers string `json:"peers,omitempty"`
+
+	// recv only
+	RecvOnly bool `json:"recv_only,omitempty"`
 
 	// size
 	// Minimum: 0

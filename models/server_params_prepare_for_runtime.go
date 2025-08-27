@@ -24,6 +24,9 @@ func (s *ServerParams) prepareForRuntimeDoNotSendDisabledFields() {
 	if s.Check == "disabled" {
 		s.Check = ""
 	}
+	if s.CheckReusePool == "disabled" {
+		s.CheckReusePool = ""
+	}
 	if s.CheckSendProxy == "disabled" {
 		s.CheckSendProxy = ""
 	}
@@ -113,5 +116,8 @@ func (s *ServerParams) prepareForRuntimeDoNotSendEnabledFields() {
 	}
 	if s.NoVerifyhost == "enabled" {
 		s.NoVerifyhost = ""
+	}
+	if s.Renegotiate == "enabled" {
+		s.Renegotiate = ""
 	}
 }

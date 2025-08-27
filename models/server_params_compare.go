@@ -69,6 +69,14 @@ func (s ServerParams) Equal(t ServerParams, opts ...Options) bool {
 		return false
 	}
 
+	if s.CheckPoolConnName != t.CheckPoolConnName {
+		return false
+	}
+
+	if s.CheckReusePool != t.CheckReusePool {
+		return false
+	}
+
 	if s.CheckSendProxy != t.CheckSendProxy {
 		return false
 	}
@@ -166,6 +174,10 @@ func (s ServerParams) Equal(t ServerParams, opts ...Options) bool {
 	}
 
 	if !equalPointers(s.HealthCheckPort, t.HealthCheckPort) {
+		return false
+	}
+
+	if !equalPointers(s.IdlePing, t.IdlePing) {
 		return false
 	}
 
@@ -285,6 +297,10 @@ func (s ServerParams) Equal(t ServerParams, opts ...Options) bool {
 		return false
 	}
 
+	if s.Renegotiate != t.Renegotiate {
+		return false
+	}
+
 	if s.ResolveNet != t.ResolveNet {
 		return false
 	}
@@ -399,6 +415,10 @@ func (s ServerParams) Equal(t ServerParams, opts ...Options) bool {
 		return false
 	}
 
+	if s.StrictMaxconn != t.StrictMaxconn {
+		return false
+	}
+
 	if !equalPointers(s.TCPUt, t.TCPUt) {
 		return false
 	}
@@ -503,6 +523,14 @@ func (s ServerParams) Diff(t ServerParams, opts ...Options) map[string][]interfa
 		diff["Check"] = []interface{}{s.Check, t.Check}
 	}
 
+	if s.CheckPoolConnName != t.CheckPoolConnName {
+		diff["CheckPoolConnName"] = []interface{}{s.CheckPoolConnName, t.CheckPoolConnName}
+	}
+
+	if s.CheckReusePool != t.CheckReusePool {
+		diff["CheckReusePool"] = []interface{}{s.CheckReusePool, t.CheckReusePool}
+	}
+
 	if s.CheckSendProxy != t.CheckSendProxy {
 		diff["CheckSendProxy"] = []interface{}{s.CheckSendProxy, t.CheckSendProxy}
 	}
@@ -601,6 +629,10 @@ func (s ServerParams) Diff(t ServerParams, opts ...Options) map[string][]interfa
 
 	if !equalPointers(s.HealthCheckPort, t.HealthCheckPort) {
 		diff["HealthCheckPort"] = []interface{}{ValueOrNil(s.HealthCheckPort), ValueOrNil(t.HealthCheckPort)}
+	}
+
+	if !equalPointers(s.IdlePing, t.IdlePing) {
+		diff["IdlePing"] = []interface{}{ValueOrNil(s.IdlePing), ValueOrNil(t.IdlePing)}
 	}
 
 	if !equalPointers(s.InitAddr, t.InitAddr) {
@@ -719,6 +751,10 @@ func (s ServerParams) Diff(t ServerParams, opts ...Options) map[string][]interfa
 		diff["Redir"] = []interface{}{s.Redir, t.Redir}
 	}
 
+	if s.Renegotiate != t.Renegotiate {
+		diff["Renegotiate"] = []interface{}{s.Renegotiate, t.Renegotiate}
+	}
+
 	if s.ResolveNet != t.ResolveNet {
 		diff["ResolveNet"] = []interface{}{s.ResolveNet, t.ResolveNet}
 	}
@@ -831,6 +867,10 @@ func (s ServerParams) Diff(t ServerParams, opts ...Options) map[string][]interfa
 
 	if s.Stick != t.Stick {
 		diff["Stick"] = []interface{}{s.Stick, t.Stick}
+	}
+
+	if s.StrictMaxconn != t.StrictMaxconn {
+		diff["StrictMaxconn"] = []interface{}{s.StrictMaxconn, t.StrictMaxconn}
 	}
 
 	if !equalPointers(s.TCPUt, t.TCPUt) {

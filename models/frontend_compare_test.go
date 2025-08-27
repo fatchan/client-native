@@ -172,7 +172,7 @@ func TestFrontendDiffFalse(t *testing.T) {
 
 	for _, sample := range samples {
 		result := sample.a.Diff(sample.b)
-		if len(result) != 13 {
+		if len(result) != 14 {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
@@ -182,7 +182,7 @@ func TestFrontendDiffFalse(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			t.Errorf("Expected Frontend to be different in 13 cases, but it is not (%d) %s %s", len(result), a, b)
+			t.Errorf("Expected Frontend to be different in 14 cases, but it is not (%d) %s %s", len(result), a, b)
 		}
 	}
 }

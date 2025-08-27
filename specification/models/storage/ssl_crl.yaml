@@ -1,0 +1,12 @@
+---
+ssl_crl:
+  title: SSL CRL File
+  description: A file containing one or more SSL/TLS CRLs
+  type: object
+  properties:
+    file:
+      type: string
+    storage_name:
+      type: string
+    description:
+      type: string

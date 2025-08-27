@@ -80,6 +80,12 @@ server_params:
     check_via_socks4:
       type: string
       enum: [enabled, disabled]
+    check-pool-conn-name:
+      type: string
+      pattern: '^[^\s]+$'
+    check-reuse-pool:
+      type: string
+      enum: [enabled, disabled]
     ciphers:
       type: string
       x-dependency:
@@ -115,6 +121,10 @@ server_params:
       type: integer
       x-display-name: Nr. of consecutive failed checks
       x-nullable: true
+    renegotiate:
+      type: string
+      enum: [enabled, disabled]
+      description: Toggles the secure renegotiation mechanism for an SSL backend.
     sslv3:
       type: string
       enum: [enabled, disabled]
@@ -186,6 +196,12 @@ server_params:
     hash_key:
       type: string
       pattern: '^[^\s]+$'
+    idle_ping:
+      type: integer
+      minimum: 0
+      x-nullable: true
+      x-duration: true
+      x-default-unit: ms
     init-addr:
       pattern: ^[^\s]+$
       type: string
@@ -308,6 +324,8 @@ server_params:
           type: string
         value:
           type: string
+    strict-maxconn:
+      type: boolean
     proxy-v2-options:
       type: array
       x-omitempty: true

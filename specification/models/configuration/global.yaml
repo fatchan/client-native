@@ -172,6 +172,54 @@ global_base:
           cpu_set:
             type: string
             x-display-name: CPU Set
+    cpu_policy:
+      type: string
+      enum:
+        [
+          "none",
+          "efficiency",
+          "first-usable-node",
+          "group-by-2-ccx",
+          "group-by-2-clusters",
+          "group-by-3-ccx",
+          "group-by-3-clusters",
+          "group-by-4-ccx",
+          "group-by-4-cluster",
+          "group-by-ccx",
+          "group-by-cluster",
+          "performance",
+          "resource",
+        ]
+      x-display-name: CPU Policy
+    cpu_set:
+      type: array
+      x-go-name: CPUSets
+      x-omitempty: true
+      x-display-name: CPU Set
+      items:
+        type: object
+        x-go-name: CPUSet
+        required:
+          - directive
+        properties:
+          directive:
+            type: string
+            enum:
+              [
+                "reset",
+                "drop-cpu",
+                "only-cpu",
+                "drop-node",
+                "only-node",
+                "drop-cluster",
+                "only-cluster",
+                "drop-core",
+                "only-core",
+                "drop-thread",
+                "only-thread",
+              ]
+          set:
+            type: string
     runtime_apis:
       type: array
       x-omitempty: true
@@ -311,6 +359,10 @@ global_base:
             quic:
               type: string
               enum: ["enabled", "disabled"]
+    dns_accept_family:
+      pattern: ^[^\s]+$
+      type: string
+      x-display-name: DNS accept family
     environment_options:
       $ref: "#/definitions/environment_options"
     performance_options:
@@ -345,6 +397,9 @@ global_base:
       $ref: "#/definitions/device_atlas_options"
     fifty_one_degrees_options:
       $ref: "#/definitions/fifty_one_degrees_options"
+    metadata:
+      additionalProperties:
+        type: object
   additionalProperties: false
 http_client_options:
   type: object
@@ -442,6 +497,12 @@ tune_options:
     disable_zero_copy_forwarding:
       type: boolean
       x-display-name: Disable zero-copy forwarding
+    epoll_mask_events:
+      type: array
+      items:
+        type: string
+        enum: [err, hup, rdhup]
+      x-omitempty: true
     events_max_events_at_once:
       type: integer
       minimum: 1
@@ -449,6 +510,12 @@ tune_options:
     fail_alloc:
       type: boolean
       x-display-name: Failed Allocation Chance
+    glitches_kill_cpu_usage:
+      type: integer
+      minimum: 0
+      maximum: 100
+      x-nullable: true
+      x-display-name: CPU Usage Kill glitched Connections
     h1_zero_copy_fwd_recv:
       type: string
       enum: [enabled, disabled]
@@ -544,6 +611,11 @@ tune_options:
       type: integer
       x-nullable: true
       x-display-name: Maximum checks per thread
+    max_rules_at_once:
+      type: integer
+      minimum: 0
+      x-nullable: true
+      x-display-name: Maximum rules at once
     maxaccept:
       type: integer
       x-display-name: Maximum Accept Events
@@ -557,6 +629,16 @@ tune_options:
       type: integer
       x-display-name: Per-thread Amount of Memory
       x-nullable: true
+    notsent_lowat_client:
+      type: integer
+      x-display-name: Client Not Sent Low Watermark
+      x-nullable: true
+      x-size: true
+    notsent_lowat_server:
+      type: integer
+      x-display-name: Server Not Sent Low Watermark
+      x-nullable: true
+      x-size: true
     pattern_cache_size:
       type: integer
       x-display-name: Pattern Lookup Cache Size
@@ -601,6 +683,10 @@ tune_options:
       type: integer
       x-display-name: Number of stick-counters
       x-nullable: true
+    takeover_other_tg_connections:
+      type: string
+      enum: ["none", "restricted", "full"]
+      x-display-name: Takeover Other Thread Groups Connections
     fd_edge_triggered:
       type: string
       enum: [enabled, disabled]
@@ -622,6 +708,11 @@ tune_quic_options:
     frontend_max_streams_bidi:
       type: integer
       x-display-name: QUIC Max Number of Bidirectional Streams
+      x-nullable: true
+    frontend_max_tx_memory:
+      type: integer
+      x-size: true
+      x-display-name: QUIC Frontend Max Tx Memory
       x-nullable: true
     max_frame_loss:
       type: integer
@@ -733,6 +824,9 @@ tune_ssl_options:
 tune_lua_options:
   type: object
   properties:
+    bool_sample_conversion:
+      type: string
+      enum: ["normal", "pre-3.1-bug"]
     forced_yield:
       type: integer
       x-display-name: Lua Forced Yield
@@ -848,6 +942,10 @@ tune_buffer_options:
 ssl_options:
   type: object
   properties:
+    acme_scheduler:
+      type: string
+      enum: [auto, off]
+      x-display-name: ACME Scheduler
     ca_base:
       type: string
       x-display-name: SSL CA Certificates Base Directory
@@ -998,6 +1096,11 @@ debug_options:
       type: integer
       minimum: 0
       maximum: 4294967295
+      x-nullable: true
+    stress_level:
+      type: integer
+      minimum: 0
+      maximum: 9
       x-nullable: true
     quiet:
       type: boolean

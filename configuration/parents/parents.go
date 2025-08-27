@@ -35,6 +35,7 @@ func Parents(childType string) []Parent {
 		return []Parent{
 			{PathParentType: "backends", ParentType: "Backend", IsGenericParent: true},
 			{PathParentType: "frontends", ParentType: "Frontend", GenericParentType: "Backend"},
+			{PathParentType: "defaults", ParentType: "Defaults", GenericParentType: "Backend"},
 		}
 	case HTTPCheckChildType:
 		return []Parent{
@@ -51,11 +52,13 @@ func Parents(childType string) []Parent {
 		return []Parent{
 			{PathParentType: "backends", ParentType: "Backend", IsGenericParent: true},
 			{PathParentType: "frontends", ParentType: "Frontend", GenericParentType: "Backend"},
+			{PathParentType: "defaults", ParentType: "Defaults", GenericParentType: "Backend"},
 		}
 	case HTTPResponseRuleChildType:
 		return []Parent{
 			{PathParentType: "backends", ParentType: "Backend", IsGenericParent: true},
 			{PathParentType: "frontends", ParentType: "Frontend", GenericParentType: "Backend"},
+			{PathParentType: "defaults", ParentType: "Defaults", GenericParentType: "Backend"},
 		}
 	case TCPCheckChildType:
 		return []Parent{
@@ -66,10 +69,12 @@ func Parents(childType string) []Parent {
 		return []Parent{
 			{PathParentType: "backends", ParentType: "Backend", IsGenericParent: true},
 			{PathParentType: "frontends", ParentType: "Frontend", GenericParentType: "Backend"},
+			{PathParentType: "defaults", ParentType: "Defaults", GenericParentType: "Backend"},
 		}
 	case TCPResponseRuleChildType:
 		return []Parent{
 			{PathParentType: "backends", ParentType: "Backend", IsGenericParent: true},
+			{PathParentType: "defaults", ParentType: "Defaults", GenericParentType: "Backend"},
 		}
 	case QUICInitialRuleType:
 		return []Parent{
@@ -81,6 +86,7 @@ func Parents(childType string) []Parent {
 			{PathParentType: "backends", ParentType: "Backend", IsGenericParent: true},
 			{PathParentType: "frontends", ParentType: "Frontend", GenericParentType: "Backend"},
 			{PathParentType: "fcgi_apps", ParentType: "FCGIApp", GenericParentType: "Backend"},
+			{PathParentType: "defaults", ParentType: "Defaults", GenericParentType: "Backend"},
 		}
 	case BindChildType:
 		return []Parent{
@@ -100,6 +106,10 @@ func Parents(childType string) []Parent {
 			{PathParentType: "defaults", ParentType: "Defaults", GenericParentType: "Backend"},
 			{PathParentType: "peers", ParentType: "Peer", GenericParentType: "Backend"},
 			{PathParentType: "log_forwards", ParentType: "LogForward", GenericParentType: "Backend"},
+		}
+	case SSLFrontUseChildType:
+		return []Parent{
+			{PathParentType: "frontends", ParentType: "Frontend", IsGenericParent: true},
 		}
 	}
 	return nil

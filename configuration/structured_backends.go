@@ -45,7 +45,7 @@ func (c *client) GetStructuredBackend(name string, transactionID string) (int64,
 		return 0, nil, err
 	}
 
-	if !c.checkSectionExists(parser.Backends, name, p) {
+	if !p.SectionExists(parser.Backends, name) {
 		return v, nil, NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("Backend %s does not exist", name))
 	}
 
@@ -88,7 +88,7 @@ func (c *client) EditStructuredBackend(name string, data *models.Backend, transa
 		return err
 	}
 
-	if !c.checkSectionExists(parser.Backends, name, p) {
+	if !p.SectionExists(parser.Backends, name) {
 		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("%s %s does not exist", parser.Backends, name))
 		return c.HandleError(name, "", "", t, transactionID == "", e)
 	}
@@ -98,11 +98,10 @@ func (c *client) EditStructuredBackend(name string, data *models.Backend, transa
 	}
 
 	if err = serializeBackendSection(StructuredToParserArgs{
-		TID:                transactionID,
-		Parser:             &p,
-		Options:            &c.ConfigurationOptions,
-		HandleError:        c.HandleError,
-		CheckSectionExists: c.checkSectionExists,
+		TID:         transactionID,
+		Parser:      &p,
+		Options:     &c.ConfigurationOptions,
+		HandleError: c.HandleError,
 	}, data); err != nil {
 		return err
 	}
@@ -124,17 +123,16 @@ func (c *client) CreateStructuredBackend(data *models.Backend, transactionID str
 		return err
 	}
 
-	if c.checkSectionExists(parser.Backends, data.Name, p) {
+	if p.SectionExists(parser.Backends, data.Name) {
 		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("%s %s already exist", parser.Backends, data.Name))
 		return c.HandleError(data.Name, "", "", t, transactionID == "", e)
 	}
 
 	if err = serializeBackendSection(StructuredToParserArgs{
-		TID:                transactionID,
-		Parser:             &p,
-		Options:            &c.ConfigurationOptions,
-		HandleError:        c.HandleError,
-		CheckSectionExists: c.checkSectionExists,
+		TID:         transactionID,
+		Parser:      &p,
+		Options:     &c.ConfigurationOptions,
+		HandleError: c.HandleError,
 	}, data); err != nil {
 		return err
 	}
@@ -270,7 +268,7 @@ func parseBackendsSection(name string, p parser.Parser) (*models.Backend, error)
 	b.TCPRequestRuleList = tcpRules
 
 	// tcp response rules
-	tcpRespRules, err := ParseTCPResponseRules(name, p)
+	tcpRespRules, err := ParseTCPResponseRules(BackendParentName, name, p)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +300,7 @@ func serializeBackendSection(a StructuredToParserArgs, b *models.Backend) error 
 		}
 	}
 	for i, acl := range b.ACLList {
-		if err = p.Insert(parser.Backends, b.Name, "acl", SerializeACL(*acl), i); err != nil {
+		if err = p.Insert(parser.Backends, b.Name, "acl", *acl, i); err != nil {
 			return a.HandleError(strconv.FormatInt(int64(i), 10), BackendParentName, b.Name, a.TID, a.TID == "", err)
 		}
 	}

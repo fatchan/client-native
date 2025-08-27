@@ -27,6 +27,9 @@ table:
         - string
         - binary
       type: string
+    recv_only:
+      type: boolean
+      x-display-name: Receive Only
     type_len:
       type: integer
       x-display-name: Type
@@ -34,3 +37,6 @@ table:
     write_to:
       type: string
       x-nullable: true
+    metadata:
+      additionalProperties:
+        type: object

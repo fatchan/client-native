@@ -91,6 +91,7 @@ func TestTuneOptionsEqualFalse(t *testing.T) {
 		result.DisableZeroCopyForwarding = !sample.DisableZeroCopyForwarding
 		result.EventsMaxEventsAtOnce = sample.EventsMaxEventsAtOnce + 1
 		result.FailAlloc = !sample.FailAlloc
+		result.GlitchesKillCPUUsage = Ptr(*sample.GlitchesKillCPUUsage + 1)
 		result.H2BeGlitchesThreshold = Ptr(*sample.H2BeGlitchesThreshold + 1)
 		result.H2BeInitialWindowSize = sample.H2BeInitialWindowSize + 1
 		result.H2BeMaxConcurrentStreams = sample.H2BeMaxConcurrentStreams + 1
@@ -109,10 +110,13 @@ func TestTuneOptionsEqualFalse(t *testing.T) {
 		result.HTTPMaxhdr = sample.HTTPMaxhdr + 1
 		result.Idletimer = Ptr(*sample.Idletimer + 1)
 		result.MaxChecksPerThread = Ptr(*sample.MaxChecksPerThread + 1)
+		result.MaxRulesAtOnce = Ptr(*sample.MaxRulesAtOnce + 1)
 		result.Maxaccept = sample.Maxaccept + 1
 		result.Maxpollevents = sample.Maxpollevents + 1
 		result.Maxrewrite = sample.Maxrewrite + 1
 		result.MemoryHotSize = Ptr(*sample.MemoryHotSize + 1)
+		result.NotsentLowatClient = Ptr(*sample.NotsentLowatClient + 1)
+		result.NotsentLowatServer = Ptr(*sample.NotsentLowatServer + 1)
 		result.PatternCacheSize = Ptr(*sample.PatternCacheSize + 1)
 		result.PeersMaxUpdatesAtOnce = sample.PeersMaxUpdatesAtOnce + 1
 		result.PoolHighFdRatio = sample.PoolHighFdRatio + 1
@@ -206,6 +210,7 @@ func TestTuneOptionsDiffFalse(t *testing.T) {
 		result.DisableZeroCopyForwarding = !sample.DisableZeroCopyForwarding
 		result.EventsMaxEventsAtOnce = sample.EventsMaxEventsAtOnce + 1
 		result.FailAlloc = !sample.FailAlloc
+		result.GlitchesKillCPUUsage = Ptr(*sample.GlitchesKillCPUUsage + 1)
 		result.H2BeGlitchesThreshold = Ptr(*sample.H2BeGlitchesThreshold + 1)
 		result.H2BeInitialWindowSize = sample.H2BeInitialWindowSize + 1
 		result.H2BeMaxConcurrentStreams = sample.H2BeMaxConcurrentStreams + 1
@@ -224,10 +229,13 @@ func TestTuneOptionsDiffFalse(t *testing.T) {
 		result.HTTPMaxhdr = sample.HTTPMaxhdr + 1
 		result.Idletimer = Ptr(*sample.Idletimer + 1)
 		result.MaxChecksPerThread = Ptr(*sample.MaxChecksPerThread + 1)
+		result.MaxRulesAtOnce = Ptr(*sample.MaxRulesAtOnce + 1)
 		result.Maxaccept = sample.Maxaccept + 1
 		result.Maxpollevents = sample.Maxpollevents + 1
 		result.Maxrewrite = sample.Maxrewrite + 1
 		result.MemoryHotSize = Ptr(*sample.MemoryHotSize + 1)
+		result.NotsentLowatClient = Ptr(*sample.NotsentLowatClient + 1)
+		result.NotsentLowatServer = Ptr(*sample.NotsentLowatServer + 1)
 		result.PatternCacheSize = Ptr(*sample.PatternCacheSize + 1)
 		result.PeersMaxUpdatesAtOnce = sample.PeersMaxUpdatesAtOnce + 1
 		result.PoolHighFdRatio = sample.PoolHighFdRatio + 1
@@ -244,7 +252,7 @@ func TestTuneOptionsDiffFalse(t *testing.T) {
 
 	for _, sample := range samples {
 		result := sample.a.Diff(sample.b)
-		if len(result) != 46 {
+		if len(result) != 52 {
 			json := jsoniter.ConfigCompatibleWithStandardLibrary
 			a, err := json.Marshal(&sample.a)
 			if err != nil {
@@ -254,7 +262,7 @@ func TestTuneOptionsDiffFalse(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			t.Errorf("Expected TuneOptions to be different in 46 cases, but it is not (%d) %s %s", len(result), a, b)
+			t.Errorf("Expected TuneOptions to be different in 52 cases, but it is not (%d) %s %s", len(result), a, b)
 		}
 	}
 }

@@ -224,6 +224,11 @@ type DefaultsBase struct {
 	// hash balance factor
 	HashBalanceFactor *int64 `json:"hash_balance_factor,omitempty"`
 
+	// hash preserve affinity
+	// Enum: ["always","maxconn","maxqueue"]
+	// +kubebuilder:validation:Enum=always;maxconn;maxqueue;
+	HashPreserveAffinity string `json:"hash_preserve_affinity,omitempty"`
+
 	// hash type
 	HashType *HashType `json:"hash_type,omitempty"`
 
@@ -231,6 +236,16 @@ type DefaultsBase struct {
 	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	HTTPBufferRequest string `json:"http-buffer-request,omitempty"`
+
+	// http drop request trailers
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	HTTPDropRequestTrailers string `json:"http-drop-request-trailers,omitempty"`
+
+	// http drop response trailers
+	// Enum: ["enabled","disabled"]
+	// +kubebuilder:validation:Enum=enabled;disabled;
+	HTTPDropResponseTrailers string `json:"http-drop-response-trailers,omitempty"`
 
 	// http use htx
 	// Enum: ["enabled","disabled"]
@@ -342,6 +357,10 @@ type DefaultsBase struct {
 
 	// maxconn
 	Maxconn *int64 `json:"maxconn,omitempty"`
+
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 
 	// mode
 	// Enum: ["tcp","http","log"]
@@ -634,11 +653,23 @@ func (m *DefaultsBase) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateHashPreserveAffinity(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateHashType(formats); err != nil {
 		res = append(res, err)
 	}
 
 	if err := m.validateHTTPBufferRequest(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateHTTPDropRequestTrailers(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateHTTPDropResponseTrailers(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -1859,6 +1890,51 @@ func (m *DefaultsBase) validateH1CaseAdjustBogusServer(formats strfmt.Registry) 
 	return nil
 }
 
+var defaultsBaseTypeHashPreserveAffinityPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["always","maxconn","maxqueue"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		defaultsBaseTypeHashPreserveAffinityPropEnum = append(defaultsBaseTypeHashPreserveAffinityPropEnum, v)
+	}
+}
+
+const (
+
+	// DefaultsBaseHashPreserveAffinityAlways captures enum value "always"
+	DefaultsBaseHashPreserveAffinityAlways string = "always"
+
+	// DefaultsBaseHashPreserveAffinityMaxconn captures enum value "maxconn"
+	DefaultsBaseHashPreserveAffinityMaxconn string = "maxconn"
+
+	// DefaultsBaseHashPreserveAffinityMaxqueue captures enum value "maxqueue"
+	DefaultsBaseHashPreserveAffinityMaxqueue string = "maxqueue"
+)
+
+// prop value enum
+func (m *DefaultsBase) validateHashPreserveAffinityEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, defaultsBaseTypeHashPreserveAffinityPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *DefaultsBase) validateHashPreserveAffinity(formats strfmt.Registry) error {
+	if swag.IsZero(m.HashPreserveAffinity) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateHashPreserveAffinityEnum("hash_preserve_affinity", "body", m.HashPreserveAffinity); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *DefaultsBase) validateHashType(formats strfmt.Registry) error {
 	if swag.IsZero(m.HashType) { // not required
 		return nil
@@ -1914,6 +1990,90 @@ func (m *DefaultsBase) validateHTTPBufferRequest(formats strfmt.Registry) error 
 
 	// value enum
 	if err := m.validateHTTPBufferRequestEnum("http-buffer-request", "body", m.HTTPBufferRequest); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var defaultsBaseTypeHTTPDropRequestTrailersPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		defaultsBaseTypeHTTPDropRequestTrailersPropEnum = append(defaultsBaseTypeHTTPDropRequestTrailersPropEnum, v)
+	}
+}
+
+const (
+
+	// DefaultsBaseHTTPDropRequestTrailersEnabled captures enum value "enabled"
+	DefaultsBaseHTTPDropRequestTrailersEnabled string = "enabled"
+
+	// DefaultsBaseHTTPDropRequestTrailersDisabled captures enum value "disabled"
+	DefaultsBaseHTTPDropRequestTrailersDisabled string = "disabled"
+)
+
+// prop value enum
+func (m *DefaultsBase) validateHTTPDropRequestTrailersEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, defaultsBaseTypeHTTPDropRequestTrailersPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *DefaultsBase) validateHTTPDropRequestTrailers(formats strfmt.Registry) error {
+	if swag.IsZero(m.HTTPDropRequestTrailers) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateHTTPDropRequestTrailersEnum("http-drop-request-trailers", "body", m.HTTPDropRequestTrailers); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var defaultsBaseTypeHTTPDropResponseTrailersPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["enabled","disabled"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		defaultsBaseTypeHTTPDropResponseTrailersPropEnum = append(defaultsBaseTypeHTTPDropResponseTrailersPropEnum, v)
+	}
+}
+
+const (
+
+	// DefaultsBaseHTTPDropResponseTrailersEnabled captures enum value "enabled"
+	DefaultsBaseHTTPDropResponseTrailersEnabled string = "enabled"
+
+	// DefaultsBaseHTTPDropResponseTrailersDisabled captures enum value "disabled"
+	DefaultsBaseHTTPDropResponseTrailersDisabled string = "disabled"
+)
+
+// prop value enum
+func (m *DefaultsBase) validateHTTPDropResponseTrailersEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, defaultsBaseTypeHTTPDropResponseTrailersPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *DefaultsBase) validateHTTPDropResponseTrailers(formats strfmt.Registry) error {
+	if swag.IsZero(m.HTTPDropResponseTrailers) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateHTTPDropResponseTrailersEnum("http-drop-response-trailers", "body", m.HTTPDropResponseTrailers); err != nil {
 		return err
 	}
 

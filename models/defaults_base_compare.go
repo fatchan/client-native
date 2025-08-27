@@ -18,6 +18,7 @@
 package models
 
 import (
+	"reflect"
 	"strconv"
 )
 
@@ -377,6 +378,10 @@ func (s DefaultsBase) Equal(t DefaultsBase, opts ...Options) bool {
 		return false
 	}
 
+	if s.HashPreserveAffinity != t.HashPreserveAffinity {
+		return false
+	}
+
 	if s.HashType == nil || t.HashType == nil {
 		if s.HashType != nil || t.HashType != nil {
 			if opt.NilSameAsEmpty {
@@ -400,6 +405,14 @@ func (s DefaultsBase) Equal(t DefaultsBase, opts ...Options) bool {
 	}
 
 	if s.HTTPBufferRequest != t.HTTPBufferRequest {
+		return false
+	}
+
+	if s.HTTPDropRequestTrailers != t.HTTPDropRequestTrailers {
+		return false
+	}
+
+	if s.HTTPDropResponseTrailers != t.HTTPDropResponseTrailers {
 		return false
 	}
 
@@ -519,6 +532,16 @@ func (s DefaultsBase) Equal(t DefaultsBase, opts ...Options) bool {
 
 	if !equalPointers(s.Maxconn, t.Maxconn) {
 		return false
+	}
+
+	if !CheckSameNilAndLenMap[string](s.Metadata, t.Metadata, opt) {
+		return false
+	}
+
+	for k, v := range s.Metadata {
+		if !reflect.DeepEqual(t.Metadata[k], v) {
+			return false
+		}
 	}
 
 	if s.Mode != t.Mode {
@@ -1183,6 +1206,10 @@ func (s DefaultsBase) Diff(t DefaultsBase, opts ...Options) map[string][]interfa
 		diff["HashBalanceFactor"] = []interface{}{ValueOrNil(s.HashBalanceFactor), ValueOrNil(t.HashBalanceFactor)}
 	}
 
+	if s.HashPreserveAffinity != t.HashPreserveAffinity {
+		diff["HashPreserveAffinity"] = []interface{}{s.HashPreserveAffinity, t.HashPreserveAffinity}
+	}
+
 	if s.HashType == nil || t.HashType == nil {
 		if s.HashType != nil || t.HashType != nil {
 			if opt.NilSameAsEmpty {
@@ -1207,6 +1234,14 @@ func (s DefaultsBase) Diff(t DefaultsBase, opts ...Options) map[string][]interfa
 
 	if s.HTTPBufferRequest != t.HTTPBufferRequest {
 		diff["HTTPBufferRequest"] = []interface{}{s.HTTPBufferRequest, t.HTTPBufferRequest}
+	}
+
+	if s.HTTPDropRequestTrailers != t.HTTPDropRequestTrailers {
+		diff["HTTPDropRequestTrailers"] = []interface{}{s.HTTPDropRequestTrailers, t.HTTPDropRequestTrailers}
+	}
+
+	if s.HTTPDropResponseTrailers != t.HTTPDropResponseTrailers {
+		diff["HTTPDropResponseTrailers"] = []interface{}{s.HTTPDropResponseTrailers, t.HTTPDropResponseTrailers}
 	}
 
 	if s.HTTPUseHtx != t.HTTPUseHtx {
@@ -1325,6 +1360,16 @@ func (s DefaultsBase) Diff(t DefaultsBase, opts ...Options) map[string][]interfa
 
 	if !equalPointers(s.Maxconn, t.Maxconn) {
 		diff["Maxconn"] = []interface{}{ValueOrNil(s.Maxconn), ValueOrNil(t.Maxconn)}
+	}
+
+	if !CheckSameNilAndLenMap[string](s.Metadata, t.Metadata, opt) {
+		diff["Metadata"] = []interface{}{s.Metadata, t.Metadata}
+	}
+
+	for k, v := range s.Metadata {
+		if !reflect.DeepEqual(t.Metadata[k], v) {
+			diff["Metadata"] = []interface{}{s.Metadata, t.Metadata}
+		}
 	}
 
 	if s.Mode != t.Mode {

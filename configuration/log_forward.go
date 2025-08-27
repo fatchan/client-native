@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/haproxytech/client-native/v6/config-parser/common"
+
 	strfmt "github.com/go-openapi/strfmt"
 	parser "github.com/haproxytech/client-native/v6/config-parser"
 	parsererrors "github.com/haproxytech/client-native/v6/config-parser/errors"
@@ -79,7 +81,7 @@ func (c *client) GetLogForward(name string, transactionID string) (int64, *model
 		return 0, nil, err
 	}
 
-	if !c.checkSectionExists(parser.LogForward, name, p) {
+	if !p.SectionExists(parser.LogForward, name) {
 		return v, nil, NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("log forward %s does not exist", name))
 	}
 
@@ -91,6 +93,31 @@ func (c *client) GetLogForward(name string, transactionID string) (int64, *model
 }
 
 func ParseLogForward(p parser.Parser, lf *models.LogForward) error {
+	if data, err := p.SectionGet(parser.LogForward, lf.Name); err == nil {
+		d, ok := data.(types.Section)
+		if ok {
+			lf.Metadata = parseMetadata(d.Comment)
+		}
+	}
+
+	// get option assume-rfc6587-ntf
+	_, err := p.Get(parser.LogForward, lf.Name, "option assume-rfc6587-ntf", false)
+	if err != nil && !errors.Is(err, parsererrors.ErrFetch) {
+		return err
+	}
+	if err == nil {
+		lf.AssumeRfc6587Ntf = true
+	}
+
+	// get option dont-parse-log
+	_, err = p.Get(parser.LogForward, lf.Name, "option dont-parse-log", false)
+	if err != nil && !errors.Is(err, parsererrors.ErrFetch) {
+		return err
+	}
+	if err == nil {
+		lf.DontParseLog = true
+	}
+
 	backlog, err := p.Get(parser.LogForward, lf.Name, "backlog", false)
 	if err != nil && !errors.Is(err, parsererrors.ErrFetch) {
 		return err
@@ -156,7 +183,7 @@ func (c *client) CreateLogForward(data *models.LogForward, transactionID string,
 		return err
 	}
 
-	if c.checkSectionExists(parser.LogForward, data.Name, p) {
+	if p.SectionExists(parser.LogForward, data.Name) {
 		e := NewConfError(ErrObjectAlreadyExists, fmt.Sprintf("%s %s already exists", parser.LogForward, data.Name))
 		return c.HandleError(data.Name, "", "", t, transactionID == "", e)
 	}
@@ -186,7 +213,7 @@ func (c *client) EditLogForward(name string, data *models.LogForward, transactio
 		return err
 	}
 
-	if !c.checkSectionExists(parser.LogForward, data.Name, p) {
+	if !p.SectionExists(parser.LogForward, data.Name) {
 		e := NewConfError(ErrObjectAlreadyExists, fmt.Sprintf("%s %s does not exists", parser.LogForward, data.Name))
 		return c.HandleError(data.Name, "", "", t, transactionID == "", e)
 	}
@@ -204,7 +231,15 @@ func SerializeLogForwardSection(p parser.Parser, data *models.LogForward, opt *o
 	}
 
 	var err error
-
+	if data.Metadata != nil {
+		comment, err := serializeMetadata(data.Metadata)
+		if err != nil {
+			return err
+		}
+		if err := p.SectionCommentSet(parser.LogForward, data.Name, comment); err != nil {
+			return err
+		}
+	}
 	if data.Backlog == nil {
 		if err = p.Set(parser.LogForward, data.Name, "backlog", nil); err != nil {
 			return err
@@ -236,6 +271,22 @@ func SerializeLogForwardSection(p parser.Parser, data *models.LogForward, opt *o
 		if err = p.Set(parser.LogForward, data.Name, "timeout client", tc); err != nil {
 			return err
 		}
+	}
+
+	var assumeRfc6587NtfOption common.ParserData
+	if data.AssumeRfc6587Ntf {
+		assumeRfc6587NtfOption = types.SimpleOption{}
+	}
+	if err = p.Set(parser.LogForward, data.Name, "option assume-rfc6587-ntf", assumeRfc6587NtfOption); err != nil {
+		return err
+	}
+
+	var dontParseLogOption common.ParserData
+	if data.DontParseLog {
+		dontParseLogOption = types.SimpleOption{}
+	}
+	if err = p.Set(parser.LogForward, data.Name, "option dont-parse-log", dontParseLogOption); err != nil {
+		return err
 	}
 
 	return err

@@ -23,6 +23,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -48,6 +49,9 @@ type TuneOptions struct {
 	// disable zero copy forwarding
 	DisableZeroCopyForwarding bool `json:"disable_zero_copy_forwarding,omitempty"`
 
+	// epoll mask events
+	EpollMaskEvents []string `json:"epoll_mask_events,omitempty"`
+
 	// events max events at once
 	// Maximum: 10000
 	// Minimum: 1
@@ -62,6 +66,13 @@ type TuneOptions struct {
 	// Enum: ["enabled","disabled"]
 	// +kubebuilder:validation:Enum=enabled;disabled;
 	FdEdgeTriggered string `json:"fd_edge_triggered,omitempty"`
+
+	// glitches kill cpu usage
+	// Maximum: 100
+	// Minimum: 0
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:validation:Minimum=0
+	GlitchesKillCPUUsage *int64 `json:"glitches_kill_cpu_usage,omitempty"`
 
 	// h1 zero copy fwd recv
 	// Enum: ["enabled","disabled"]
@@ -157,6 +168,11 @@ type TuneOptions struct {
 	// max checks per thread
 	MaxChecksPerThread *int64 `json:"max_checks_per_thread,omitempty"`
 
+	// max rules at once
+	// Minimum: 0
+	// +kubebuilder:validation:Minimum=0
+	MaxRulesAtOnce *int64 `json:"max_rules_at_once,omitempty"`
+
 	// maxaccept
 	Maxaccept int64 `json:"maxaccept,omitempty"`
 
@@ -168,6 +184,12 @@ type TuneOptions struct {
 
 	// memory hot size
 	MemoryHotSize *int64 `json:"memory_hot_size,omitempty"`
+
+	// notsent lowat client
+	NotsentLowatClient *int64 `json:"notsent_lowat_client,omitempty"`
+
+	// notsent lowat server
+	NotsentLowatServer *int64 `json:"notsent_lowat_server,omitempty"`
 
 	// pattern cache size
 	PatternCacheSize *int64 `json:"pattern_cache_size,omitempty"`
@@ -213,6 +235,11 @@ type TuneOptions struct {
 
 	// stick counters
 	StickCounters *int64 `json:"stick_counters,omitempty"`
+
+	// takeover other tg connections
+	// Enum: ["none","restricted","full"]
+	// +kubebuilder:validation:Enum=none;restricted;full;
+	TakeoverOtherTgConnections string `json:"takeover_other_tg_connections,omitempty"`
 }
 
 // Validate validates this tune options
@@ -223,11 +250,19 @@ func (m *TuneOptions) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateEpollMaskEvents(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateEventsMaxEventsAtOnce(formats); err != nil {
 		res = append(res, err)
 	}
 
 	if err := m.validateFdEdgeTriggered(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateGlitchesKillCPUUsage(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -267,6 +302,10 @@ func (m *TuneOptions) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateMaxRulesAtOnce(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validatePtZeroCopyForwarding(formats); err != nil {
 		res = append(res, err)
 	}
@@ -280,6 +319,10 @@ func (m *TuneOptions) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateSchedLowLatency(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTakeoverOtherTgConnections(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -326,6 +369,42 @@ func (m *TuneOptions) validateAppletZeroCopyForwarding(formats strfmt.Registry) 
 	// value enum
 	if err := m.validateAppletZeroCopyForwardingEnum("applet_zero_copy_forwarding", "body", m.AppletZeroCopyForwarding); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+var tuneOptionsEpollMaskEventsItemsEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["err","hup","rdhup"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		tuneOptionsEpollMaskEventsItemsEnum = append(tuneOptionsEpollMaskEventsItemsEnum, v)
+	}
+}
+
+func (m *TuneOptions) validateEpollMaskEventsItemsEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, tuneOptionsEpollMaskEventsItemsEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *TuneOptions) validateEpollMaskEvents(formats strfmt.Registry) error {
+	if swag.IsZero(m.EpollMaskEvents) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(m.EpollMaskEvents); i++ {
+
+		// value enum
+		if err := m.validateEpollMaskEventsItemsEnum("epoll_mask_events"+"."+strconv.Itoa(i), "body", m.EpollMaskEvents[i]); err != nil {
+			return err
+		}
+
 	}
 
 	return nil
@@ -383,6 +462,22 @@ func (m *TuneOptions) validateFdEdgeTriggered(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateFdEdgeTriggeredEnum("fd_edge_triggered", "body", m.FdEdgeTriggered); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *TuneOptions) validateGlitchesKillCPUUsage(formats strfmt.Registry) error {
+	if swag.IsZero(m.GlitchesKillCPUUsage) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("glitches_kill_cpu_usage", "body", *m.GlitchesKillCPUUsage, 0, false); err != nil {
+		return err
+	}
+
+	if err := validate.MaximumInt("glitches_kill_cpu_usage", "body", *m.GlitchesKillCPUUsage, 100, false); err != nil {
 		return err
 	}
 
@@ -688,6 +783,18 @@ func (m *TuneOptions) validateListenerMultiQueue(formats strfmt.Registry) error 
 	return nil
 }
 
+func (m *TuneOptions) validateMaxRulesAtOnce(formats strfmt.Registry) error {
+	if swag.IsZero(m.MaxRulesAtOnce) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("max_rules_at_once", "body", *m.MaxRulesAtOnce, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 var tuneOptionsTypePtZeroCopyForwardingPropEnum []interface{}
 
 func init() {
@@ -798,6 +905,51 @@ func (m *TuneOptions) validateSchedLowLatency(formats strfmt.Registry) error {
 
 	// value enum
 	if err := m.validateSchedLowLatencyEnum("sched_low_latency", "body", m.SchedLowLatency); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var tuneOptionsTypeTakeoverOtherTgConnectionsPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["none","restricted","full"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		tuneOptionsTypeTakeoverOtherTgConnectionsPropEnum = append(tuneOptionsTypeTakeoverOtherTgConnectionsPropEnum, v)
+	}
+}
+
+const (
+
+	// TuneOptionsTakeoverOtherTgConnectionsNone captures enum value "none"
+	TuneOptionsTakeoverOtherTgConnectionsNone string = "none"
+
+	// TuneOptionsTakeoverOtherTgConnectionsRestricted captures enum value "restricted"
+	TuneOptionsTakeoverOtherTgConnectionsRestricted string = "restricted"
+
+	// TuneOptionsTakeoverOtherTgConnectionsFull captures enum value "full"
+	TuneOptionsTakeoverOtherTgConnectionsFull string = "full"
+)
+
+// prop value enum
+func (m *TuneOptions) validateTakeoverOtherTgConnectionsEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, tuneOptionsTypeTakeoverOtherTgConnectionsPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *TuneOptions) validateTakeoverOtherTgConnections(formats strfmt.Registry) error {
+	if swag.IsZero(m.TakeoverOtherTgConnections) { // not required
+		return nil
+	}
+
+	// value enum
+	if err := m.validateTakeoverOtherTgConnectionsEnum("takeover_other_tg_connections", "body", m.TakeoverOtherTgConnections); err != nil {
 		return err
 	}
 

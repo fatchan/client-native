@@ -18,6 +18,7 @@ package configuration
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	strfmt "github.com/go-openapi/strfmt"
 	parser "github.com/haproxytech/client-native/v6/config-parser"
@@ -75,7 +76,7 @@ func (c *client) GetCrtStore(name, transactionID string) (int64, *models.CrtStor
 		return 0, nil, err
 	}
 
-	if !c.checkSectionExists(parser.CrtStore, name, p) {
+	if !p.SectionExists(parser.CrtStore, name) {
 		return v, nil, NewConfError(ErrObjectDoesNotExist,
 			fmt.Sprintf("%s section '%s' does not exist", CrtStoreParentName, name))
 	}
@@ -105,7 +106,7 @@ func (c *client) CreateCrtStore(data *models.CrtStore, transactionID string, ver
 		return c.HandleError(data.Name, "", "", t, transactionID == "", err)
 	}
 
-	if c.checkSectionExists(parser.CrtStore, data.Name, p) {
+	if p.SectionExists(parser.CrtStore, data.Name) {
 		e := NewConfError(ErrObjectAlreadyExists, fmt.Sprintf("%s %s already exists", parser.CrtStore, data.Name))
 		return c.HandleError(data.Name, "", "", t, transactionID == "", e)
 	}
@@ -133,7 +134,7 @@ func (c *client) EditCrtStore(name string, data *models.CrtStore, transactionID 
 		return err
 	}
 
-	if !c.checkSectionExists(parser.CrtStore, data.Name, p) {
+	if !p.SectionExists(parser.CrtStore, data.Name) {
 		e := NewConfError(ErrObjectAlreadyExists, fmt.Sprintf("%s %s does not exists", parser.CrtStore, data.Name))
 		return c.HandleError(data.Name, "", "", t, transactionID == "", e)
 	}
@@ -147,6 +148,13 @@ func (c *client) EditCrtStore(name string, data *models.CrtStore, transactionID 
 
 func ParseCrtStore(p parser.Parser, name string) (*models.CrtStore, error) {
 	store := &models.CrtStore{Name: name}
+
+	if data, err := p.SectionGet(parser.CrtStore, name); err == nil {
+		d, ok := data.(types.Section)
+		if ok {
+			store.Metadata = parseMetadata(d.Comment)
+		}
+	}
 
 	// get optional crt-base
 	crtBase, err := p.Get(parser.CrtStore, name, "crt-base", false)
@@ -190,13 +198,20 @@ func ParseCrtStore(p parser.Parser, name string) (*models.CrtStore, error) {
 	}
 	store.Loads = make(models.CrtLoads, len(tloads))
 	for i, l := range tloads {
+		domains := strings.Split(l.Domains, ",")
+		if len(domains) == 1 && domains[0] == "" {
+			domains = nil
+		}
 		mload := &models.CrtLoad{
+			Acme:        l.Acme,
 			Alias:       l.Alias,
 			Certificate: l.Certificate,
+			Domains:     domains,
 			Issuer:      l.Issuer,
 			Key:         l.Key,
 			Ocsp:        l.Ocsp,
 			Sctl:        l.Sctl,
+			Metadata:    parseMetadata(l.Comment),
 		}
 		if l.OcspUpdate != nil {
 			if *l.OcspUpdate {
@@ -214,6 +229,16 @@ func ParseCrtStore(p parser.Parser, name string) (*models.CrtStore, error) {
 func SerializeCrtStore(p parser.Parser, store *models.CrtStore) error {
 	if store == nil {
 		return fmt.Errorf("empty %s section", CrtStoreParentName)
+	}
+
+	if store.Metadata != nil {
+		comment, err := serializeMetadata(store.Metadata)
+		if err != nil {
+			return err
+		}
+		if err := p.SectionCommentSet(parser.CrtStore, store.Name, comment); err != nil {
+			return err
+		}
 	}
 
 	crtBase := types.StringC{Value: store.CrtBase}

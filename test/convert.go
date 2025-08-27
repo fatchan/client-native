@@ -103,6 +103,8 @@ func expectedChildResources[P, T any](res map[string][]T, parentKey, parentNameK
 			pkey = configuration.DefaultsParentName
 		case "crt_stores":
 			pkey = configuration.CrtStoreParentName
+		case "acme_providers":
+			pkey = configuration.AcmeParentName
 		}
 		key := fmt.Sprintf("%s/%s", pkey, pname)
 		if pname == "dynamic_update_rule_list" {
@@ -283,12 +285,11 @@ func StructuredToTracesMap() models.Traces {
 	return resources[""]
 }
 
-func StructuredToDefaultsMap() map[string][]*models.Defaults {
+func StructuredToDefaultsMap() map[string]*models.Defaults {
 	resources, _ := expectedResources[models.Defaults]("defaults")
-	res := make(map[string][]*models.Defaults)
+	res := make(map[string]*models.Defaults)
 	for _, v := range resources {
-		currentv := v
-		res[v.Name] = append(res[v.Name], &currentv)
+		res[v.Name] = &v
 	}
 	return res
 }
@@ -579,6 +580,7 @@ func StructuredToTCPResponseRuleMap() map[string]models.TCPResponseRules {
 	res := make(map[string]models.TCPResponseRules)
 	resources := make(map[string][]models.TCPResponseRule)
 	_ = expectedChildResources[models.Backend](resources, "backends", "name", "tcp_response_rule_list")
+	_ = expectedChildResources[models.Backend](resources, "defaults", "name", "tcp_response_rule_list")
 	for k, v := range resources {
 		res[k] = toSliceOfPtrs(v)
 	}
@@ -609,6 +611,15 @@ func StructuredToUserMap() map[string]models.Users {
 func StructuredToLogProfileMap() map[string]models.LogProfiles {
 	resources, _ := expectedResources[models.LogProfile]("log_profiles")
 	res := make(map[string]models.LogProfiles)
+	keyRoot := ""
+	t := toResMap(keyRoot, resources)
+	res[keyRoot] = t[keyRoot]
+	return res
+}
+
+func StructuredToAcmeMap() map[string]models.AcmeProviders {
+	resources, _ := expectedResources[models.AcmeProvider]("acme_providers")
+	res := make(map[string]models.AcmeProviders)
 	keyRoot := ""
 	t := toResMap(keyRoot, resources)
 	res[keyRoot] = t[keyRoot]

@@ -28,6 +28,7 @@ type Options struct {
 	Runtime        runtime.Runtime
 	MapStorage     storage.Storage
 	SSLCertStorage storage.Storage
+	CrtListStorage storage.Storage
 	GeneralStorage storage.Storage
 	Spoe           spoe.Spoe
 }

@@ -6,6 +6,9 @@ traces:
   properties:
     entries:
       $ref: "#/definitions/trace_entries"
+    metadata:
+      additionalProperties:
+        type: object
   additionalProperties: false
 trace_entry:
   title: Trace event
@@ -19,3 +22,6 @@ trace_entry:
       description: Trace parameters
       minLength: 1
       x-nullable: false
+    metadata:
+      additionalProperties:
+        type: object

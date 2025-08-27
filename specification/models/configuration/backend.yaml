@@ -82,6 +82,9 @@ backend_base:
       type: string
       enum: [enabled, disabled]
       x-display-name: All Backups
+    hash_preserve_affinity:
+      type: string
+      enum: [always, maxconn, maxqueue]
     http-buffer-request:
       type: string
       enum: [enabled, disabled]
@@ -309,6 +312,10 @@ backend_base:
       type: string
       enum: [enabled, disabled]
       x-display-name: Checkcache
+    http-drop-request-trailers:
+      type: string
+      enum: [enabled, disabled]
+      x-display-name: Drop HTTP Request Trailers
     independent_streams:
       type: string
       enum: [enabled, disabled]
@@ -503,6 +510,9 @@ backend_base:
       x-display-name: Retry on
     source:
       $ref: "#/definitions/source"
+    metadata:
+      additionalProperties:
+        type: object
   additionalProperties: false
   example:
     name: test_backend

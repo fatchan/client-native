@@ -70,7 +70,7 @@ func (c *client) GetStructuredDefaultsSection(name string, transactionID string)
 		return 0, nil, err
 	}
 
-	if !c.checkSectionExists(parser.Defaults, name, p) {
+	if !p.SectionExists(parser.Defaults, name) {
 		return v, nil, NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("Defaults %s does not exist", name))
 	}
 
@@ -113,7 +113,7 @@ func (c *client) PushStructuredDefaultsConfiguration(data *models.Defaults, tran
 		return err
 	}
 
-	if !c.checkSectionExists(parser.Defaults, parser.DefaultSectionName, p) {
+	if !p.SectionExists(parser.Defaults, parser.DefaultSectionName) {
 		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("%s %s does not exist", parser.Defaults, parser.DefaultSectionName))
 		return c.HandleError(parser.DefaultSectionName, "", "", t, transactionID == "", e)
 	}
@@ -124,11 +124,10 @@ func (c *client) PushStructuredDefaultsConfiguration(data *models.Defaults, tran
 
 	data.Name = parser.DefaultSectionName
 	if err = serializeDefaultsSection(StructuredToParserArgs{
-		TID:                transactionID,
-		Parser:             &p,
-		Options:            &c.ConfigurationOptions,
-		HandleError:        c.HandleError,
-		CheckSectionExists: c.checkSectionExists,
+		TID:         transactionID,
+		Parser:      &p,
+		Options:     &c.ConfigurationOptions,
+		HandleError: c.HandleError,
 	}, data); err != nil {
 		return err
 	}
@@ -150,7 +149,7 @@ func (c *client) EditStructuredDefaultsSection(name string, data *models.Default
 		return err
 	}
 
-	if !c.checkSectionExists(parser.Defaults, name, p) {
+	if !p.SectionExists(parser.Defaults, name) {
 		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("%s %s does not exist", parser.Defaults, name))
 		return c.HandleError(name, "", "", t, transactionID == "", e)
 	}
@@ -160,11 +159,10 @@ func (c *client) EditStructuredDefaultsSection(name string, data *models.Default
 	}
 
 	if err = serializeDefaultsSection(StructuredToParserArgs{
-		TID:                transactionID,
-		Parser:             &p,
-		Options:            &c.ConfigurationOptions,
-		HandleError:        c.HandleError,
-		CheckSectionExists: c.checkSectionExists,
+		TID:         transactionID,
+		Parser:      &p,
+		Options:     &c.ConfigurationOptions,
+		HandleError: c.HandleError,
 	}, data); err != nil {
 		return err
 	}
@@ -186,17 +184,16 @@ func (c *client) CreateStructuredDefaultsSection(data *models.Defaults, transact
 		return err
 	}
 
-	if c.checkSectionExists(parser.Defaults, data.Name, p) {
+	if p.SectionExists(parser.Defaults, data.Name) {
 		e := NewConfError(ErrObjectDoesNotExist, fmt.Sprintf("%s %s already exist", parser.Defaults, data.Name))
 		return c.HandleError(data.Name, "", "", t, transactionID == "", e)
 	}
 
 	if err = serializeDefaultsSection(StructuredToParserArgs{
-		TID:                transactionID,
-		Parser:             &p,
-		Options:            &c.ConfigurationOptions,
-		HandleError:        c.HandleError,
-		CheckSectionExists: c.checkSectionExists,
+		TID:         transactionID,
+		Parser:      &p,
+		Options:     &c.ConfigurationOptions,
+		HandleError: c.HandleError,
 	}, data); err != nil {
 		return err
 	}
@@ -225,6 +222,16 @@ func parseDefaultsSection(name string, p parser.Parser) (*models.Defaults, error
 		return nil, err
 	}
 
+	acls, err := ParseACLs(DefaultsParentName, name, p)
+	if err != nil {
+		return nil, err
+	}
+	d.ACLList = acls
+	lt, err := ParseLogTargets(DefaultsParentName, name, p)
+	if err != nil {
+		return nil, err
+	}
+	d.LogTargetList = lt
 	hchecks, err := ParseHTTPChecks(DefaultsParentName, name, p)
 	if err != nil {
 		return nil, err
@@ -240,21 +247,41 @@ func parseDefaultsSection(name string, p parser.Parser) (*models.Defaults, error
 		return nil, err
 	}
 	d.TCPCheckRuleList = tchecks
-	lt, err := ParseLogTargets(DefaultsParentName, name, p)
-	if err != nil {
-		return nil, err
-	}
-	d.LogTargetList = lt
 	qi, err := ParseQUICInitialRules(DefaultsParentName, name, p)
 	if err != nil {
 		return nil, err
 	}
 	d.QUICInitialRuleList = qi
+	httpAfterResponseRules, err := ParseHTTPAfterRules(DefaultsParentName, name, p)
+	if err != nil {
+		return nil, err
+	}
+	d.HTTPAfterResponseRuleList = httpAfterResponseRules
+	httpRequestRules, err := ParseHTTPRequestRules(DefaultsParentName, name, p)
+	if err != nil {
+		return nil, err
+	}
+	d.HTTPRequestRuleList = httpRequestRules
+	httpResponseRules, err := ParseHTTPResponseRules(DefaultsParentName, name, p)
+	if err != nil {
+		return nil, err
+	}
+	d.HTTPResponseRuleList = httpResponseRules
+	tcpRequestRules, err := ParseTCPRequestRules(DefaultsParentName, name, p)
+	if err != nil {
+		return nil, err
+	}
+	d.TCPRequestRuleList = tcpRequestRules
+	tcpResponseRules, err := ParseTCPResponseRules(DefaultsParentName, name, p)
+	if err != nil {
+		return nil, err
+	}
+	d.TCPResponseRuleList = tcpResponseRules
 
 	return d, nil
 }
 
-func serializeDefaultsSection(a StructuredToParserArgs, d *models.Defaults) error {
+func serializeDefaultsSection(a StructuredToParserArgs, d *models.Defaults) error { //nolint: gocognit
 	p := *a.Parser
 	var err error
 
@@ -302,6 +329,64 @@ func serializeDefaultsSection(a StructuredToParserArgs, d *models.Defaults) erro
 			return a.HandleError(strconv.FormatInt(int64(i), 10), DefaultsParentName, "", a.TID, a.TID == "", err)
 		}
 	}
+	for i, rule := range d.HTTPRequestRuleList {
+		var s types.Action
+		s, err = SerializeHTTPRequestRule(*rule, a.Options)
+		if err != nil {
+			return err
+		}
+		if err = p.Insert(parser.Defaults, d.Name, "http-request", s, i); err != nil {
+			return a.HandleError(strconv.FormatInt(int64(i), 10), DefaultsParentName, d.Name, a.TID, a.TID == "", err)
+		}
+	}
+	for i, rule := range d.HTTPResponseRuleList {
+		var s types.Action
+		s, err = SerializeHTTPResponseRule(*rule, a.Options)
+		if err != nil {
+			return err
+		}
+		if err = p.Insert(parser.Defaults, d.Name, "http-response", s, i); err != nil {
+			return a.HandleError(strconv.FormatInt(int64(i), 10), DefaultsParentName, d.Name, a.TID, a.TID == "", err)
+		}
+	}
+	for i, rule := range d.TCPRequestRuleList {
+		var s types.TCPType
+		s, err = SerializeTCPRequestRule(*rule, a.Options)
+		if err != nil {
+			return err
+		}
+		if err = p.Insert(parser.Defaults, d.Name, "tcp-request", s, i); err != nil {
+			return a.HandleError(strconv.FormatInt(int64(i), 10), DefaultsParentName, d.Name, a.TID, a.TID == "", err)
+		}
+	}
+	for i, rule := range d.TCPResponseRuleList {
+		var s types.TCPType
+		s, err = SerializeTCPResponseRule(*rule, a.Options)
+		if err != nil {
+			return err
+		}
+		if err = p.Insert(parser.Defaults, d.Name, "tcp-response", s, i); err != nil {
+			return a.HandleError(strconv.FormatInt(int64(i), 10), DefaultsParentName, d.Name, a.TID, a.TID == "", err)
+		}
+	}
+	for i, httpAfterResponse := range d.HTTPAfterResponseRuleList {
+		var s types.Action
+		s, err = SerializeHTTPAfterRule(*httpAfterResponse)
+		if err != nil {
+			return err
+		}
+		if err = p.Insert(parser.Defaults, d.Name, "http-after-response", s, i); err != nil {
+			return a.HandleError(strconv.FormatInt(int64(i), 10), DefaultsParentName, d.Name, a.TID, a.TID == "", err)
+		}
+	}
+	for i, acl := range d.ACLList {
+		if err != nil {
+			return err
+		}
+		if err = p.Insert(parser.Defaults, d.Name, "acl", *acl, i); err != nil {
+			return a.HandleError(strconv.FormatInt(int64(i), 10), DefaultsParentName, d.Name, a.TID, a.TID == "", err)
+		}
+	}
 	for i, quicInitial := range d.QUICInitialRuleList {
 		var s types.Action
 		s, err = SerializeQUICInitialRule(*quicInitial)
@@ -309,7 +394,7 @@ func serializeDefaultsSection(a StructuredToParserArgs, d *models.Defaults) erro
 			return err
 		}
 		if err = p.Insert(parser.Defaults, d.Name, "quic-initial", s, i); err != nil {
-			return a.HandleError(strconv.FormatInt(int64(i), 10), DefaultsParentName, "", a.TID, a.TID == "", err)
+			return a.HandleError(strconv.FormatInt(int64(i), 10), DefaultsParentName, d.Name, a.TID, a.TID == "", err)
 		}
 	}
 

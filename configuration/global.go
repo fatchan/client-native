@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/haproxytech/client-native/v6/config-parser/parsers"
+
 	"github.com/go-openapi/strfmt"
 	parser "github.com/haproxytech/client-native/v6/config-parser"
 	"github.com/haproxytech/client-native/v6/config-parser/common"
@@ -58,6 +60,24 @@ func (c *client) GetGlobalConfiguration(transactionID string) (int64, *models.Gl
 	return v, g, nil
 }
 
+// ValidateGlobalSection performs validation of the Global section that cannot be done by swagger 2.0
+func ValidateGlobalSection(data *models.Global) error {
+	for i, cpuSet := range data.CPUSets {
+		if cpuSet != nil {
+			if cpuSet.Directive == nil {
+				return fmt.Errorf("cpu_set.%d.directive must not be empty", i)
+			}
+			if *cpuSet.Directive == parsers.CPUSetResetDirective && len(cpuSet.Set) > 0 {
+				return fmt.Errorf("cpu_set.%d.set must be empty when directive is %s", i, parsers.CPUSetResetDirective)
+			}
+			if *cpuSet.Directive != parsers.CPUSetResetDirective && len(cpuSet.Set) == 0 {
+				return fmt.Errorf("cpu_set.%d.set must not be empty when directive is %s", i, *cpuSet.Directive)
+			}
+		}
+	}
+	return nil
+}
+
 // PushGlobalConfiguration pushes a Global config struct to global
 // config file
 func (c *client) PushGlobalConfiguration(data *models.Global, transactionID string, version int64) error {
@@ -65,6 +85,10 @@ func (c *client) PushGlobalConfiguration(data *models.Global, transactionID stri
 		validationErr := data.Validate(strfmt.Default)
 		if validationErr != nil {
 			return NewConfError(ErrValidationError, validationErr.Error())
+		}
+
+		if err := ValidateGlobalSection(data); err != nil {
+			return NewConfError(ErrValidationError, err.Error())
 		}
 	}
 
@@ -97,6 +121,25 @@ func parseCPUMaps(p parser.Parser) ([]*models.CPUMap, error) {
 		}
 	}
 	return cpuMaps, nil
+}
+
+func parseCPUSets(p parser.Parser) ([]*models.CPUSet, error) {
+	var cpuSet []*models.CPUSet
+	d, err := p.Get(parser.Global, parser.GlobalSectionName, "cpu-set")
+	if err == nil {
+		cpuSets, ok := d.([]types.CPUSet)
+		if !ok {
+			return nil, misc.CreateTypeAssertError("cpu-set")
+		}
+		for _, c := range cpuSets {
+			directive := c.Directive
+			cpuSet = append(cpuSet, &models.CPUSet{
+				Directive: &directive,
+				Set:       c.Set,
+			})
+		}
+	}
+	return cpuSet, nil
 }
 
 func parseH1CaseAdjusts(p parser.Parser) ([]*models.H1CaseAdjust, error) {
@@ -562,6 +605,15 @@ func parseSSLOptions(p parser.Parser) (*models.SslOptions, error) { //nolint:goc
 		options.SslEngines = sslEngines
 	}
 
+	sched, err := parseStringOption(p, "acme.scheduler")
+	if err != nil {
+		return nil, err
+	}
+	if sched != "" {
+		isEmpty = false
+		options.AcmeScheduler = sched
+	}
+
 	caBase, err := parseStringOption(p, "ca-base")
 	if err != nil {
 		return nil, err
@@ -810,6 +862,15 @@ func parseDebugOptions(p parser.Parser) (*models.DebugOptions, error) {
 	if anonkey != nil {
 		isEmpty = false
 		options.Anonkey = anonkey
+	}
+
+	stress, err := parseInt64POption(p, "stress-level")
+	if err != nil {
+		return nil, err
+	}
+	if stress != nil {
+		isEmpty = false
+		options.StressLevel = stress
 	}
 
 	quiet, err := parseBoolOption(p, "quiet")
@@ -1215,6 +1276,17 @@ func parseTuneOptions(p parser.Parser) (*models.TuneOptions, error) { //nolint:g
 		options.DisableZeroCopyForwarding = boolOption
 	}
 
+	strOption, err = parseStringOption(p, "tune.epoll.mask-events")
+	if err != nil {
+		return nil, err
+	}
+	if strOption != "" {
+		if words := strings.Split(strOption, ","); len(words) > 0 && words[0] != "" {
+			isEmpty = false
+			options.EpollMaskEvents = words
+		}
+	}
+
 	intOption, err = parseInt64Option(p, "tune.events.max-events-at-once")
 	if err != nil {
 		return nil, err
@@ -1231,6 +1303,15 @@ func parseTuneOptions(p parser.Parser) (*models.TuneOptions, error) { //nolint:g
 	if boolOption {
 		isEmpty = false
 		options.FailAlloc = boolOption
+	}
+
+	intPOption, err = parseInt64POption(p, "tune.glitches.kill.cpu-usage")
+	if err != nil {
+		return nil, err
+	}
+	if intOption != 0 {
+		isEmpty = false
+		options.GlitchesKillCPUUsage = intPOption
 	}
 
 	intOption, err = parseInt64Option(p, "tune.h2.header-table-size")
@@ -1341,6 +1422,15 @@ func parseTuneOptions(p parser.Parser) (*models.TuneOptions, error) { //nolint:g
 		options.MaxChecksPerThread = intPOption
 	}
 
+	intPOption, err = parseInt64POption(p, "tune.max-rules-at-once")
+	if err != nil {
+		return nil, err
+	}
+	if intPOption != nil {
+		isEmpty = false
+		options.MaxRulesAtOnce = intPOption
+	}
+
 	intOption, err = parseInt64Option(p, "tune.maxaccept")
 	if err != nil {
 		return nil, err
@@ -1447,6 +1537,15 @@ func parseTuneOptions(p parser.Parser) (*models.TuneOptions, error) { //nolint:g
 	if intPOption != nil {
 		isEmpty = false
 		options.StickCounters = intPOption
+	}
+
+	strOption, err = parseStringOption(p, "tune.takeover-other-tg-connections")
+	if err != nil {
+		return nil, err
+	}
+	if strOption != "" {
+		isEmpty = false
+		options.TakeoverOtherTgConnections = strOption
 	}
 
 	strOption, err = parseOnOffOption(p, "tune.fd.edge-triggered")
@@ -1564,6 +1663,24 @@ func parseTuneOptions(p parser.Parser) (*models.TuneOptions, error) { //nolint:g
 	if strOption != "" {
 		isEmpty = false
 		options.H2ZeroCopyFwdSend = strOption
+	}
+
+	intPOption, err = parseSizeOption(p, "tune.notsent-lowat.client")
+	if err != nil {
+		return nil, err
+	}
+	if intPOption != nil {
+		isEmpty = false
+		options.NotsentLowatClient = intPOption
+	}
+
+	intPOption, err = parseSizeOption(p, "tune.notsent-lowat.server")
+	if err != nil {
+		return nil, err
+	}
+	if intPOption != nil {
+		isEmpty = false
+		options.NotsentLowatServer = intPOption
 	}
 
 	strOption, err = parseOnOffOption(p, "tune.pt.zero-copy-forwarding")
@@ -1738,9 +1855,20 @@ func parseTuneBufferOptions(p parser.Parser) (*models.TuneBufferOptions, error) 
 func parseTuneLuaOptions(p parser.Parser) (*models.TuneLuaOptions, error) {
 	var intOption int64
 	var intPOption *int64
+	var strOption string
 	var err error
 	options := &models.TuneLuaOptions{}
 	isEmpty := true
+
+	strOption, err = parseStringOption(p, "tune.lua.bool-sample-conversion")
+	if err != nil {
+		return nil, err
+	}
+	if strOption != "" {
+		isEmpty = false
+		options.BoolSampleConversion = strOption
+	}
+
 	intOption, err = parseInt64Option(p, "tune.lua.forced-yield")
 	if err != nil {
 		return nil, err
@@ -1759,7 +1887,7 @@ func parseTuneLuaOptions(p parser.Parser) (*models.TuneLuaOptions, error) {
 		isEmpty = false
 	}
 
-	strOption, err := parseOnOffOption(p, "tune.lua.log.loggers")
+	strOption, err = parseOnOffOption(p, "tune.lua.log.loggers")
 	if err != nil {
 		return nil, err
 	}
@@ -1848,6 +1976,15 @@ func parseTuneQuicOptions(p parser.Parser) (*models.TuneQuicOptions, error) {
 	if intPOption != nil {
 		isEmpty = false
 		options.FrontendMaxStreamsBidi = intPOption
+	}
+
+	intPOption, err = parseSizeOption(p, "tune.quic.frontend.max-tx-mem")
+	if err != nil {
+		return nil, err
+	}
+	if intPOption != nil {
+		isEmpty = false
+		options.FrontendMaxTxMemory = intPOption
 	}
 
 	intPOption, err = parseInt64POption(p, "tune.quic.max-frame-loss")
@@ -2092,6 +2229,12 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 	}
 	global.CPUMaps = cpuMaps
 
+	cpuSets, err := parseCPUSets(p)
+	if err != nil {
+		return nil, err
+	}
+	global.GlobalBase.CPUSets = cpuSets
+
 	h1CaseAdjusts, err := parseH1CaseAdjusts(p)
 	if err != nil {
 		return nil, err
@@ -2140,6 +2283,12 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 	}
 	global.ClusterSecret = clusterSecret
 
+	cpuPolicy, err := parseStringOption(p, "cpu-policy")
+	if err != nil {
+		return nil, err
+	}
+	global.CPUPolicy = cpuPolicy
+
 	daemon, err := parseBoolOption(p, "daemon")
 	if err != nil {
 		return nil, err
@@ -2169,6 +2318,12 @@ func ParseGlobalSection(p parser.Parser) (*models.Global, error) { //nolint:goco
 		return nil, err
 	}
 	global.DeviceAtlasOptions = deviceAtlasOptions
+
+	dnsAcceptFamily, err := parseStringOption(p, "dns-accept-family")
+	if err != nil {
+		return nil, err
+	}
+	global.DNSAcceptFamily = dnsAcceptFamily
 
 	envOptions, err := parseEnvironmentOptions(p)
 	if err != nil {
@@ -2547,6 +2702,9 @@ func serializeDebugOptions(p parser.Parser, options *models.DebugOptions) error 
 	if err := serializeInt64POption(p, "anonkey", options.Anonkey); err != nil {
 		return err
 	}
+	if err := serializeInt64POption(p, "stress-level", options.StressLevel); err != nil {
+		return err
+	}
 	if err := serializeBoolOption(p, "quiet", options.Quiet); err != nil {
 		return err
 	}
@@ -2705,6 +2863,10 @@ func serializeSSLOptions(p parser.Parser, options *models.SslOptions) error { //
 		}
 	}
 	if err := p.Set(parser.Global, parser.GlobalSectionName, "ssl-engine", sslEngines); err != nil {
+		return err
+	}
+
+	if err := serializeStringOption(p, "acme.scheduler", options.AcmeScheduler); err != nil {
 		return err
 	}
 
@@ -2955,6 +3117,18 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global, opt *options.C
 		return err
 	}
 
+	cpuSets := []types.CPUSet{}
+	for _, cpuSet := range data.CPUSets {
+		cs := types.CPUSet{
+			Directive: *cpuSet.Directive,
+			Set:       cpuSet.Set,
+		}
+		cpuSets = append(cpuSets, cs)
+	}
+	if err := p.Set(parser.Global, parser.GlobalSectionName, "cpu-set", cpuSets); err != nil {
+		return err
+	}
+
 	pH1CaseAdjusts := []types.H1CaseAdjust{}
 	if len(data.H1CaseAdjusts) > 0 {
 		for _, caseAdjust := range data.H1CaseAdjusts {
@@ -2974,7 +3148,7 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global, opt *options.C
 			Path:   *rAPI.Address,
 			Params: []params.BindOption{},
 		}
-		socket.Params = serializeBindParams(rAPI.BindParams, "")
+		socket.Params = serializeBindParams(rAPI.BindParams, "", opt)
 		sockets = append(sockets, socket)
 	}
 	if err := p.Set(parser.Global, parser.GlobalSectionName, "stats socket", sockets); err != nil {
@@ -3041,6 +3215,10 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global, opt *options.C
 		return err
 	}
 
+	if err := serializeStringOption(p, "cpu-policy", data.CPUPolicy); err != nil {
+		return err
+	}
+
 	if err := serializeBoolOption(p, "daemon", data.Daemon); err != nil {
 		return err
 	}
@@ -3050,6 +3228,10 @@ func SerializeGlobalSection(p parser.Parser, data *models.Global, opt *options.C
 	}
 
 	if err := serializeDefaultPath(p, data.DefaultPath); err != nil {
+		return err
+	}
+
+	if err := serializeStringOption(p, "dns-accept-family", data.DNSAcceptFamily); err != nil {
 		return err
 	}
 
@@ -3456,6 +3638,9 @@ func serializeTuneLuaOptions(p parser.Parser, options *models.TuneLuaOptions, co
 	if options == nil {
 		options = &models.TuneLuaOptions{}
 	}
+	if err := serializeStringOption(p, "tune.lua.bool-sample-conversion", options.BoolSampleConversion); err != nil {
+		return err
+	}
 	if err := serializeTimeoutOption(p, "tune.lua.burst-timeout", options.BurstTimeout, configOptions); err != nil {
 		return err
 	}
@@ -3491,6 +3676,9 @@ func serializeTuneQuicOptions(p parser.Parser, options *models.TuneQuicOptions, 
 		return err
 	}
 	if err := serializeInt64POption(p, "tune.quic.frontend.max-streams-bidi", options.FrontendMaxStreamsBidi); err != nil {
+		return err
+	}
+	if err := serializeSizeOption(p, "tune.quic.frontend.max-tx-mem", options.FrontendMaxTxMemory); err != nil {
 		return err
 	}
 	if err := serializeInt64POption(p, "tune.quic.max-frame-loss", options.MaxFrameLoss); err != nil {
@@ -3575,7 +3763,7 @@ func serializeTuneZlibOptions(p parser.Parser, options *models.TuneZlibOptions) 
 	return serializeInt64Option(p, "tune.zlib.windowsize", options.Windowsize)
 }
 
-func serializeTuneOptions(p parser.Parser, options *models.TuneOptions, configOptions *options.ConfigurationOptions) error { //nolint:gocognit,gocyclo,cyclop
+func serializeTuneOptions(p parser.Parser, options *models.TuneOptions, configOptions *options.ConfigurationOptions) error { //nolint:gocognit,gocyclo,cyclop,maintidx
 	if options == nil {
 		options = &models.TuneOptions{}
 	}
@@ -3591,10 +3779,16 @@ func serializeTuneOptions(p parser.Parser, options *models.TuneOptions, configOp
 	if err := serializeBoolOption(p, "tune.disable-zero-copy-forwarding", options.DisableZeroCopyForwarding); err != nil {
 		return err
 	}
+	if err := serializeStringOption(p, "tune.epoll.mask-events", strings.Join(options.EpollMaskEvents, ",")); err != nil {
+		return err
+	}
 	if err := serializeInt64Option(p, "tune.events.max-events-at-once", options.EventsMaxEventsAtOnce); err != nil {
 		return err
 	}
 	if err := serializeBoolOption(p, "tune.fail-alloc", options.FailAlloc); err != nil {
+		return err
+	}
+	if err := serializeInt64POption(p, "tune.glitches.kill.cpu-usage", options.GlitchesKillCPUUsage); err != nil {
 		return err
 	}
 	if err := serializeInt64Option(p, "tune.h2.header-table-size", options.H2HeaderTableSize); err != nil {
@@ -3633,6 +3827,9 @@ func serializeTuneOptions(p parser.Parser, options *models.TuneOptions, configOp
 	if err := serializeInt64POption(p, "tune.max-checks-per-thread", options.MaxChecksPerThread); err != nil {
 		return err
 	}
+	if err := serializeInt64POption(p, "tune.max-rules-at-once", options.MaxRulesAtOnce); err != nil {
+		return err
+	}
 	if err := serializeInt64Option(p, "tune.maxaccept", options.Maxaccept); err != nil {
 		return err
 	}
@@ -3667,6 +3864,9 @@ func serializeTuneOptions(p parser.Parser, options *models.TuneOptions, configOp
 		return err
 	}
 	if err := serializeInt64POption(p, "tune.stick-counters", options.StickCounters); err != nil {
+		return err
+	}
+	if err := serializeStringOption(p, "tune.takeover-other-tg-connections", options.TakeoverOtherTgConnections); err != nil {
 		return err
 	}
 	if err := serializeOnOffOption(p, "tune.fd.edge-triggered", options.FdEdgeTriggered); err != nil {
@@ -3706,6 +3906,12 @@ func serializeTuneOptions(p parser.Parser, options *models.TuneOptions, configOp
 		return err
 	}
 	if err := serializeOnOffOption(p, "tune.h2.zero-copy-fwd-send", options.H2ZeroCopyFwdSend); err != nil {
+		return err
+	}
+	if err := serializeSizeOption(p, "tune.notsent-lowat.client", options.NotsentLowatClient); err != nil {
+		return err
+	}
+	if err := serializeSizeOption(p, "tune.notsent-lowat.server", options.NotsentLowatServer); err != nil {
 		return err
 	}
 	if err := serializeOnOffOption(p, "tune.pt.zero-copy-forwarding", options.PtZeroCopyForwarding); err != nil {

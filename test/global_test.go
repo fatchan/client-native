@@ -33,14 +33,8 @@ func globalExpcectation() *models.Global {
 
 func TestGetGlobal(t *testing.T) {
 	v, global, err := clientTest.GetGlobalConfiguration("")
-	if err != nil {
-		t.Error(err.Error())
-	}
-
-	if v != version {
-		t.Errorf("Version %v returned, expected %v", v, version)
-	}
-
+	require.NoError(t, err, "failed to get global configuration")
+	require.Equal(t, version, v, "version mismatch")
 	checkGlobal(t, global)
 }
 
@@ -112,6 +106,20 @@ func getGlobalBase() models.GlobalBase {
 				CPUSet:  &v,
 			},
 		},
+		CPUPolicy: models.GlobalBaseCPUPolicyEfficiency,
+		CPUSets: []*models.CPUSet{
+			{
+				Directive: misc.StringP("reset"),
+			},
+			{
+				Directive: misc.StringP("drop-cpu"),
+				Set:       "1,3",
+			},
+			{
+				Directive: misc.StringP("only-thread"),
+				Set:       "4-9",
+			},
+		},
 		RuntimeAPIs: []*models.RuntimeAPI{
 			{
 				Address: &a,
@@ -169,21 +177,26 @@ func getGlobalBase() models.GlobalBase {
 			FrontendConnTxBuffersLimit: nil,
 			FrontendMaxIdleTimeout:     misc.Int64P(5000),
 			SocketOwner:                "listener",
+			FrontendMaxTxMemory:        misc.Int64P(10 * 1024),
 		},
 		TuneSslOptions: &models.TuneSslOptions{
 			OcspUpdateMaxDelay: misc.Int64P(48),
 			OcspUpdateMinDelay: misc.Int64P(49),
 		},
 		TuneOptions: &models.TuneOptions{
-			DisableZeroCopyForwarding: true,
-			EventsMaxEventsAtOnce:     50,
-			H1ZeroCopyFwdRecv:         "disabled",
-			H1ZeroCopyFwdSend:         "disabled",
-			H2ZeroCopyFwdSend:         "disabled",
-			MaxChecksPerThread:        misc.Int64P(20),
-			PeersMaxUpdatesAtOnce:     100,
-			PtZeroCopyForwarding:      "disabled",
-			StickCounters:             misc.Int64P(50),
+			DisableZeroCopyForwarding:  true,
+			EventsMaxEventsAtOnce:      50,
+			GlitchesKillCPUUsage:       misc.Int64P(25),
+			H1ZeroCopyFwdRecv:          "disabled",
+			H1ZeroCopyFwdSend:          "disabled",
+			H2ZeroCopyFwdSend:          "disabled",
+			MaxChecksPerThread:         misc.Int64P(20),
+			NotsentLowatClient:         misc.Int64P(10),
+			NotsentLowatServer:         misc.Int64P(20),
+			PeersMaxUpdatesAtOnce:      100,
+			PtZeroCopyForwarding:       "disabled",
+			StickCounters:              misc.Int64P(50),
+			TakeoverOtherTgConnections: "restricted",
 		},
 		HTTPClientOptions: &models.HTTPClientOptions{
 			ResolversDisabled: "disabled",
