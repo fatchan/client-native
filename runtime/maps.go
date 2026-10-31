@@ -276,7 +276,7 @@ func (s *SingleRuntime) CommitMap(version, name string) error {
 	return nil
 }
 
-// GetMapEntry returns one map runtime setting
+// GetMapEntry returns one map runtime setting.
 func (s *SingleRuntime) GetMapEntry(name, id string) (*models.MapEntry, error) {
 	cmd := fmt.Sprintf("get map %s %s", name, id)
 	response, err := s.ExecuteWithResponse(cmd)
@@ -284,26 +284,40 @@ func (s *SingleRuntime) GetMapEntry(name, id string) (*models.MapEntry, error) {
 		return nil, fmt.Errorf("%s %w", err.Error(), native_errors.ErrNotFound)
 	}
 
-	m := &models.MapEntry{}
-	parts := strings.Split(response, ",")
-	for _, p := range parts {
-		kv := strings.Split(p, "=")
-		switch key := strings.TrimSpace(kv[0]); {
-		case key == "key":
-			m.Key = strings.TrimPrefix(strings.TrimSuffix(kv[1], "\""), "\"")
-		case key == "value":
-			m.Value = strings.TrimPrefix(strings.TrimSuffix(kv[1], "\""), "\"")
-		}
-	}
-	// safe guard m.Key != id:
-	// when id doesn't exist in runtime maps,
-	// but any existing key is substring of id
-	// get map command returns wrong result(BUG in HAProxy)
-	// so we need to check it
-	if m.Key == "" || m.Value == "" || m.Key != id {
+	m := parseRuntimeMapEntry(response)
+	// HAProxy returns found=no without key/value fields for an absent entry.
+	// It can also return a partial match, so require an exact key match.
+	if m == nil || m.Key == "" || m.Value == "" || m.Key != id {
 		return nil, fmt.Errorf("%s %w", id, native_errors.ErrNotFound)
 	}
 	return m, nil
+}
+
+func parseRuntimeMapEntry(response string) *models.MapEntry {
+	const keyPrefix = "key="
+	const valuePrefix = ", value="
+
+	keyIndex := strings.Index(response, keyPrefix)
+	if keyIndex == -1 {
+		return nil
+	}
+	valueIndex := strings.Index(response[keyIndex:], valuePrefix)
+	if valueIndex == -1 {
+		return nil
+	}
+	valueIndex += keyIndex
+
+	key := strings.Trim(strings.TrimSpace(response[keyIndex+len(keyPrefix):valueIndex]), "\"")
+	value := strings.TrimSpace(response[valueIndex+len(valuePrefix):])
+	if typeIndex := strings.LastIndex(value, ", type="); typeIndex != -1 {
+		value = value[:typeIndex]
+	}
+	value = strings.Trim(value, "\"")
+	if key == "" || value == "" {
+		return nil
+	}
+
+	return &models.MapEntry{Key: key, Value: value}
 }
 
 // SetMapEntry replaces the value corresponding to each id in a map

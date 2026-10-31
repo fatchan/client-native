@@ -235,13 +235,13 @@ func (c *client) Reload() (string, error) {
 
 // GetMapsPath returns runtime map file path or map id
 func (c *client) GetMapsPath(name string) (string, error) {
-
 	// we can refer to runtime map with either id or path
 	if strings.HasPrefix(name, "#") { // id
 		return name, nil
 	}
 
-	// if not id then sanitize filename
+	// keep both original and sanitized forms for comparison
+	originalName := name
 	name = misc.SanitizeFilename(name)
 
 	// CLI
@@ -253,14 +253,23 @@ func (c *client) GetMapsPath(name string) (string, error) {
 		p := filepath.Join(*c.options.MapsDir, name) // path
 		return p, nil
 	}
+
 	// config
 	maps, _ := c.ShowMaps()
 	for _, m := range maps {
 		basename := filepath.Base(m.File)
-		if strings.TrimSuffix(basename, filepath.Ext(basename)) == name {
+
+		trimmedBase := strings.TrimSuffix(basename, filepath.Ext(basename))
+		sanitizedTrimmedBase := misc.SanitizeFilename(trimmedBase)
+
+		if trimmedBase == originalName ||
+			trimmedBase == name ||
+			sanitizedTrimmedBase == originalName ||
+			sanitizedTrimmedBase == name {
 			return m.File, nil // path from config
 		}
 	}
+
 	return "", fmt.Errorf("maps dir doesn't exist or not specified. Either use `maps-dir` CLI option or reload HAProxy if map section exists in config file")
 }
 
